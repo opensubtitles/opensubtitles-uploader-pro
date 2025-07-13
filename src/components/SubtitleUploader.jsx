@@ -714,6 +714,37 @@ function SubtitleUploaderInner() {
     }
   }, [files.length]);
 
+  // Auto-unselect subtitles that already exist in database based on CheckSubHash results
+  useEffect(() => {
+    if (hashCheckResults && Object.keys(hashCheckResults).length > 0) {
+      const newUploadStates = { ...uploadStates };
+      let hasChanges = false;
+      
+      // Find subtitles that exist in database and unselect them
+      Object.entries(hashCheckResults).forEach(([filePath, result]) => {
+        if (result.status === 'exists') {
+          // Only update if not already set to false
+          if (newUploadStates[filePath] !== false) {
+            newUploadStates[filePath] = false;
+            hasChanges = true;
+            addDebugInfo(`🚫 Auto-unselected uploaded subtitle: ${result.filename} (ID: ${result.subtitleId})`);
+          }
+        }
+      });
+      
+      // Update upload states if there are changes
+      if (hasChanges) {
+        setUploadStates(newUploadStates);
+        
+        // Show summary of auto-unselected subtitles
+        const unselectedCount = Object.values(hashCheckResults).filter(r => r.status === 'exists').length;
+        if (unselectedCount > 0) {
+          addDebugInfo(`✅ Auto-unselected ${unselectedCount} subtitle${unselectedCount > 1 ? 's' : ''} that already exist${unselectedCount > 1 ? '' : 's'} in database`);
+        }
+      }
+    }
+  }, [hashCheckResults, uploadStates, addDebugInfo]);
+
   // Filter successful pairs
   const successfulPairs = pairedFiles.filter(pair => pair.video && pair.subtitles.length > 0);
   
