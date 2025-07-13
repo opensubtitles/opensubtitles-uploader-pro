@@ -10,10 +10,10 @@
     "vite",
     "pro"
   ],
-  "homepage": "https://github.com/opensubtitles/opensubtitles-uploader",
+  "homepage": "https://github.com/opensubtitles/opensubtitles-uploader-pro",
   "repository": {
     "type": "git",
-    "url": "https://github.com/opensubtitles/opensubtitles-uploader.git"
+    "url": "https://github.com/opensubtitles/opensubtitles-uploader-pro.git"
   },
   "author": "OpenSubtitles",
   "license": "MIT",

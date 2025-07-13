@@ -1169,7 +1169,7 @@ function SubtitleUploaderInner() {
               </a>
               <span className="text-xs opacity-60">•</span>
               <a 
-                href="https://github.com/opensubtitles/opensubtitles-uploader" 
+                href="https://github.com/opensubtitles/opensubtitles-uploader-pro" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:underline transition-all flex items-center gap-1"
