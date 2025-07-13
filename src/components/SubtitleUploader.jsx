@@ -782,25 +782,31 @@ function SubtitleUploaderInner() {
                     Logged as: <strong style={styles.link}>{getUsername()}</strong>
                   </span>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span>
                       Logged as: <strong style={styles.link}>Anonymous</strong>
                     </span>
-                    <div style={{ fontSize: '11px', color: colors.warning }}>
-                      ⚠️ Uploader requires login - 
-                      <a 
-                        href="https://www.opensubtitles.org/login" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        style={{ 
-                          color: colors.link, 
-                          textDecoration: 'underline',
-                          marginLeft: '4px'
-                        }}
-                      >
-                        Login here
-                      </a>
-                    </div>
+                    <a 
+                      href="https://www.opensubtitles.org/login" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 rounded-lg transition-all text-xs"
+                      style={{
+                        backgroundColor: colors.warning,
+                        color: 'white',
+                        textDecoration: 'none',
+                        fontWeight: '500',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = colors.error;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = colors.warning;
+                      }}
+                    >
+                      🔑 Login Required
+                    </a>
                   </div>
                 )}
               </div>
@@ -996,41 +1002,71 @@ function SubtitleUploaderInner() {
 
         {/* Login Required Message for Anonymous Users */}
         {hasUploadableContent && !isLoggedIn() && (
-          <div 
-            className="max-w-4xl mx-auto p-6 rounded-lg text-center"
-            style={{
-              backgroundColor: colors.cardBackground,
-              border: `1px solid ${colors.warning}`,
-              boxShadow: `0 2px 4px ${colors.shadow}`
-            }}
-          >
-            <div style={{ color: colors.warning, fontSize: '18px', marginBottom: '8px' }}>
-              🔒 Login Required
-            </div>
-            <div style={{ color: colors.textPrimary, marginBottom: '12px' }}>
-              You have subtitle files ready for upload, but uploading requires a logged-in account.
-            </div>
-            <a 
-              href="https://www.opensubtitles.org/login" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-block px-6 py-3 rounded-lg transition-all"
+          <div className="max-w-4xl mx-auto mb-6">
+            <div 
+              className="p-8 rounded-xl text-center"
               style={{
-                backgroundColor: colors.primary,
-                color: 'white',
-                textDecoration: 'none',
-                fontSize: '16px',
-                fontWeight: '500'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.backgroundColor = colors.primaryHover;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.backgroundColor = colors.primary;
+                backgroundColor: colors.cardBackground,
+                border: `2px solid ${colors.warning}`,
+                boxShadow: `0 8px 32px ${colors.shadow}`,
+                background: `linear-gradient(135deg, ${colors.cardBackground} 0%, ${colors.background} 100%)`
               }}
             >
-              Login to OpenSubtitles.org
-            </a>
+              <div style={{ 
+                color: colors.warning, 
+                fontSize: '48px', 
+                marginBottom: '16px',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+              }}>
+                🔑
+              </div>
+              <div style={{ 
+                color: colors.textPrimary, 
+                fontSize: '24px', 
+                fontWeight: '600',
+                marginBottom: '12px' 
+              }}>
+                Login Required to Upload
+              </div>
+              <div style={{ 
+                color: colors.textSecondary, 
+                fontSize: '16px',
+                marginBottom: '32px',
+                maxWidth: '500px',
+                margin: '0 auto 32px auto',
+                lineHeight: '1.6'
+              }}>
+                Your subtitle files are ready for upload! Please log in to your OpenSubtitles account to continue with the upload process.
+              </div>
+              <a 
+                href="https://www.opensubtitles.org/login" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-3 px-8 py-4 rounded-xl transition-all transform"
+                style={{
+                  backgroundColor: colors.success,
+                  color: 'white',
+                  textDecoration: 'none',
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  boxShadow: `0 4px 16px ${colors.shadow}`,
+                  border: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.backgroundColor = colors.successHover || colors.primary;
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = `0 8px 24px ${colors.shadow}`;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.backgroundColor = colors.success;
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = `0 4px 16px ${colors.shadow}`;
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>🚀</span>
+                Login to OpenSubtitles.org
+              </a>
+            </div>
           </div>
         )}
 
