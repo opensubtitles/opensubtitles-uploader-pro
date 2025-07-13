@@ -1,6 +1,7 @@
 # OpenSubtitles Uploader PRO
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/opensubtitles/opensubtitles-uploader/releases)
+[![Tests](https://github.com/opensubtitles/opensubtitles-uploader-pro/workflows/Tests/badge.svg)](https://github.com/opensubtitles/opensubtitles-uploader-pro/actions)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/opensubtitles/opensubtitles-uploader-pro/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-uploader.opensubtitles.org-brightgreen.svg)](https://uploader.opensubtitles.org)
 [![OpenSubtitles.org API](https://img.shields.io/badge/OpenSubtitles.org-API-orange.svg)](https://www.opensubtitles.org/)
@@ -121,7 +122,20 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run test suite
+npm test
 ```
+
+### Testing
+
+The project includes a comprehensive test suite with 42 test cases covering:
+- File detection and movie title extraction
+- Multilingual subtitle directory handling  
+- Complex filename processing
+- Edge cases and real-world scenarios
+
+Tests are automatically run on every push and pull request via GitHub Actions.
 
 ### Project Structure
 
