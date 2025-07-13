@@ -1002,16 +1002,15 @@ function SubtitleUploaderInner() {
 
         {/* Login Required Message for Anonymous Users */}
         {hasUploadableContent && !isLoggedIn() && (
-          <div className="max-w-4xl mx-auto mb-6">
-            <div 
-              className="p-8 rounded-xl text-center"
-              style={{
-                backgroundColor: colors.cardBackground,
-                border: `2px solid ${colors.warning}`,
-                boxShadow: `0 8px 32px ${colors.shadow}`,
-                background: `linear-gradient(135deg, ${colors.cardBackground} 0%, ${colors.background} 100%)`
-              }}
-            >
+          <div 
+            className="p-8 rounded-xl text-center mb-6"
+            style={{
+              backgroundColor: colors.cardBackground,
+              border: `2px solid ${colors.warning}`,
+              boxShadow: `0 8px 32px ${colors.shadow}`,
+              background: `linear-gradient(135deg, ${colors.cardBackground} 0%, ${colors.background} 100%)`
+            }}
+          >
               <div style={{ 
                 color: colors.warning, 
                 fontSize: '48px', 
@@ -1066,7 +1065,6 @@ function SubtitleUploaderInner() {
                 <span style={{ fontSize: '20px' }}>🚀</span>
                 Login to OpenSubtitles.org
               </a>
-            </div>
           </div>
         )}
 
