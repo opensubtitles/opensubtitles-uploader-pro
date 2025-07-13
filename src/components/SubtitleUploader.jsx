@@ -954,6 +954,7 @@ function SubtitleUploaderInner() {
             getFormattedTags={getFormattedTags}
             fetchFeaturesByImdbId={fetchFeaturesByImdbId}
             uploadResults={uploadResults}
+            hashCheckResults={hashCheckResults}
             colors={colors}
             isDark={isDark}
           />

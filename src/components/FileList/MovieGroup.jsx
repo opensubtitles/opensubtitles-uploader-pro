@@ -27,6 +27,7 @@ export const MovieGroup = ({
   getFormattedTags,
   fetchFeaturesByImdbId,
   uploadResults,
+  hashCheckResults,
   colors,
   isDark
 }) => {
@@ -106,6 +107,7 @@ export const MovieGroup = ({
               uploadEnabled={getUploadEnabled(subtitle.fullPath)}
               onToggleUpload={onToggleUpload}
               uploadResults={uploadResults}
+              hashCheckResults={hashCheckResults}
               colors={colors}
               isDark={isDark}
             />

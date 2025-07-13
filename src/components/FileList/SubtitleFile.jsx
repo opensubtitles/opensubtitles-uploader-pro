@@ -16,6 +16,7 @@ export const SubtitleFile = ({
   uploadEnabled = true, // New prop for upload status
   onToggleUpload, // New prop for upload toggle callback
   uploadResults, // New prop for upload results
+  hashCheckResults, // New prop for CheckSubHash results
   colors,
   isDark
 }) => {
@@ -276,8 +277,38 @@ export const SubtitleFile = ({
 
           {/* Disabled state message */}
           {!uploadEnabled && !uploadResults?.[subtitle.fullPath] && (
-            <div className="text-xs mt-2 italic" style={{color: colors?.textMuted || '#808080'}}>
-              This subtitle will not be uploaded
+            <div className="text-xs mt-2">
+              {(() => {
+                // Check if this subtitle was auto-unselected due to CheckSubHash results
+                const hashResult = hashCheckResults?.[subtitle.fullPath];
+                if (hashResult && hashResult.status === 'exists' && hashResult.subtitleUrl) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className="italic" style={{color: colors?.textMuted || '#808080'}}>
+                        Auto-unselected: Already uploaded
+                      </span>
+                      <a 
+                        href={hashResult.subtitleUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs underline font-medium"
+                        style={{
+                          color: isDark ? '#ef4444' : (colors?.error || '#dc3545')
+                        }}
+                        onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
+                      >
+                        View Existing (ID: {hashResult.subtitleId})
+                      </a>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="italic" style={{color: colors?.textMuted || '#808080'}}>
+                      This subtitle will not be uploaded
+                    </div>
+                  );
+                }
+              })()}
             </div>
           )}
         </div>

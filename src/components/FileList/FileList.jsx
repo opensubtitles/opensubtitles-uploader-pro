@@ -26,6 +26,7 @@ export const FileList = ({
   getFormattedTags,
   fetchFeaturesByImdbId,
   uploadResults,
+  hashCheckResults,
   colors,
   isDark
 }) => {
@@ -128,6 +129,7 @@ export const FileList = ({
           getFormattedTags={getFormattedTags}
           fetchFeaturesByImdbId={fetchFeaturesByImdbId}
           uploadResults={uploadResults}
+          hashCheckResults={hashCheckResults}
           colors={colors}
           isDark={isDark}
         />
