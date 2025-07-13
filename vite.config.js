@@ -5,7 +5,58 @@ export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
   build: {
-    sourcemap: false
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks
+          'react-vendor': ['react', 'react-dom'],
+          'router': ['react-router-dom'],
+          'crypto': ['crypto-js', 'pako'],
+          
+          // App chunks
+          'services': [
+            'src/services/api/openSubtitlesApi.js',
+            'src/services/api/xmlrpc.js',
+            'src/services/cache.js',
+            'src/services/movieHash.js',
+            'src/services/subtitleHash.js',
+            'src/services/fileProcessing.js',
+            'src/services/guessItService.js',
+            'src/services/subtitleUploadService.js'
+          ],
+          'hooks': [
+            'src/hooks/useDebugMode.js',
+            'src/hooks/useFileHandling.js',
+            'src/hooks/useLanguageData.js',
+            'src/hooks/useLanguageDetection.js',
+            'src/hooks/useMovieGuess.js',
+            'src/hooks/useGuessIt.js',
+            'src/hooks/useUserSession.js',
+            'src/hooks/useCheckSubHash.js'
+          ],
+          'components': [
+            'src/components/FileList/FileList.jsx',
+            'src/components/FileList/MovieGroup.jsx',
+            'src/components/FileList/SubtitleFile.jsx',
+            'src/components/FileList/VideoFile.jsx',
+            'src/components/MatchedPairs.jsx',
+            'src/components/OrphanedSubtitles.jsx',
+            'src/components/DebugPanel.jsx',
+            'src/components/SubtitlePreview.jsx',
+            'src/components/UploadButton.jsx'
+          ],
+          'utils': [
+            'src/utils/fileUtils.js',
+            'src/utils/constants.js',
+            'src/utils/networkUtils.js',
+            'src/utils/retryUtils.js',
+            'src/utils/themeUtils.js'
+          ]
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600
   },
   server: {
     sourcemapIgnoreList: () => true,

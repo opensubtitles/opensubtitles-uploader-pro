@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
 import { useDebugMode } from "../hooks/useDebugMode.js";
 import { useFileHandling } from "../hooks/useFileHandling.js";
 import { useLanguageData } from "../hooks/useLanguageData.js";
@@ -17,12 +17,14 @@ import { MatchedPairs } from "./MatchedPairs.jsx";
 import { OrphanedSubtitles } from "./OrphanedSubtitles.jsx";
 import { StatsPanel } from "./StatsPanel.jsx";
 import { SubtitlePreview } from "./SubtitlePreview.jsx";
-import { DebugPanel } from "./DebugPanel.jsx";
 import { UploadButton } from "./UploadButton.jsx";
 import { ApiHealthCheck } from "./ApiHealthCheck.jsx";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext.jsx";
 import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
+
+// Lazy load the DebugPanel component
+const DebugPanel = lazy(() => import("./DebugPanel.jsx").then(module => ({ default: module.DebugPanel })));
 
 function SubtitleUploaderInner() {
   const { colors, isDark, toggleTheme } = useTheme();
@@ -1132,22 +1134,24 @@ function SubtitleUploaderInner() {
         )}
 
         {/* Debug Panel */}
-        <DebugPanel
-          debugMode={debugMode}
-          debugInfo={debugInfo}
-          languagesLoading={languagesLoading}
-          languagesError={languagesError}
-          movieGuesses={movieGuesses}
-          featuresByImdbId={featuresByImdbId}
-          hashCheckResults={hashCheckResults}
-          hashCheckLoading={hashCheckLoading}
-          hashCheckProcessed={hashCheckProcessed}
-          getHashCheckSummary={getHashCheckSummary}
-          toggleDebugMode={toggleDebugMode}
-          clearAllCache={clearAllCache}
-          colors={colors}
-          isDark={isDark}
-        />
+        <Suspense fallback={<div className="mt-6 p-4 rounded-lg text-center" style={{backgroundColor: colors.cardBackground, color: colors.textSecondary}}>Loading debug panel...</div>}>
+          <DebugPanel
+            debugMode={debugMode}
+            debugInfo={debugInfo}
+            languagesLoading={languagesLoading}
+            languagesError={languagesError}
+            movieGuesses={movieGuesses}
+            featuresByImdbId={featuresByImdbId}
+            hashCheckResults={hashCheckResults}
+            hashCheckLoading={hashCheckLoading}
+            hashCheckProcessed={hashCheckProcessed}
+            getHashCheckSummary={getHashCheckSummary}
+            toggleDebugMode={toggleDebugMode}
+            clearAllCache={clearAllCache}
+            colors={colors}
+            isDark={isDark}
+          />
+        </Suspense>
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t text-center text-sm" 
