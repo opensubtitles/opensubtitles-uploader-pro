@@ -547,7 +547,30 @@ export class XmlRpcService {
       // Parse response
       const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
       if (responseStruct) {
-        return this.extractStructData(responseStruct);
+        const result = this.extractStructData(responseStruct);
+        
+        // Process the data section to extract hash results
+        if (result.status === '200 OK' && result.data) {
+          const hashResults = {};
+          
+          // Extract each hash and its result from the data struct
+          Object.entries(result.data).forEach(([hash, value]) => {
+            const subtitleId = parseInt(value);
+            hashResults[hash] = {
+              id: subtitleId,
+              exists: subtitleId > 0,
+              url: subtitleId > 0 ? `https://www.opensubtitles.org/subtitles/${subtitleId}` : null
+            };
+          });
+          
+          return {
+            status: result.status,
+            data: hashResults,
+            seconds: result.seconds
+          };
+        }
+        
+        return result;
       }
       
       throw new Error('Invalid CheckSubHash response structure');

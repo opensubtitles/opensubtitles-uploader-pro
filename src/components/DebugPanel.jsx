@@ -214,20 +214,36 @@ export const DebugPanel = ({
                   }}>
                     {result.hash || 'no hash'}
                   </span>
-                  <span style={{
-                    color: result.status === 'exists' ? (isDark ? '#ef4444' : themeColors.error) : 
-                           result.status === 'new' ? (isDark ? '#22c55e' : themeColors.success) :
-                           result.status === 'error' ? (isDark ? '#ef4444' : themeColors.error) :
-                           (isDark ? '#d1d5db' : themeColors.textMuted),
-                    fontWeight: '600',
-                    fontSize: '11px'
-                  }}>
-                    {result.status === 'exists' ? 'uploaded' :
-                     result.status === 'new' ? 'not uploaded yet' :
-                     result.status === 'error' ? 'error' :
-                     result.status === 'pending' ? 'checking...' :
-                     result.status}
-                  </span>
+                  {result.status === 'exists' && result.subtitleUrl ? (
+                    <a 
+                      href={result.subtitleUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{
+                        color: isDark ? '#ef4444' : themeColors.error,
+                        fontWeight: '600',
+                        fontSize: '11px',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      uploaded (ID: {result.subtitleId})
+                    </a>
+                  ) : (
+                    <span style={{
+                      color: result.status === 'exists' ? (isDark ? '#ef4444' : themeColors.error) : 
+                             result.status === 'new' ? (isDark ? '#22c55e' : themeColors.success) :
+                             result.status === 'error' ? (isDark ? '#ef4444' : themeColors.error) :
+                             (isDark ? '#d1d5db' : themeColors.textMuted),
+                      fontWeight: '600',
+                      fontSize: '11px'
+                    }}>
+                      {result.status === 'exists' ? 'uploaded' :
+                       result.status === 'new' ? 'not uploaded yet' :
+                       result.status === 'error' ? 'error' :
+                       result.status === 'pending' ? 'checking...' :
+                       result.status}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

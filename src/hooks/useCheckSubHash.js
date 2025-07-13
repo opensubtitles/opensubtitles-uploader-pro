@@ -80,18 +80,22 @@ export const useCheckSubHash = (addDebugInfo) => {
           addDebugInfo && addDebugInfo(`📝 [CheckSubHash] API Response received`);
           
           // Process the response
-          if (response && typeof response === 'object') {
-            // The response should contain hash results
+          if (response && response.status === '200 OK' && response.data) {
+            // The response data contains hash results with subtitle IDs
             for (const hash of hashesToCheck) {
               const filePath = fileHashMap[hash];
-              if (results[filePath]) {
-                // Check if hash exists in response (indicates subtitle already uploaded)
-                const exists = response[hash] || response.data?.[hash];
+              if (results[filePath] && response.data[hash]) {
+                const hashResult = response.data[hash];
+                const exists = hashResult.exists;
+                const subtitleId = hashResult.id;
+                const subtitleUrl = hashResult.url;
                 
                 results[filePath].status = exists ? 'exists' : 'new';
-                results[filePath].apiResponse = exists;
+                results[filePath].subtitleId = subtitleId;
+                results[filePath].subtitleUrl = subtitleUrl;
+                results[filePath].apiResponse = hashResult;
                 
-                const statusText = exists ? 'uploaded' : 'not uploaded yet';
+                const statusText = exists ? `uploaded (ID: ${subtitleId})` : 'not uploaded yet';
                 addDebugInfo && addDebugInfo(`📝 [CheckSubHash] ${results[filePath].filename} - ${hash} - ${statusText}`);
               }
             }
