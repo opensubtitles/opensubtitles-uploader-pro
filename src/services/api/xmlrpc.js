@@ -520,6 +520,75 @@ export class XmlRpcService {
   }
 
   /**
+   * Check if subtitle hashes exist in database using XML-RPC API
+   * @param {Array<string>} hashes - Array of MD5 hashes to check
+   * @returns {Promise<Object>} - Response with hash check results
+   */
+  static async checkSubHash(hashes) {
+    try {
+      const token = this.getAuthToken();
+      
+      // Convert hashes array to XML-RPC format
+      const xmlRpcBody = this.buildCheckSubHashXml(token, hashes);
+      
+      const response = await delayedFetch(API_ENDPOINTS.OPENSUBTITLES_XMLRPC, {
+        method: 'POST',
+        headers: getApiHeaders('text/xml'),
+        body: xmlRpcBody,
+      });
+
+      if (!response.ok) {
+        throw new Error(`XML-RPC CheckSubHash failed: ${response.status} ${response.statusText}`);
+      }
+
+      const xmlText = await response.text();
+      const xmlDoc = this.parseXmlRpcResponse(xmlText);
+      
+      // Parse response
+      const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
+      if (responseStruct) {
+        return this.extractStructData(responseStruct);
+      }
+      
+      throw new Error('Invalid CheckSubHash response structure');
+    } catch (error) {
+      console.error('CheckSubHash failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Build XML-RPC body for CheckSubHash
+   * @param {string} token - Login token
+   * @param {Array<string>} hashes - Array of MD5 hashes to check
+   * @returns {string} - XML-RPC body
+   */
+  static buildCheckSubHashXml(token, hashes) {
+    const hashesXml = hashes.map(hash => `<value><string>${hash}</string></value>`).join('');
+    
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>CheckSubHash</methodName>
+  <params>
+    <param>
+      <value>
+        <string>${token}</string>
+      </value>
+    </param>
+    <param>
+      <value>
+        <array>
+          <data>
+            ${hashesXml}
+          </data>
+        </array>
+      </value>
+    </param>
+  </params>
+</methodCall>`;
+  }
+
+  /**
    * Try to upload subtitles using XML-RPC API with PHPSESSID token
    * @param {Object} uploadData - Upload data structure
    * @returns {Promise<Object>} - Upload response

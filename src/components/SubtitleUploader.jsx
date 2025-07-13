@@ -6,6 +6,7 @@ import { useLanguageDetection } from "../hooks/useLanguageDetection.js";
 import { useMovieGuess } from "../hooks/useMovieGuess.js";
 import { useGuessIt } from "../hooks/useGuessIt.js";
 import { useUserSession } from "../hooks/useUserSession.js";
+import { useCheckSubHash } from "../hooks/useCheckSubHash.js";
 import { CacheService } from "../services/cache.js";
 import { MovieHashService } from "../services/movieHash.js";
 import { SubtitleUploadService } from "../services/subtitleUploadService.js";
@@ -107,6 +108,17 @@ function SubtitleUploaderInner() {
     isLoggedIn,
     getUserRank
   } = useUserSession(addDebugInfo);
+
+  const {
+    hashCheckResults,
+    hashCheckLoading,
+    hashCheckProcessed,
+    processSubtitleHashes,
+    getHashCheckResult,
+    fileExistsInDatabase,
+    getHashCheckSummary,
+    clearHashCheckResults
+  } = useCheckSubHash(addDebugInfo);
 
   // Track processed files to prevent reprocessing
   const processedFiles = useRef(new Set());
@@ -299,6 +311,7 @@ function SubtitleUploaderInner() {
       clearAllGuessItState(); // GuessIt data and processing state
       clearAllLanguageState(); // Language detection processing state
       clearSubtitleLanguages(); // Subtitle language selections
+      clearHashCheckResults(); // Clear CheckSubHash results
       
       // Reset all UI state when new files are dropped
       setUploadResults({}); // Clear previous upload results
@@ -350,6 +363,9 @@ function SubtitleUploaderInner() {
     }
     if (subtitleFiles.length > 0) {
       addDebugInfo(`📝 Subtitle files: ${subtitleFiles.map(f => f.name).join(', ')}`);
+      
+      // Process subtitle files for CheckSubHash
+      processSubtitleHashes(subtitleFiles);
     }
 
     // Process video files for hashes, file info, and movie guessing
@@ -679,6 +695,9 @@ function SubtitleUploaderInner() {
     
     // Clear processing state
     processedFiles.current.clear();
+    
+    // Clear CheckSubHash results
+    clearHashCheckResults();
     
     // Clear all processing states
     files.forEach(file => {
@@ -1087,6 +1106,10 @@ function SubtitleUploaderInner() {
           languagesError={languagesError}
           movieGuesses={movieGuesses}
           featuresByImdbId={featuresByImdbId}
+          hashCheckResults={hashCheckResults}
+          hashCheckLoading={hashCheckLoading}
+          hashCheckProcessed={hashCheckProcessed}
+          getHashCheckSummary={getHashCheckSummary}
           toggleDebugMode={toggleDebugMode}
           clearAllCache={clearAllCache}
           colors={colors}

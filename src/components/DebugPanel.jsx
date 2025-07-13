@@ -8,6 +8,10 @@ export const DebugPanel = ({
   languagesError,
   movieGuesses,
   featuresByImdbId,
+  hashCheckResults,
+  hashCheckLoading,
+  hashCheckProcessed,
+  getHashCheckSummary,
   toggleDebugMode,
   clearAllCache,
   colors,
@@ -141,6 +145,72 @@ export const DebugPanel = ({
             ))
           )}
         </div>
+        
+        {/* CheckSubHash Results */}
+        {hashCheckResults && Object.keys(hashCheckResults).length > 0 && (
+          <div className="mt-3 p-3 rounded" 
+               style={{
+                 backgroundColor: isDark ? '#2a2a2a' : '#f8f9fa',
+                 border: `1px solid ${themeColors.border}`
+               }}>
+            <div className="flex items-center gap-2 mb-2">
+              <span style={{color: themeColors.textSecondary, fontWeight: 'bold'}}>
+                📝 [CheckSubHash] Subtitle Hash Check Results
+              </span>
+              {hashCheckLoading && (
+                <div className="w-3 h-3 rounded-full animate-spin" style={{
+                  borderTop: `2px solid transparent`,
+                  borderRight: `2px solid ${themeColors.link}`,
+                  borderBottom: `2px solid ${themeColors.link}`,
+                  borderLeft: `2px solid ${themeColors.link}`
+                }}></div>
+              )}
+            </div>
+            
+            {getHashCheckSummary && (
+              <div className="mb-2 text-xs" style={{color: themeColors.textMuted}}>
+                <span>Summary: </span>
+                {(() => {
+                  const summary = getHashCheckSummary();
+                  return (
+                    <span>
+                      {summary.total} total, {' '}
+                      <span style={{color: themeColors.success}}>{summary.new} new</span>, {' '}
+                      <span style={{color: themeColors.error}}>{summary.exists} exists</span>
+                      {summary.pending > 0 && <span>, {summary.pending} pending</span>}
+                      {summary.error > 0 && <span>, {summary.error} errors</span>}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
+            
+            <div className="text-xs font-mono space-y-1">
+              {Object.values(hashCheckResults).map((result, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <span style={{color: themeColors.textSecondary}}>
+                    {result.filename}
+                  </span>
+                  <span style={{color: themeColors.textMuted, fontFamily: 'monospace'}}>
+                    {result.hash || 'no hash'}
+                  </span>
+                  <span style={{
+                    color: result.status === 'exists' ? themeColors.error : 
+                           result.status === 'new' ? themeColors.success :
+                           result.status === 'error' ? themeColors.error :
+                           themeColors.textMuted
+                  }}>
+                    {result.status === 'exists' ? 'uploaded' :
+                     result.status === 'new' ? 'not uploaded yet' :
+                     result.status === 'error' ? 'error' :
+                     result.status === 'pending' ? 'checking...' :
+                     result.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {/* Cache Info and Clear Cache Button */}
         <div className="mt-3 flex items-center justify-between">
