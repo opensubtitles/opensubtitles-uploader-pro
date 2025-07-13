@@ -933,11 +933,11 @@ export const MatchedPairs = ({
                                       rel="noopener noreferrer"
                                       className="text-xs underline font-medium"
                                       style={{
-                                        color: isDark ? '#60a5fa' : (themeColors.link || '#2878C0')
+                                        color: isDark ? '#22c55e' : (themeColors.success || '#9EC068')
                                       }}
                                       onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
                                     >
-                                      View Existing (ID: {hashResult.subtitleId})
+                                      View Existing Subtitles
                                     </a>
                                   </div>
                                 );

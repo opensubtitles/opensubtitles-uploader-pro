@@ -293,11 +293,11 @@ export const SubtitleFile = ({
                         rel="noopener noreferrer"
                         className="text-xs underline font-medium"
                         style={{
-                          color: isDark ? '#60a5fa' : (colors?.link || '#2878C0')
+                          color: isDark ? '#22c55e' : (colors?.success || '#9EC068')
                         }}
                         onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
                       >
-                        View Existing (ID: {hashResult.subtitleId})
+                        View Existing Subtitles
                       </a>
                     </div>
                   );
