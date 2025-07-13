@@ -151,10 +151,13 @@ export const DebugPanel = ({
           <div className="mt-3 p-3 rounded" 
                style={{
                  backgroundColor: isDark ? '#2a2a2a' : '#f8f9fa',
-                 border: `1px solid ${themeColors.border}`
+                 border: `1px solid ${isDark ? '#525252' : themeColors.border}`
                }}>
             <div className="flex items-center gap-2 mb-2">
-              <span style={{color: themeColors.textSecondary, fontWeight: 'bold'}}>
+              <span style={{
+                color: isDark ? '#f0f0f0' : themeColors.textSecondary, 
+                fontWeight: 'bold'
+              }}>
                 📝 [CheckSubHash] Subtitle Hash Check Results
               </span>
               {hashCheckLoading && (
@@ -168,15 +171,21 @@ export const DebugPanel = ({
             </div>
             
             {getHashCheckSummary && (
-              <div className="mb-2 text-xs" style={{color: themeColors.textMuted}}>
+              <div className="mb-2 text-xs" style={{
+                color: isDark ? '#d0d0d0' : themeColors.textMuted
+              }}>
                 <span>Summary: </span>
                 {(() => {
                   const summary = getHashCheckSummary();
                   return (
                     <span>
                       {summary.total} total, {' '}
-                      <span style={{color: themeColors.success}}>{summary.new} new</span>, {' '}
-                      <span style={{color: themeColors.error}}>{summary.exists} exists</span>
+                      <span style={{
+                        color: isDark ? '#22c55e' : themeColors.success
+                      }}>{summary.new} new</span>, {' '}
+                      <span style={{
+                        color: isDark ? '#ef4444' : themeColors.error
+                      }}>{summary.exists} exists</span>
                       {summary.pending > 0 && <span>, {summary.pending} pending</span>}
                       {summary.error > 0 && <span>, {summary.error} errors</span>}
                     </span>
@@ -187,18 +196,31 @@ export const DebugPanel = ({
             
             <div className="text-xs font-mono space-y-1">
               {Object.values(hashCheckResults).map((result, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <span style={{color: themeColors.textSecondary}}>
+                <div key={idx} className="flex items-center gap-2 flex-wrap">
+                  <span style={{
+                    color: isDark ? '#f5f5f5' : themeColors.textSecondary,
+                    fontWeight: '500'
+                  }}>
                     {result.filename}
                   </span>
-                  <span style={{color: themeColors.textMuted, fontFamily: 'monospace'}}>
+                  <span style={{
+                    color: isDark ? '#d1d5db' : themeColors.textMuted, 
+                    fontFamily: 'monospace',
+                    fontSize: '10px',
+                    backgroundColor: isDark ? '#374151' : '#f3f4f6',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    border: isDark ? '1px solid #4b5563' : '1px solid #e5e7eb'
+                  }}>
                     {result.hash || 'no hash'}
                   </span>
                   <span style={{
-                    color: result.status === 'exists' ? themeColors.error : 
-                           result.status === 'new' ? themeColors.success :
-                           result.status === 'error' ? themeColors.error :
-                           themeColors.textMuted
+                    color: result.status === 'exists' ? (isDark ? '#ef4444' : themeColors.error) : 
+                           result.status === 'new' ? (isDark ? '#22c55e' : themeColors.success) :
+                           result.status === 'error' ? (isDark ? '#ef4444' : themeColors.error) :
+                           (isDark ? '#d1d5db' : themeColors.textMuted),
+                    fontWeight: '600',
+                    fontSize: '11px'
                   }}>
                     {result.status === 'exists' ? 'uploaded' :
                      result.status === 'new' ? 'not uploaded yet' :
