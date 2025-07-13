@@ -1003,7 +1003,7 @@ function SubtitleUploaderInner() {
         {/* Login Required Message for Anonymous Users */}
         {hasUploadableContent && !isLoggedIn() && (
           <div 
-            className="p-8 rounded-xl text-center mb-6"
+            className="p-8 rounded-xl text-center mt-6"
             style={{
               backgroundColor: colors.cardBackground,
               border: `2px solid ${colors.warning}`,
