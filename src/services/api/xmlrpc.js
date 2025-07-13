@@ -559,7 +559,7 @@ export class XmlRpcService {
             hashResults[hash] = {
               id: subtitleId,
               exists: subtitleId > 0,
-              url: subtitleId > 0 ? `https://www.opensubtitles.org/subtitles/${subtitleId}` : null
+              url: subtitleId > 0 ? `https://www.opensubtitles.org/search/idsubtitlefile-${subtitleId}` : null
             };
           });
           
