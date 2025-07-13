@@ -27,6 +27,7 @@ export const MatchedPairs = ({
   getUploadEnabled, // New prop for getting upload status
   fetchFeaturesByImdbId, // New prop for fetching features by IMDb ID
   uploadResults, // New prop for upload results
+  hashCheckResults, // New prop for CheckSubHash results
   colors, // Theme colors
   isDark // Dark mode flag
 }) => {
@@ -916,8 +917,38 @@ export const MatchedPairs = ({
 
                         {/* Disabled state message */}
                         {!getUploadEnabled(subtitle.fullPath) && !uploadResults[subtitle.fullPath] && (
-                          <div className="text-xs italic ml-20" style={{color: themeColors.textMuted}}>
-                            This subtitle will not be uploaded
+                          <div className="text-xs ml-20">
+                            {(() => {
+                              // Check if this subtitle was auto-unselected due to CheckSubHash results
+                              const hashResult = hashCheckResults?.[subtitle.fullPath];
+                              if (hashResult && hashResult.status === 'exists' && hashResult.subtitleUrl) {
+                                return (
+                                  <div className="flex items-center gap-2">
+                                    <span className="italic" style={{color: themeColors.textMuted}}>
+                                      Auto-unselected: Already uploaded
+                                    </span>
+                                    <a 
+                                      href={hashResult.subtitleUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-xs underline font-medium"
+                                      style={{
+                                        color: isDark ? '#ef4444' : (themeColors.error || '#dc3545')
+                                      }}
+                                      onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
+                                    >
+                                      View Existing (ID: {hashResult.subtitleId})
+                                    </a>
+                                  </div>
+                                );
+                              } else {
+                                return (
+                                  <div className="italic" style={{color: themeColors.textMuted}}>
+                                    This subtitle will not be uploaded
+                                  </div>
+                                );
+                              }
+                            })()}
                           </div>
                         )}
                       </div>
