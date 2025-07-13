@@ -293,7 +293,7 @@ export const SubtitleFile = ({
                         rel="noopener noreferrer"
                         className="text-xs underline font-medium"
                         style={{
-                          color: isDark ? '#ef4444' : (colors?.error || '#dc3545')
+                          color: isDark ? '#60a5fa' : (colors?.link || '#2878C0')
                         }}
                         onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
                       >

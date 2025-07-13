@@ -933,7 +933,7 @@ export const MatchedPairs = ({
                                       rel="noopener noreferrer"
                                       className="text-xs underline font-medium"
                                       style={{
-                                        color: isDark ? '#ef4444' : (themeColors.error || '#dc3545')
+                                        color: isDark ? '#60a5fa' : (themeColors.link || '#2878C0')
                                       }}
                                       onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
                                     >
