@@ -1,0 +1,107 @@
+// Import version from package.json
+import packageJson from '../../package.json' with { type: 'json' };
+
+// API Configuration - from environment variables
+export const OPENSUBTITLES_COM_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_OPENSUBTITLES_API_KEY || '' : '';
+
+// Application version from package.json (single source of truth)
+export const APP_VERSION = packageJson.version;
+
+// User Agent for all API requests
+export const USER_AGENT = `OpenSubtitles Uploader PRO v${APP_VERSION}`;
+
+// Get standard headers for API requests
+export const getApiHeaders = (contentType = 'application/json', additionalHeaders = {}) => {
+  return {
+    'Content-Type': contentType,
+    'User-Agent': USER_AGENT,
+    'X-User-Agent': USER_AGENT,
+    ...additionalHeaders
+  };
+};
+
+// Validate API configuration
+export const validateApiConfiguration = () => {
+  const errors = [];
+  
+  if (!OPENSUBTITLES_COM_API_KEY) {
+    errors.push('VITE_OPENSUBTITLES_API_KEY is not set. Please check your .env file.');
+  }
+  
+  if (errors.length > 0) {
+    console.error('⚠️ API Configuration Issues:');
+    errors.forEach(error => console.error(`  - ${error}`));
+    console.error('Please copy .env.example to .env and configure your API credentials.');
+    return false;
+  }
+  
+  return true;
+};
+
+// Cache Configuration
+export const CACHE_KEYS = {
+  LANGUAGES: 'opensubtitles_languages_cache',
+  LANGUAGES_EXPIRY: 'opensubtitles_languages_cache_expiry',
+  XMLRPC_LANGUAGES: 'opensubtitles_xmlrpc_languages_cache',
+  XMLRPC_LANGUAGES_EXPIRY: 'opensubtitles_xmlrpc_languages_cache_expiry',
+  GUESSIT_CACHE: 'opensubtitles_guessit_cache',
+  GUESSIT_CACHE_EXPIRY: 'opensubtitles_guessit_cache_expiry',
+  MOVIE_GUESS_CACHE: 'opensubtitles_movie_guess_cache',
+  MOVIE_GUESS_CACHE_EXPIRY: 'opensubtitles_movie_guess_cache_expiry',
+  LANGUAGE_DETECTION_CACHE: 'opensubtitles_language_detection_cache',
+  LANGUAGE_DETECTION_CACHE_EXPIRY: 'opensubtitles_language_detection_cache_expiry',
+  FEATURES_CACHE: 'opensubtitles_features_cache',
+  FEATURES_CACHE_EXPIRY: 'opensubtitles_features_cache_expiry',
+  DEBUG_MODE: 'opensubtitles_debug_mode'
+};
+
+// File Extensions
+export const VIDEO_EXTENSIONS = [
+  ".mp4", ".mkv", ".avi", ".mov", ".webm", ".flv", ".wmv", ".mpeg", ".mpg", 
+  ".ts", ".m2ts", ".mts", ".f4v", ".ogv", ".ogg", ".amv", ".nsv", ".yuv", 
+  ".nut", ".nuv", ".wtv", ".tivo", ".ty"
+];
+
+export const SUBTITLE_EXTENSIONS = [
+  ".srt", ".vtt", ".ass", ".ssa", ".sub", ".txt", ".smi", ".mpl", ".tmp"
+];
+
+// MIME Types
+export const VIDEO_MIME_TYPES = [
+  'video/mp4', 'video/x-msvideo', 'video/quicktime', 'video/x-ms-wmv',
+  'video/webm', 'video/x-flv', 'video/3gpp', 'video/x-matroska'
+];
+
+export const SUBTITLE_MIME_TYPES = [
+  'text/srt', 'text/vtt', 'text/plain', 'application/x-subrip'
+];
+
+// API Endpoints - public URLs
+export const API_ENDPOINTS = {
+  OPENSUBTITLES_REST: 'https://api.opensubtitles.com/api/v1',
+  OPENSUBTITLES_XMLRPC: 'https://api.opensubtitles.org/xml-rpc',
+  LANGUAGE_DETECTION: 'https://api.opensubtitles.com/api/v1/utilities/fasttext/language/detect/file',
+  SUPPORTED_LANGUAGES: 'https://api.opensubtitles.com/api/v1/utilities/fasttext/language/supported',
+  FEATURES: 'https://api.opensubtitles.com/api/v1/features',
+  GUESSIT: 'https://api.opensubtitles.com/api/v1/utilities/guessit'
+};
+
+// Default Settings
+export const DEFAULT_SETTINGS = {
+  CACHE_DURATION: 259200, // 72 hours in seconds (3 days) - for language data
+  GUESSIT_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
+  MOVIE_GUESS_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
+  LANGUAGE_DETECTION_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
+  FEATURES_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
+  LANGUAGE_DETECTION_CHUNK_SIZE: 5120, // 5KB
+  MOVIE_HASH_CHUNK_SIZE: 65536, // 64KB
+  DEBUG_LOG_LIMIT: 1000,
+  
+  // Network request delays (in milliseconds)
+  NETWORK_REQUEST_DELAY: 100, // 0.1 seconds between any network requests
+  RETRY_BASE_DELAY: 1000, // 1 second base delay for retries
+  MOVIE_GUESS_DELAY: 3000, // 3 seconds base delay for movie guessing
+  LANGUAGE_DETECTION_DELAY: 2000, // 2 seconds base delay for language detection
+  FEATURES_FETCH_DELAY: 1000, // 1 second delay for features fetching
+  GUESSIT_DELAY: 1500 // 1.5 seconds delay for GuessIt processing
+};
