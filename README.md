@@ -33,8 +33,8 @@ A professional React-based subtitle uploader application that integrates with bo
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/opensubtitles/opensubtitles-uploader.git
-   cd opensubtitles-uploader
+   git clone https://github.com/opensubtitles/opensubtitles-uploader-pro.git
+   cd opensubtitles-uploader-pro
    ```
 
 2. **Install dependencies**
@@ -167,10 +167,7 @@ The app integrates with two OpenSubtitles API systems:
 
 ### Caching Strategy
 
-- **Language Data**: 72 hours
-- **Movie Metadata**: 72 hours  
-- **Language Detection**: 72 hours
-- **Features Data**: 72 hours
+All API responses cached for 72 hours (language data, movie metadata, detection results, features)
 
 ## Security
 
@@ -194,8 +191,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - 📖 **Documentation**: [OpenSubtitles API Docs](https://api.opensubtitles.com)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/opensubtitles/opensubtitles-uploader/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/opensubtitles/opensubtitles-uploader/discussions)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/opensubtitles/opensubtitles-uploader-pro/issues)
 
 ## Acknowledgments
 
