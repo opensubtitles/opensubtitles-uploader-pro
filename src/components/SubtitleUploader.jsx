@@ -777,10 +777,31 @@ function SubtitleUploaderInner() {
                 <span className="text-base">👤</span>
                 {userLoading ? (
                   <span>Loading user...</span>
-                ) : (
+                ) : isLoggedIn() ? (
                   <span>
                     Logged as: <strong style={styles.link}>{getUsername()}</strong>
                   </span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span>
+                      Logged as: <strong style={styles.link}>Anonymous</strong>
+                    </span>
+                    <div style={{ fontSize: '11px', color: colors.warning }}>
+                      ⚠️ Uploader requires login - 
+                      <a 
+                        href="https://www.opensubtitles.org/login" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        style={{ 
+                          color: colors.link, 
+                          textDecoration: 'underline',
+                          marginLeft: '4px'
+                        }}
+                      >
+                        Login here
+                      </a>
+                    </div>
+                  </div>
                 )}
               </div>
               
@@ -956,8 +977,8 @@ function SubtitleUploaderInner() {
           />
         )}
 
-        {/* Upload Button */}
-        {hasUploadableContent && (
+        {/* Upload Button - Only show for logged in users */}
+        {hasUploadableContent && isLoggedIn() && (
           <UploadButton
             pairedFiles={pairedFiles}
             orphanedSubtitles={orphanedSubtitles}
@@ -971,6 +992,46 @@ function SubtitleUploaderInner() {
             colors={colors}
             isDark={isDark}
           />
+        )}
+
+        {/* Login Required Message for Anonymous Users */}
+        {hasUploadableContent && !isLoggedIn() && (
+          <div 
+            className="max-w-4xl mx-auto p-6 rounded-lg text-center"
+            style={{
+              backgroundColor: colors.cardBackground,
+              border: `1px solid ${colors.warning}`,
+              boxShadow: `0 2px 4px ${colors.shadow}`
+            }}
+          >
+            <div style={{ color: colors.warning, fontSize: '18px', marginBottom: '8px' }}>
+              🔒 Login Required
+            </div>
+            <div style={{ color: colors.textPrimary, marginBottom: '12px' }}>
+              You have subtitle files ready for upload, but uploading requires a logged-in account.
+            </div>
+            <a 
+              href="https://www.opensubtitles.org/login" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-block px-6 py-3 rounded-lg transition-all"
+              style={{
+                backgroundColor: colors.primary,
+                color: 'white',
+                textDecoration: 'none',
+                fontSize: '16px',
+                fontWeight: '500'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = colors.primaryHover;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = colors.primary;
+              }}
+            >
+              Login to OpenSubtitles.org
+            </a>
+          </div>
         )}
 
         {/* Subtitle Preview Modal */}
