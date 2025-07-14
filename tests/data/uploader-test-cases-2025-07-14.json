@@ -1,0 +1,135 @@
+{
+  "version": "1.0",
+  "exported": "2025-07-14T18:59:47.252Z",
+  "testCases": [
+    {
+      "id": 1752519333684,
+      "description": "directory with two subtitles",
+      "timestamp": "2025-07-14T18:55:33.684Z",
+      "originalFiles": [],
+      "pairedFiles": [],
+      "validationResults": {},
+      "status": "saved",
+      "expectedResults": {
+        "expectedPairs": 1,
+        "pairValidations": {
+          "A Million Miles Away (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/A Million Miles Away (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/A.Million.Miles.Away.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4": {
+            "videoCorrect": true,
+            "imdbCorrect": true
+          },
+          "A Million Miles Away (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/A Million Miles Away (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/A.Million.Miles.Away.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4_sub_0": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          },
+          "A Million Miles Away (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/A Million Miles Away (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/A.Million.Miles.Away.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4_sub_1": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          }
+        },
+        "expectedResults": {}
+      }
+    },
+    {
+      "id": 1752519414912,
+      "description": "Directory with Subs subdirectory (movie)",
+      "timestamp": "2025-07-14T18:56:54.912Z",
+      "originalFiles": [],
+      "pairedFiles": [],
+      "validationResults": {},
+      "status": "saved",
+      "expectedResults": {
+        "expectedPairs": 1,
+        "pairValidations": {
+          "After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After.Death.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4": {
+            "videoCorrect": true,
+            "imdbCorrect": true
+          },
+          "After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After.Death.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4_sub_0": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          },
+          "After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After.Death.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4_sub_1": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          },
+          "After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After Death (2023) [1080p] [WEBRip] [x265] [10bit] [5.1] [YTS.MX]/After.Death.2023.1080p.WEBRip.x265.10bit.AAC5.1-[YTS.MX].mp4_sub_2": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          }
+        },
+        "expectedResults": {}
+      }
+    },
+    {
+      "id": 1752519473531,
+      "description": "2 episodes with 2 subtitles",
+      "timestamp": "2025-07-14T18:57:53.531Z",
+      "originalFiles": [],
+      "pairedFiles": [],
+      "validationResults": {},
+      "status": "saved",
+      "expectedResults": {
+        "expectedPairs": 2,
+        "pairValidations": {
+          "Resident.Alien.S04E03.720p.HEVC.x265-MeGusta[EZTVx.to].mkv": {
+            "videoCorrect": true,
+            "imdbCorrect": true
+          },
+          "Resident.Alien.S04E03.720p.HEVC.x265-MeGusta[EZTVx.to].mkv_sub_0": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          },
+          "Resident.Alien.S04E04.480p.x264-mSD[EZTVx.to].mkv": {
+            "videoCorrect": true,
+            "imdbCorrect": true
+          },
+          "Resident.Alien.S04E04.480p.x264-mSD[EZTVx.to].mkv_sub_0": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          }
+        },
+        "expectedResults": {}
+      }
+    },
+    {
+      "id": 1752519567238,
+      "description": "directory with episodes",
+      "timestamp": "2025-07-14T18:59:27.238Z",
+      "originalFiles": [],
+      "pairedFiles": [],
+      "validationResults": {},
+      "status": "saved",
+      "expectedResults": {
+        "expectedPairs": 2,
+        "pairValidations": {
+          "Episodes/Episodes/Resident.Alien.S04E04.480p.x264-mSD[EZTVx.to]/Resident.Alien.S04E04.480p.x264-mSD[EZTVx.to].mkv": {
+            "videoCorrect": true,
+            "imdbCorrect": true
+          },
+          "Episodes/Episodes/Resident.Alien.S04E04.480p.x264-mSD[EZTVx.to]/Resident.Alien.S04E04.480p.x264-mSD[EZTVx.to].mkv_sub_0": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          },
+          "Episodes/Episodes/Resident.Alien.S04E03.720p.HEVC.x265-MeGusta[EZTVx.to]/Resident.Alien.S04E03.720p.HEVC.x265-MeGusta[EZTVx.to].mkv": {
+            "videoCorrect": true,
+            "imdbCorrect": true
+          },
+          "Episodes/Episodes/Resident.Alien.S04E03.720p.HEVC.x265-MeGusta[EZTVx.to]/Resident.Alien.S04E03.720p.HEVC.x265-MeGusta[EZTVx.to].mkv_sub_0": {
+            "pairedCorrectly": true,
+            "languageCorrect": true,
+            "movieDataCorrect": true
+          }
+        },
+        "expectedResults": {}
+      }
+    }
+  ]
+}

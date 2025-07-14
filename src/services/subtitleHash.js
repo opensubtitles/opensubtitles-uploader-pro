@@ -16,11 +16,6 @@ export class SubtitleHashService {
     const wordArray = CryptoJS.lib.WordArray.create(uint8Array);
     const hash = CryptoJS.MD5(wordArray).toString().toLowerCase();
     
-    console.log('MD5 Debug:', {
-      fileSize: uint8Array.length,
-      firstBytes: Array.from(uint8Array.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' '),
-      hash: hash
-    });
     return hash;
   }
 
@@ -32,11 +27,6 @@ export class SubtitleHashService {
   static calculateSubtitleHash(content) {
     // Ensure we're working with the raw content, not escaped
     const hash = CryptoJS.MD5(content).toString().toLowerCase();
-    console.log('MD5 Debug (string):', {
-      contentLength: content.length,
-      firstChars: content.substring(0, 100),
-      hash: hash
-    });
     return hash;
   }
 
@@ -60,26 +50,11 @@ export class SubtitleHashService {
           const decoder = new TextDecoder('utf-8', { fatal: false, ignoreBOM: false });
           const content = decoder.decode(uint8Array);
           
-          console.log('File read debug:', {
-            fileName: file.name,
-            fileSize: file.size,
-            arrayBufferSize: arrayBuffer.byteLength,
-            contentLength: content.length,
-            firstLine: content.split('\n')[0],
-            hasCarriageReturn: content.includes('\r'),
-            lineEndings: content.includes('\r\n') ? 'CRLF' : content.includes('\n') ? 'LF' : 'none',
-            firstBytes: Array.from(uint8Array.slice(0, 20)).map(b => b.toString(16).padStart(2, '0')).join(' ')
-          });
           
           // Try both methods - hash from raw bytes and from string
           const hashFromBytes = this.calculateSubtitleHashFromBytes(uint8Array);
           const hashFromString = this.calculateSubtitleHash(content);
           
-          console.log('Hash comparison:', {
-            fromBytes: hashFromBytes,
-            fromString: hashFromString,
-            match: hashFromBytes === hashFromString
-          });
           
           // CRITICAL: Use hash from raw file bytes, not string content
           // The server expects the MD5 of the original file bytes

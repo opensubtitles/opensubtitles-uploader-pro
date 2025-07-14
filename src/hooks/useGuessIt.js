@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { GuessItService } from '../services/guessItService.js';
+import { OfflineGuessItService } from '../services/offlineGuessItService.js';
 
 /**
  * Custom hook for GuessIt metadata extraction
- * Now uses data from XML-RPC GuessMovieFromString instead of separate API calls
+ * Priority: WASM offline > XML-RPC data > API fallback
  */
 export const useGuessIt = (addDebugInfo) => {
   const [guessItData, setGuessItData] = useState({});
@@ -28,7 +29,7 @@ export const useGuessIt = (addDebugInfo) => {
     return false;
   }, [addDebugInfo]);
 
-  // Process file metadata extraction (now checks XML-RPC first, fallback to API)
+  // Process file metadata extraction (Priority: WASM offline > XML-RPC data > API fallback)
   const processGuessIt = useCallback(async (videoFile, movieGuesses = {}) => {
     const filePath = videoFile.fullPath;
     
@@ -49,26 +50,42 @@ export const useGuessIt = (addDebugInfo) => {
       return;
     }
     
-    // First, check if we have GuessIt data from XML-RPC movie guess
+    // First priority: Check if we have GuessIt data from XML-RPC movie guess
     const movieData = movieGuesses[filePath];
     if (movieData && typeof movieData === 'object' && movieData.guessit) {
       extractGuessItFromMovieData(movieData, filePath, videoFile.name);
       return;
     }
     
-    // If XML-RPC data not available, use fallback to direct API call
     processingFiles.current.add(filePath);
     
     try {
-      addDebugInfo(`XML-RPC GuessIt data not available, using fallback API for: ${videoFile.name}`);
-      
       // Set processing status
       setGuessItData(prev => ({
         ...prev,
         [filePath]: 'processing'
       }));
 
-      const metadata = await GuessItService.guessFileMetadataWithRetry(videoFile.name, addDebugInfo);
+      let metadata = null;
+      
+      // Second priority: Try offline WASM GuessIt first
+      try {
+        addDebugInfo(`🔧 Trying offline WASM GuessIt for: ${videoFile.name}`);
+        metadata = await OfflineGuessItService.enhancedGuess(videoFile.name);
+        addDebugInfo(`✅ Offline WASM GuessIt succeeded for: ${videoFile.name}`);
+      } catch (wasmError) {
+        addDebugInfo(`⚠️ Offline WASM GuessIt failed for ${videoFile.name}: ${wasmError.message}`);
+        
+        // Third priority: Fallback to API call
+        try {
+          addDebugInfo(`🌐 Falling back to API GuessIt for: ${videoFile.name}`);
+          metadata = await GuessItService.guessFileMetadataWithRetry(videoFile.name, addDebugInfo);
+          addDebugInfo(`✅ API GuessIt succeeded for: ${videoFile.name}`);
+        } catch (apiError) {
+          addDebugInfo(`❌ API GuessIt also failed for ${videoFile.name}: ${apiError.message}`);
+          throw apiError;
+        }
+      }
       
       setGuessItData(prev => ({
         ...prev,
@@ -125,6 +142,14 @@ export const useGuessIt = (addDebugInfo) => {
     return GuessItService.formatMetadataAsTags(data);
   }, [guessItData]);
 
+  // Set GuessIt data externally (for episode enhancement)
+  const setGuessItDataForFile = useCallback((filePath, data) => {
+    setGuessItData(prev => ({
+      ...prev,
+      [filePath]: data
+    }));
+  }, []);
+
   return {
     guessItData,
     processGuessIt,
@@ -132,7 +157,8 @@ export const useGuessIt = (addDebugInfo) => {
     clearAllGuessItState,
     getGuessItProcessingStatus,
     getFormattedTags,
-    extractGuessItFromMovieData
+    extractGuessItFromMovieData,
+    setGuessItDataForFile // New function for external updates
   };
 };
 

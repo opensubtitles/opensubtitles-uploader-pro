@@ -2,12 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { XmlRpcService } from '../services/api/xmlrpc.js';
 import { OpenSubtitlesApiService } from '../services/api/openSubtitlesApi.js';
 import { MovieHashService } from '../services/movieHash.js';
+import { OfflineGuessItService } from '../services/offlineGuessItService.js';
 import { detectVideoFileInfo, getBestMovieDetectionName } from '../utils/fileUtils.js';
 
 /**
  * Custom hook for movie guessing and hash calculation
  */
-export const useMovieGuess = (addDebugInfo) => {
+export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
   const [movieGuesses, setMovieGuesses] = useState({});
   const [featuresByImdbId, setFeaturesByImdbId] = useState({});
   const [featuresLoading, setFeaturesLoading] = useState({});
@@ -145,6 +146,85 @@ export const useMovieGuess = (addDebugInfo) => {
     return `${directory}/${baseName}`;
   }, []);
 
+  // Create episode-specific movie data from GuessIt results for orphaned subtitles
+  const createEpisodeMovieData = useCallback(async (movieGuess, filePath, fileName) => {
+    try {
+      addDebugInfo(`🔍 Starting GuessIt episode detection for: ${fileName}`);
+      
+      // Use WASM GuessIt to extract episode information from filename
+      const guessItData = await OfflineGuessItService.enhancedGuess(fileName);
+      
+      // Debug: Show raw GuessIt output
+      addDebugInfo(`📊 GuessIt raw output for ${fileName}:`);
+      addDebugInfo(JSON.stringify(guessItData, null, 2));
+      
+      // Debug: Show formatted tags like for movies
+      if (guessItData?.formatted_data) {
+        addDebugInfo(`🏷️ GuessIt tags for ${fileName}:`);
+        Object.entries(guessItData.formatted_data).forEach(([key, value]) => {
+          addDebugInfo(`   ${key}: ${value}`);
+        });
+      }
+      
+      // Debug: Show episode info specifically
+      if (guessItData?.episode_info) {
+        addDebugInfo(`📺 Episode info for ${fileName}:`);
+        addDebugInfo(`   Season: ${guessItData.episode_info.season || 'not found'}`);
+        addDebugInfo(`   Episode: ${guessItData.episode_info.episode || 'not found'}`);
+        addDebugInfo(`   Episode Title: ${guessItData.episode_info.episode_title || 'not found'}`);
+      } else {
+        addDebugInfo(`⚠️ No episode_info found in GuessIt data for ${fileName}`);
+      }
+      
+      if (!guessItData?.episode_info?.season || !guessItData?.episode_info?.episode) {
+        addDebugInfo(`⚠️ No episode information found in filename: ${fileName}`);
+        addDebugInfo(`   Available data keys: ${Object.keys(guessItData || {}).join(', ')}`);
+        return;
+      }
+      
+      const { season, episode } = guessItData.episode_info;
+      const seriesTitle = movieGuess.title;
+      const episodeTitle = guessItData.episode_info.episode_title || `Episode ${episode}`;
+      
+      addDebugInfo(`🔍 Creating episode data: ${seriesTitle} S${season}E${episode} - ${episodeTitle}`);
+      
+      // Create episode-specific movie data (similar to how it works for paired files)
+      const episodeMovieData = {
+        ...movieGuess,
+        kind: 'episode',
+        season: season,
+        episode: episode,
+        episode_title: episodeTitle,
+        title: seriesTitle,
+        formatted_title: guessItData.formatted_title || `${seriesTitle} - S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')} - ${episodeTitle}`,
+        series_imdb_id: movieGuess.imdbid, // Keep original series IMDB ID
+        // For orphaned subtitles, we create episode-like data but keep series IMDB ID for features
+        // This matches how the system works for movies - GuessIt enhances the display but doesn't change the core identification
+        source: 'xmlrpc-enhanced-with-guessit-episode-data',
+        guessit_data: guessItData, // Store GuessIt data for tags display
+        guessit_enhanced: true
+      };
+      
+      // Update the movie guess with episode-specific data
+      setMovieGuesses(prev => ({
+        ...prev,
+        [filePath]: episodeMovieData
+      }));
+      
+      // Also update GuessIt data so tags display correctly
+      if (setGuessItDataForFile) {
+        setGuessItDataForFile(filePath, guessItData);
+        addDebugInfo(`📋 Updated GuessIt data for tags display: ${fileName}`);
+      }
+      
+      addDebugInfo(`✅ Created episode data for ${seriesTitle} S${season}E${episode} - ${episodeTitle}`);
+      
+    } catch (error) {
+      addDebugInfo(`❌ Episode data creation failed: ${error.message}`);
+      addDebugInfo(`❌ Stack trace: ${error.stack}`);
+    }
+  }, [addDebugInfo, setGuessItDataForFile]);
+
   // Guess movie from filename with state tracking and deduplication
   const guessMovie = useCallback(async (videoFile) => {
     const filePath = videoFile.fullPath;
@@ -252,6 +332,15 @@ export const useMovieGuess = (addDebugInfo) => {
         // For TV series/episodes: allow multiple fetches as episodes might need different season/episode data
         if (movieGuess.imdbid) {
           fetchFeaturesByImdbId(movieGuess.imdbid);
+          
+          // For TV series, try to enhance with episode-specific data using GuessIt
+          if (movieGuess.kind === 'tv series') {
+            setTimeout(() => {
+              createEpisodeMovieData(movieGuess, filePath, videoFile.name).catch(error => {
+                addDebugInfo(`Episode data creation failed for ${videoFile.name}: ${error.message}`);
+              });
+            }, 1000); // 1 second delay to allow GuessIt processing
+          }
         }
       } else {
         addDebugInfo(`No valid movie match found for ${videoFile.name} or its directory`);
@@ -266,7 +355,7 @@ export const useMovieGuess = (addDebugInfo) => {
     } finally {
       processingFiles.current.delete(filePath);
     }
-  }, [addDebugInfo, fetchFeaturesByImdbId, movieGuesses, extractDirectoryName, getMovieKey]);
+  }, [addDebugInfo, fetchFeaturesByImdbId, movieGuesses, extractDirectoryName, getMovieKey, createEpisodeMovieData]);
 
   // Process complete movie analysis (hash + guess + file info)
   const processMovieGuess = useCallback(async (videoFile) => {
@@ -300,6 +389,7 @@ export const useMovieGuess = (addDebugInfo) => {
     }
   }, [addDebugInfo, guessMovie]);
 
+
   // Process movie guess for subtitle files (orphaned subtitles)
   const processSubtitleMovieGuess = useCallback(async (subtitleFile) => {
     const filePath = subtitleFile.fullPath;
@@ -324,14 +414,15 @@ export const useMovieGuess = (addDebugInfo) => {
         addDebugInfo(`Using parent directory "${detectionName}" for generic subtitle "${originalName}"`);
       }
       
-      // Create a modified file object for movie guessing
+      // Use the same approach as video files - just call guessMovie directly
+      // This will use XML-RPC which already handles episodes correctly
       const modifiedSubtitleFile = {
         ...subtitleFile,
         name: detectionName + '.srt', // Add .srt extension for processing
         detectionReason: detectionName !== originalName ? 'parent-directory' : 'filename'
       };
       
-      // Start movie guess for subtitle with improved detection
+      // Start movie guess for subtitle - same as video file processing
       setTimeout(() => {
         guessMovie(modifiedSubtitleFile).catch(error => {
           addDebugInfo(`Subtitle movie guess failed for ${subtitleFile.name}: ${error.message}`);

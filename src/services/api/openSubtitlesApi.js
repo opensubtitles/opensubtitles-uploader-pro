@@ -274,13 +274,13 @@ export class OpenSubtitlesApiService {
       const fileHash = await this.calculateFileHash(subtitleFile.file);
       
       if (addDebugInfo) {
-        addDebugInfo(`🔍 Language detection for ${subtitleFile.name} (MD5: ${fileHash.substring(0, 8)}...)`);
+        addDebugInfo(`🔍 Language detection for ${subtitleFile.name}`);
       }
       
       // Check cache first
       const cachedData = this.loadLanguageDetectionFromCache(fileHash);
       if (cachedData) {
-        console.log(`Language Detection cache hit for: ${subtitleFile.name} (${fileHash})`);
+        console.log(`Language Detection cache hit for: ${subtitleFile.name}`);
         if (addDebugInfo) {
           addDebugInfo(`🎯 Language Detection cache HIT for ${subtitleFile.name} (no API call needed)`);
         }
@@ -288,7 +288,7 @@ export class OpenSubtitlesApiService {
       }
 
       // Cache miss, make API call
-      console.log(`Language Detection cache miss for: ${subtitleFile.name} (${fileHash}), making API call`);
+      console.log(`Language Detection cache miss for: ${subtitleFile.name}, making API call`);
       if (addDebugInfo) {
         addDebugInfo(`❌ Language Detection cache MISS for ${subtitleFile.name}, making API call`);
       }
@@ -410,6 +410,81 @@ export class OpenSubtitlesApiService {
         return data;
       } catch (error) {
         console.error(`Features fetch with caching failed for IMDb ID ${imdbId}:`, error);
+        throw error;
+      }
+    });
+  }
+
+  /**
+   * Generate cache key for features search API
+   * @param {string} query - The search query
+   * @returns {string} - Cache key
+   */
+  static generateFeaturesSearchCacheKey(query) {
+    return `${CACHE_KEYS.FEATURES_CACHE}_search_${query.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  }
+
+  /**
+   * Search features by query string (for finding episodes)
+   * @param {string} query - Search query (e.g., "Resident Alien S04E04")
+   * @param {Function} addDebugInfo - Debug callback (optional)
+   * @returns {Promise<Object>} - Search results
+   */
+  static async searchFeatures(query, addDebugInfo = null) {
+    const requestKey = `searchFeatures_${query}`;
+    
+    return this.deduplicateRequest(requestKey, async () => {
+      try {
+        if (addDebugInfo) {
+          addDebugInfo(`🔍 Features search for query: "${query}"`);
+        }
+        
+        // Check cache first
+        const cacheKey = this.generateFeaturesSearchCacheKey(query);
+        const cachedData = CacheService.loadFromCache(cacheKey);
+        if (cachedData) {
+          if (addDebugInfo) {
+            addDebugInfo(`🎯 Features search cache HIT for "${query}" (no API call needed)`);
+          }
+          return cachedData;
+        }
+        
+        // Rate limiting - more conservative for search features
+        this.checkRateLimit(`search_features_${query}`, 2000); // 2 seconds between identical search calls
+        
+        // Log request
+        this.logRequest(`${API_ENDPOINTS.FEATURES}?query=${encodeURIComponent(query)}`, 'GET');
+        
+        const response = await delayedFetch(
+          `${API_ENDPOINTS.FEATURES}?query=${encodeURIComponent(query)}`,
+          {
+            headers: getApiHeaders('application/json', {
+              'Api-Key': OPENSUBTITLES_COM_API_KEY
+            }),
+          },
+          DEFAULT_SETTINGS.FEATURES_FETCH_DELAY
+        );
+
+        if (!response.ok) {
+          throw new Error(`Features search API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Cache the search results for 24 hours
+        CacheService.saveToCacheWithDuration(cacheKey, data, 24 * 60 * 60); // 24 hours
+        
+        if (addDebugInfo) {
+          const resultCount = data?.data?.length || 0;
+          addDebugInfo(`✅ Features search returned ${resultCount} results for "${query}" (cached for 24h)`);
+        }
+        
+        return data;
+      } catch (error) {
+        console.error(`Features search failed for query "${query}":`, error);
+        if (addDebugInfo) {
+          addDebugInfo(`❌ Features search failed for "${query}": ${error.message}`);
+        }
         throw error;
       }
     });

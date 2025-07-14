@@ -1,5 +1,6 @@
 import React from 'react';
 import { areTitlesSimilar } from '../utils/fileUtils.js';
+import { MetadataTags } from './MetadataTags.jsx';
 
 export const MovieDisplay = ({
   videoPath,
@@ -15,7 +16,9 @@ export const MovieDisplay = ({
   onToggleUpload, // Function to toggle subtitle upload status
   colors, // Theme colors
   isDark, // Dark mode flag
-  hideSelectAllCheckbox = false // Hide the "All Selected" checkbox
+  hideSelectAllCheckbox = false, // Hide the "All Selected" checkbox
+  getGuessItProcessingStatus, // Function to get GuessIt processing status
+  getFormattedTags // Function to get formatted GuessIt tags
 }) => {
   // Default to light theme colors if not provided
   const themeColors = colors || {
@@ -656,6 +659,18 @@ export const MovieDisplay = ({
             )}
           </div>
         </div>
+        
+        {/* GuessIt Metadata Tags */}
+        {getGuessItProcessingStatus && getFormattedTags && (
+          <MetadataTags
+            guessItData={guessItData}
+            filePath={videoPath}
+            getGuessItProcessingStatus={getGuessItProcessingStatus}
+            getFormattedTags={getFormattedTags}
+            compact={false}
+            isDark={isDark}
+          />
+        )}
       </div>
     );
   }

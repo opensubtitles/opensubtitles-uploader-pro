@@ -58,7 +58,7 @@ export const useCheckSubHash = (addDebugInfo) => {
           hashesToCheck.push(hash);
           fileHashMap[hash] = file.fullPath;
           
-          addDebugInfo && addDebugInfo(`📝 [CheckSubHash] ${file.name} - MD5: ${hash}`);
+          addDebugInfo && addDebugInfo(`📝 [CheckSubHash] ${file.name}`);
         } catch (error) {
           addDebugInfo && addDebugInfo(`❌ [CheckSubHash] Failed to calculate hash for ${file.name}: ${error.message}`);
           results[file.fullPath] = {

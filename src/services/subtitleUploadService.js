@@ -296,7 +296,6 @@ export class SubtitleUploadService {
       };
       
       addDebugInfo(`✅ Prepared subtitle data for: ${subtitle.name}`);
-      addDebugInfo(`   - Subtitle hash (MD5): ${subtitleInfo.hash}`);
       addDebugInfo(`   - Movie hash: ${video.movieHash}`);
       addDebugInfo(`   - IMDb ID: ${uploadImdbId}`);
       
@@ -374,8 +373,6 @@ export class SubtitleUploadService {
       
       addDebugInfo(`✅ Prepared actual upload data for: ${subtitle.name}`);
       addDebugInfo(`   - Language: ${languageId}`);
-      addDebugInfo(`   - Subtitle hash (MD5): ${subtitleInfo.hash} [SAME AS TryUploadSubtitles]`);
-      addDebugInfo(`   - Compressed content hash (MD5): ${subtitleInfo.compressedHash} [NOT USED]`);
       addDebugInfo(`   - Movie hash: ${video.movieHash}`);
       addDebugInfo(`   - IMDb ID: ${uploadImdbId}`);
       addDebugInfo(`   - HD: ${baseinfo.highdefinition}`);
@@ -445,7 +442,6 @@ export class SubtitleUploadService {
       };
       
       addDebugInfo(`✅ Prepared orphaned subtitle data for: ${subtitle.name}`);
-      addDebugInfo(`   - Subtitle hash (MD5): ${subtitleInfo.hash}`);
       addDebugInfo(`   - No movie fields included (orphaned subtitle for TryUploadSubtitles)`);
       addDebugInfo(`   - IMDb ID will be used later in UploadSubtitles: ${uploadImdbId}`);
       
@@ -515,8 +511,6 @@ export class SubtitleUploadService {
       
       addDebugInfo(`✅ Prepared actual upload data for orphaned subtitle: ${subtitle.name}`);
       addDebugInfo(`   - Language: ${languageId}`);
-      addDebugInfo(`   - Subtitle hash (MD5): ${subtitleInfo.hash} [SAME AS TryUploadSubtitles]`);
-      addDebugInfo(`   - Compressed content hash (MD5): ${subtitleInfo.compressedHash} [NOT USED]`);
       addDebugInfo(`   - IMDb ID: ${uploadImdbId}`);
       addDebugInfo(`   - HD field omitted (unknown for orphaned subtitle)`);
       addDebugInfo(`   - Content length: ${subtitleInfo.content.length} chars`);

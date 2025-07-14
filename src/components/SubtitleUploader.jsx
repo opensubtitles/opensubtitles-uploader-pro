@@ -22,6 +22,7 @@ import { ApiHealthCheck } from "./ApiHealthCheck.jsx";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext.jsx";
 import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
+import TestModePanel from "./TestModePanel.jsx";
 
 // Lazy load the DebugPanel component
 const DebugPanel = lazy(() => import("./DebugPanel.jsx").then(module => ({ default: module.DebugPanel })));
@@ -80,6 +81,17 @@ function SubtitleUploaderInner() {
     clearAllLanguageState
   } = useLanguageDetection(addDebugInfo, updateFile);
 
+  const {
+    guessItData,
+    processGuessIt,
+    clearGuessItProcessingState,
+    clearAllGuessItState,
+    getGuessItProcessingStatus,
+    getFormattedTags,
+    extractGuessItFromMovieData,
+    setGuessItDataForFile
+  } = useGuessIt(addDebugInfo);
+
   const { 
     movieGuesses, 
     featuresByImdbId, 
@@ -91,17 +103,7 @@ function SubtitleUploaderInner() {
     clearAllState,
     fetchFeaturesByImdbId,
     setMovieGuess
-  } = useMovieGuess(addDebugInfo);
-
-  const {
-    guessItData,
-    processGuessIt,
-    clearGuessItProcessingState,
-    clearAllGuessItState,
-    getGuessItProcessingStatus,
-    getFormattedTags,
-    extractGuessItFromMovieData
-  } = useGuessIt(addDebugInfo);
+  } = useMovieGuess(addDebugInfo, setGuessItDataForFile);
 
   const {
     userInfo,
@@ -716,36 +718,6 @@ function SubtitleUploaderInner() {
     }
   }, [files.length]);
 
-  // Auto-unselect subtitles that already exist in database based on CheckSubHash results
-  useEffect(() => {
-    if (hashCheckResults && Object.keys(hashCheckResults).length > 0) {
-      const newUploadStates = { ...uploadStates };
-      let hasChanges = false;
-      
-      // Find subtitles that exist in database and unselect them
-      Object.entries(hashCheckResults).forEach(([filePath, result]) => {
-        if (result.status === 'exists') {
-          // Only update if not already set to false
-          if (newUploadStates[filePath] !== false) {
-            newUploadStates[filePath] = false;
-            hasChanges = true;
-            addDebugInfo(`🚫 Auto-unselected uploaded subtitle: ${result.filename} (ID: ${result.subtitleId})`);
-          }
-        }
-      });
-      
-      // Update upload states if there are changes
-      if (hasChanges) {
-        setUploadStates(newUploadStates);
-        
-        // Show summary of auto-unselected subtitles
-        const unselectedCount = Object.values(hashCheckResults).filter(r => r.status === 'exists').length;
-        if (unselectedCount > 0) {
-          addDebugInfo(`✅ Auto-unselected ${unselectedCount} subtitle${unselectedCount > 1 ? 's' : ''} that already exist${unselectedCount > 1 ? '' : 's'} in database`);
-        }
-      }
-    }
-  }, [hashCheckResults, uploadStates, addDebugInfo]);
 
   // Filter successful pairs
   const successfulPairs = pairedFiles.filter(pair => pair.video && pair.subtitles.length > 0);
@@ -1074,7 +1046,7 @@ function SubtitleUploaderInner() {
                 🔑
               </div>
               <div style={{ 
-                color: colors.textPrimary, 
+                color: colors.text, 
                 fontSize: '24px', 
                 fontWeight: '600',
                 marginBottom: '12px' 
@@ -1190,6 +1162,15 @@ function SubtitleUploaderInner() {
           </div>
         </div>
       </div>
+      
+      {/* Test Mode Panel - Only shows in development */}
+      <TestModePanel 
+        files={files} 
+        pairedFiles={pairedFiles} 
+        onStartTestCase={(description) => {
+          addDebugInfo(`🧪 Started test case: ${description}`);
+        }}
+      />
     </div>
   );
 }
