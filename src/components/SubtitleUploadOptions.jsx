@@ -231,23 +231,13 @@ export const SubtitleUploadOptions = ({
   }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
 
   const handleFieldChange = (field, value) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('handleFieldChange called:', { field, value, subtitlePath });
-      console.log('onUpdateOptions type:', typeof onUpdateOptions);
-    }
     const newOptions = {
       ...uploadOptions,
       [field]: value
     };
-    if (process.env.NODE_ENV === 'development') {
-      console.log('About to call onUpdateOptions with:', { subtitlePath, newOptions });
-    }
     
     if (typeof onUpdateOptions === 'function') {
       onUpdateOptions(subtitlePath, newOptions);
-      if (process.env.NODE_ENV === 'development') {
-        console.log('onUpdateOptions called successfully');
-      }
     } else {
       console.error('onUpdateOptions is not a function:', onUpdateOptions);
     }
@@ -292,16 +282,10 @@ export const SubtitleUploadOptions = ({
   const currentOptions = uploadOptions || {};
   
   // Debug logging for currentOptions
-  if (process.env.NODE_ENV === 'development') {
-    console.log('SubtitleUploadOptions render - uploadOptions:', uploadOptions);
-    console.log('currentOptions.highdefinition:', currentOptions.highdefinition);
-  }
   
   // Watch for changes in uploadOptions prop
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('uploadOptions prop changed:', uploadOptions);
-    }
+    // Props changed - no logging needed
   }, [uploadOptions]);
 
   // Notify parent component of local state changes
