@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getBestMovieDetectionName } from '../utils/fileUtils.js';
 
 export const SubtitleUploadOptions = ({
@@ -22,6 +22,18 @@ export const SubtitleUploadOptions = ({
   const [localForeignPartsValue, setLocalForeignPartsValue] = useState(null);
   const [localHearingImpairedValue, setLocalHearingImpairedValue] = useState(null);
   const [localAutoTranslationValue, setLocalAutoTranslationValue] = useState(null);
+  
+  // Refs to track if we've already processed auto-detection for this file
+  const processedForeignPartsRef = useRef(false);
+  const processedHdRef = useRef(false);
+  const processedHearingImpairedRef = useRef(false);
+  
+  // Reset processing flags when subtitle path changes
+  useEffect(() => {
+    processedForeignPartsRef.current = false;
+    processedHdRef.current = false;
+    processedHearingImpairedRef.current = false;
+  }, [subtitlePath]);
 
   // Enhanced detection function that checks all file path elements
   const checkFeatureFromPath = (filePath, featureType) => {
@@ -101,7 +113,7 @@ export const SubtitleUploadOptions = ({
 
   // Pre-fill foreign parts checkbox based on full file path analysis
   useEffect(() => {
-    if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts) {
+    if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts && !processedForeignPartsRef.current) {
       let shouldBeForeignParts = false;
       
       // Check subtitle file path first (higher priority for foreign parts)
@@ -117,13 +129,14 @@ export const SubtitleUploadOptions = ({
       if (shouldBeForeignParts && !uploadOptions.foreignpartsonly) {
         setLocalForeignPartsValue('1');
         setHasSetForeignParts(true);
+        processedForeignPartsRef.current = true;
       }
     }
   }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts, uploadOptions.foreignpartsonly]);
 
   // Pre-fill high definition checkbox based on full file path analysis
   useEffect(() => {
-    if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile)) {
+    if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile) && !processedHdRef.current) {
       let shouldBeHighDefinition = false;
       
       // Check video file path first (higher priority for HD)
@@ -139,13 +152,14 @@ export const SubtitleUploadOptions = ({
       if (shouldBeHighDefinition && !uploadOptions.highdefinition) {
         setLocalHdValue('1');
         setHasSetHighDefinition(true);
+        processedHdRef.current = true;
       }
     }
   }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition, uploadOptions.highdefinition]);
 
   // Pre-fill hearing impaired checkbox based on full file path analysis
   useEffect(() => {
-    if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile)) {
+    if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile) && !processedHearingImpairedRef.current) {
       let shouldBeHearingImpaired = false;
       
       // Check video file path first (higher priority for HI)
@@ -161,6 +175,7 @@ export const SubtitleUploadOptions = ({
       if (shouldBeHearingImpaired && !uploadOptions.hearingimpaired) {
         setLocalHearingImpairedValue('1');
         setHasSetHearingImpaired(true);
+        processedHearingImpairedRef.current = true;
       }
     }
   }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired, uploadOptions.hearingimpaired]);
