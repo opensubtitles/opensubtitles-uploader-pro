@@ -56,12 +56,21 @@ export const MatchedPairs = ({
   const [movieSearchResults, setMovieSearchResults] = React.useState([]);
   const [movieSearchLoading, setMovieSearchLoading] = React.useState(false);
   const [movieUpdateLoading, setMovieUpdateLoading] = React.useState({});
+  const [localUploadStates, setLocalUploadStates] = React.useState({});
 
   // Clear search state when closing
   const closeMovieSearch = () => {
     setOpenMovieSearch(null);
     setMovieSearchQuery('');
     setMovieSearchResults([]);
+  };
+
+  // Handle local state changes from SubtitleUploadOptions
+  const handleLocalStateChange = (subtitlePath, localStates) => {
+    setLocalUploadStates(prev => ({
+      ...prev,
+      [subtitlePath]: localStates
+    }));
   };
 
   // Debounced movie search
@@ -487,14 +496,15 @@ export const MatchedPairs = ({
                       }}
                       onClick={(e) => {
                         // Prevent toggle when clicking on interactive elements
-                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'A' || e.target.closest('button, a, select, input')) {
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'A' || e.target.tagName === 'TEXTAREA' || 
+                            e.target.closest('button, a, select, input, textarea, [role="button"], [data-interactive]')) {
                           return;
                         }
                         onToggleUpload(subtitle.fullPath, !getUploadEnabled(subtitle.fullPath));
                       }}
                     >
                       <div className="space-y-2">
-                        {/* Subtitle filename line */}
+                        {/* Line 1: Upload checkbox and filename */}
                         <div className={`flex items-center gap-2 transition-colors`}
                           style={{
                             color: getUploadEnabled(subtitle.fullPath) ? themeColors.text : themeColors.textMuted
@@ -522,35 +532,139 @@ export const MatchedPairs = ({
                             </label>
                           </div>
 
-                          <span className="text-base font-medium flex-1">
-                            {(() => {
-                              const videoDir = pair.video.fullPath.includes('/') ? 
-                                pair.video.fullPath.substring(0, pair.video.fullPath.lastIndexOf('/')) : '';
-                              const subtitlePath = subtitle.fullPath;
-                              
-                              if (videoDir && subtitlePath.startsWith(videoDir)) {
-                                return subtitlePath.substring(videoDir.length);
-                              } else {
-                                return subtitlePath;
-                              }
-                            })()}
-                          </span>
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-base font-medium">
+                              {(() => {
+                                const videoDir = pair.video.fullPath.includes('/') ? 
+                                  pair.video.fullPath.substring(0, pair.video.fullPath.lastIndexOf('/')) : '';
+                                const subtitlePath = subtitle.fullPath;
+                                
+                                if (videoDir && subtitlePath.startsWith(videoDir)) {
+                                  return subtitlePath.substring(videoDir.length);
+                                } else {
+                                  return subtitlePath;
+                                }
+                              })()}
+                            </span>
+                            {/* Upload option badges */}
+                            <div className="flex gap-1">
+                              {(uploadOptions?.[subtitle.fullPath]?.hearingimpaired === '1' || localUploadStates?.[subtitle.fullPath]?.localHearingImpairedValue === '1') && 
+                                <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.info + '20', color: themeColors.info }}>🦻 HI</span>}
+                              {(uploadOptions?.[subtitle.fullPath]?.highdefinition === '1' || localUploadStates?.[subtitle.fullPath]?.localHdValue === '1') && 
+                                <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.success + '20', color: themeColors.success }}>📺 HD</span>}
+                              {(uploadOptions?.[subtitle.fullPath]?.automatictranslation === '1' || localUploadStates?.[subtitle.fullPath]?.localAutoTranslationValue === '1') && 
+                                <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.warning + '20', color: themeColors.warning }}>🤖 Auto</span>}
+                              {(uploadOptions?.[subtitle.fullPath]?.foreignpartsonly === '1' || localUploadStates?.[subtitle.fullPath]?.localForeignPartsValue === '1') && 
+                                <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.link + '20', color: themeColors.link }}>🎭 Foreign</span>}
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Subtitle metadata line */}
-                        <div className={`flex items-center gap-2 ml-20 text-sm transition-colors`}
-                          style={{
-                            color: getUploadEnabled(subtitle.fullPath) ? themeColors.textSecondary : themeColors.textMuted
-                          }}>
-                          <span>{formatFileSize(subtitle.size)}</span>
-                          <span>•</span>
-                          <span>
-                            {subtitle.detectedLanguage && 
-                             typeof subtitle.detectedLanguage === 'object' && 
-                             subtitle.detectedLanguage.file_kind
-                              ? subtitle.detectedLanguage.file_kind
-                              : 'Subtitle File'}
-                          </span>
+                        {/* Line 2: Language dropdown, file info, and preview */}
+                        {getUploadEnabled(subtitle.fullPath) && (
+                          <div className="flex items-center gap-3 ml-20 mt-2">
+                            {/* Language Dropdown */}
+                            <div className="relative" data-dropdown={subtitle.fullPath}>
+                              <button
+                                onClick={() => onToggleDropdown(subtitle.fullPath)}
+                                className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between"
+                                style={{
+                                  backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                                  color: themeColors.text,
+                                  border: `1px solid ${themeColors.border}`
+                                }}
+                                onFocus={(e) => {
+                                  e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                                }}
+                                onBlur={(e) => {
+                                  e.target.style.boxShadow = 'none';
+                                }}
+                              >
+                                <span>
+                                  {getSubtitleLanguage(subtitle) && combinedLanguages[getSubtitleLanguage(subtitle)] ? 
+                                    `${combinedLanguages[getSubtitleLanguage(subtitle)].flag} ${combinedLanguages[getSubtitleLanguage(subtitle)].displayName} (${combinedLanguages[getSubtitleLanguage(subtitle)].iso639?.toUpperCase()})` :
+                                    'Select upload language...'
+                                  }
+                                </span>
+                                <span className="ml-2">▼</span>
+                              </button>
+
+                              {openDropdowns[subtitle.fullPath] && (
+                                <div className="absolute top-full left-0 mt-1 rounded shadow-lg z-10 min-w-[250px] max-h-60 overflow-hidden"
+                                     style={{
+                                       backgroundColor: themeColors.cardBackground,
+                                       border: `1px solid ${themeColors.border}`
+                                     }}>
+                                  {/* Search input */}
+                                  <div className="p-2" style={{borderBottom: `1px solid ${themeColors.border}`}}>
+                                    <input
+                                      type="text"
+                                      placeholder="Type to search languages..."
+                                      value={dropdownSearch[subtitle.fullPath] || ''}
+                                      onChange={(e) => onDropdownSearch(subtitle.fullPath, e.target.value)}
+                                      className="w-full text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1"
+                                      style={{
+                                        backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                                        color: themeColors.text,
+                                        border: `1px solid ${themeColors.border}`
+                                      }}
+                                      onFocus={(e) => {
+                                        e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                                      }}
+                                      onBlur={(e) => {
+                                        e.target.style.boxShadow = 'none';
+                                      }}
+                                      autoFocus
+                                    />
+                                  </div>
+                                  
+                                  {/* Language options */}
+                                  <div className="max-h-48 overflow-y-auto">
+                                    {getLanguageOptionsForSubtitle(subtitle)
+                                      .filter(lang => {
+                                        const searchTerm = dropdownSearch[subtitle.fullPath] || '';
+                                        if (!searchTerm) return true;
+                                        return lang.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                               lang.iso639?.toLowerCase().includes(searchTerm.toLowerCase());
+                                      })
+                                      .map((lang) => (
+                                        <button
+                                          key={lang.code}
+                                          onClick={() => onSubtitleLanguageChange(subtitle.fullPath, lang.code)}
+                                          className="w-full text-left px-3 py-2 text-xs flex items-center gap-2"
+                                          style={{backgroundColor: 'transparent'}}
+                                          onMouseEnter={(e) => e.target.style.backgroundColor = isDark ? '#444444' : '#f8f9fa'}
+                                          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                        >
+                                          <span>{lang.flag}</span>
+                                          <span style={{color: themeColors.text}}>{lang.displayName}</span>
+                                          <span style={{color: themeColors.textSecondary}}>({lang.iso639?.toUpperCase()})</span>
+                                          {lang.isDetected && (
+                                            <span className="ml-auto font-semibold" style={{color: themeColors.success}}>
+                                              {(lang.confidence * 100).toFixed(1)}%
+                                            </span>
+                                          )}
+                                        </button>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* File Info */}
+                            <div className={`flex items-center gap-2 text-sm transition-colors`}
+                              style={{
+                                color: getUploadEnabled(subtitle.fullPath) ? themeColors.textSecondary : themeColors.textMuted
+                              }}>
+                              <span>{formatFileSize(subtitle.size)}</span>
+                              <span>•</span>
+                              <span>
+                                {subtitle.detectedLanguage && 
+                                 typeof subtitle.detectedLanguage === 'object' && 
+                                 subtitle.detectedLanguage.file_kind
+                                  ? subtitle.detectedLanguage.file_kind
+                                  : 'Subtitle File'}
+                              </span>
                           
                           {/* Language-specific subtitle count */}
                           {(() => {
@@ -653,127 +767,41 @@ export const MatchedPairs = ({
                             
                             return null;
                           })()}
-                          
-                          <span>•</span>
-                          <button
-                            onClick={() => onSubtitlePreview(subtitle)}
-                            className="text-sm underline transition-colors"
-                            style={{
-                              color: getUploadEnabled(subtitle.fullPath) ? themeColors.link : themeColors.textMuted
-                            }}
-                            onMouseEnter={(e) => {
-                              e.target.style.color = getUploadEnabled(subtitle.fullPath) ? themeColors.linkHover : themeColors.textSecondary;
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.color = getUploadEnabled(subtitle.fullPath) ? themeColors.link : themeColors.textMuted;
-                            }}
-                          >
-                            Preview
-                          </button>
-                          
-                        </div>
-                        
-                        {/* Language Selection and Upload Options - Only show if upload is enabled */}
-                        {getUploadEnabled(subtitle.fullPath) && (
-                          <div className="flex items-start gap-3 ml-20">
-                            {/* Language Selection */}
-                            <div className="relative" data-dropdown={subtitle.fullPath}>
+
+                            </div>
+
+                            {/* Preview Button */}
                             <button
-                              onClick={() => onToggleDropdown(subtitle.fullPath)}
-                              className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between"
+                              onClick={() => onSubtitlePreview(subtitle)}
+                              className="text-sm underline transition-colors px-2 py-1 rounded"
                               style={{
-                                backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
-                                color: themeColors.text,
-                                border: `1px solid ${themeColors.border}`
+                                color: getUploadEnabled(subtitle.fullPath) ? themeColors.link : themeColors.textMuted
                               }}
-                              onFocus={(e) => {
-                                e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                              onMouseEnter={(e) => {
+                                e.target.style.color = getUploadEnabled(subtitle.fullPath) ? themeColors.linkHover : themeColors.textSecondary;
                               }}
-                              onBlur={(e) => {
-                                e.target.style.boxShadow = 'none';
+                              onMouseLeave={(e) => {
+                                e.target.style.color = getUploadEnabled(subtitle.fullPath) ? themeColors.link : themeColors.textMuted;
                               }}
                             >
-                              <span>
-                                {getSubtitleLanguage(subtitle) && combinedLanguages[getSubtitleLanguage(subtitle)] ? 
-                                  `${combinedLanguages[getSubtitleLanguage(subtitle)].flag} ${combinedLanguages[getSubtitleLanguage(subtitle)].displayName} (${combinedLanguages[getSubtitleLanguage(subtitle)].iso639?.toUpperCase()})` :
-                                  'Select upload language...'
-                                }
-                              </span>
-                              <span className="ml-2">▼</span>
+                              Preview
                             </button>
-                            
-                            {openDropdowns[subtitle.fullPath] && (
-                              <div className="absolute top-full left-0 mt-1 rounded shadow-lg z-10 min-w-[250px] max-h-60 overflow-hidden"
-                                   style={{
-                                     backgroundColor: themeColors.cardBackground,
-                                     border: `1px solid ${themeColors.border}`
-                                   }}>
-                                {/* Search input */}
-                                <div className="p-2" style={{borderBottom: `1px solid ${themeColors.border}`}}>
-                                  <input
-                                    type="text"
-                                    placeholder="Type to search languages..."
-                                    value={dropdownSearch[subtitle.fullPath] || ''}
-                                    onChange={(e) => onDropdownSearch(subtitle.fullPath, e.target.value)}
-                                    className="w-full text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1"
-                                    style={{
-                                      backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
-                                      color: themeColors.text,
-                                      border: `1px solid ${themeColors.border}`
-                                    }}
-                                    onFocus={(e) => {
-                                      e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
-                                    }}
-                                    onBlur={(e) => {
-                                      e.target.style.boxShadow = 'none';
-                                    }}
-                                    autoFocus
-                                  />
-                                </div>
-                                
-                                {/* Language options */}
-                                <div className="max-h-48 overflow-y-auto">
-                                  {getLanguageOptionsForSubtitle(subtitle)
-                                    .filter(lang => {
-                                      const searchTerm = dropdownSearch[subtitle.fullPath] || '';
-                                      if (!searchTerm) return true;
-                                      return lang.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                             lang.iso639?.toLowerCase().includes(searchTerm.toLowerCase());
-                                    })
-                                    .map((lang) => (
-                                      <button
-                                        key={lang.code}
-                                        onClick={() => onSubtitleLanguageChange(subtitle.fullPath, lang.code)}
-                                        className="w-full text-left px-3 py-2 text-xs flex items-center gap-2"
-                                        style={{backgroundColor: 'transparent'}}
-                                        onMouseEnter={(e) => e.target.style.backgroundColor = isDark ? '#444444' : '#f8f9fa'}
-                                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                                      >
-                                        <span>{lang.flag}</span>
-                                        <span style={{color: themeColors.text}}>{lang.displayName}</span>
-                                        <span style={{color: themeColors.textSecondary}}>({lang.iso639?.toUpperCase()})</span>
-                                        {lang.isDetected && (
-                                          <span className="ml-auto font-semibold" style={{color: themeColors.success}}>
-                                            {(lang.confidence * 100).toFixed(1)}%
-                                          </span>
-                                        )}
-                                      </button>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-                            </div>
-                            
-                            {/* Upload Options */}
-                            <div className="flex-shrink-0">
-                              <SubtitleUploadOptions
-                                subtitlePath={subtitle.fullPath}
-                                uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
-                                onUpdateOptions={onUpdateUploadOptions}
-                                colors={themeColors}
-                                isDark={isDark}
-                              />
-                            </div>
+                          </div>
+                        )}
+
+                        {/* Line 3: Upload Options */}
+                        {getUploadEnabled(subtitle.fullPath) && (
+                          <div className="ml-20 mt-2">
+                            <SubtitleUploadOptions
+                              subtitlePath={subtitle.fullPath}
+                              uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                              onUpdateOptions={onUpdateUploadOptions}
+                              colors={themeColors}
+                              isDark={isDark}
+                              subtitleFile={subtitle}
+                              pairedVideoFile={pair.video}
+                              onLocalStateChange={handleLocalStateChange}
+                            />
                           </div>
                         )}
 
