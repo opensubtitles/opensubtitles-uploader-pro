@@ -279,17 +279,17 @@ export const SubtitleUploadOptions = ({
     // Props changed - no logging needed
   }, [uploadOptions]);
 
-  // Notify parent component of local state changes - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (onLocalStateChange) {
-  //     onLocalStateChange(subtitlePath, {
-  //       localHdValue,
-  //       localForeignPartsValue,
-  //       localHearingImpairedValue,
-  //       localAutoTranslationValue
-  //     });
-  //   }
-  // }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
+  // Notify parent component of local state changes
+  useEffect(() => {
+    if (onLocalStateChange) {
+      onLocalStateChange(subtitlePath, {
+        localHdValue,
+        localForeignPartsValue,
+        localHearingImpairedValue,
+        localAutoTranslationValue
+      });
+    }
+  }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
 
 
   return (
