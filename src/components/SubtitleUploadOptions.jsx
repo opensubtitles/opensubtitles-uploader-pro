@@ -273,24 +273,24 @@ export const SubtitleUploadOptions = ({
     }
   }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
 
-  // Sync local values to uploadOptions when they change
+  // Sync local values to uploadOptions when they change (with timeout to prevent infinite loops)
   useEffect(() => {
     if (localForeignPartsValue === '1' && !uploadOptions.foreignpartsonly) {
-      handleFieldChange('foreignpartsonly', '1');
+      setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
     }
-  }, [localForeignPartsValue, uploadOptions.foreignpartsonly, handleFieldChange]);
+  }, [localForeignPartsValue, uploadOptions.foreignpartsonly]);
 
   useEffect(() => {
     if (localHdValue === '1' && !uploadOptions.highdefinition) {
-      handleFieldChange('highdefinition', '1');
+      setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
     }
-  }, [localHdValue, uploadOptions.highdefinition, handleFieldChange]);
+  }, [localHdValue, uploadOptions.highdefinition]);
 
   useEffect(() => {
     if (localHearingImpairedValue === '1' && !uploadOptions.hearingimpaired) {
-      handleFieldChange('hearingimpaired', '1');
+      setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
     }
-  }, [localHearingImpairedValue, uploadOptions.hearingimpaired, handleFieldChange]);
+  }, [localHearingImpairedValue, uploadOptions.hearingimpaired]);
 
   return (
     <div className="mt-2" data-interactive>
