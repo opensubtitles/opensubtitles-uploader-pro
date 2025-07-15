@@ -126,14 +126,14 @@ export const SubtitleUploadOptions = ({
         shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
       }
       
-      if (shouldBeForeignParts && !uploadOptions.foreignpartsonly) {
+      if (shouldBeForeignParts) {
         setLocalForeignPartsValue('1');
         setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
         setHasSetForeignParts(true);
         processedForeignPartsRef.current = true;
       }
     }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts, uploadOptions.foreignpartsonly]);
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts]);
 
   // Pre-fill high definition checkbox based on full file path analysis
   useEffect(() => {
@@ -150,14 +150,14 @@ export const SubtitleUploadOptions = ({
         shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
       }
       
-      if (shouldBeHighDefinition && !uploadOptions.highdefinition) {
+      if (shouldBeHighDefinition) {
         setLocalHdValue('1');
         setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
         setHasSetHighDefinition(true);
         processedHdRef.current = true;
       }
     }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition, uploadOptions.highdefinition]);
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
 
   // Pre-fill hearing impaired checkbox based on full file path analysis
   useEffect(() => {
@@ -174,14 +174,14 @@ export const SubtitleUploadOptions = ({
         shouldBeHearingImpaired = checkFeatureFromPath(subtitleFile.fullPath, 'hearingimpaired');
       }
       
-      if (shouldBeHearingImpaired && !uploadOptions.hearingimpaired) {
+      if (shouldBeHearingImpaired) {
         setLocalHearingImpairedValue('1');
         setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
         setHasSetHearingImpaired(true);
         processedHearingImpairedRef.current = true;
       }
     }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired, uploadOptions.hearingimpaired]);
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
 
   // Pre-fill automatic translation checkbox based on subtitle content
   useEffect(() => {
