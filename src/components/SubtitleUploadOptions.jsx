@@ -111,53 +111,53 @@ export const SubtitleUploadOptions = ({
     }
   }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
 
-  // Pre-fill foreign parts checkbox based on full file path analysis
-  useEffect(() => {
-    if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts && !processedForeignPartsRef.current) {
-      let shouldBeForeignParts = false;
-      
-      // Check subtitle file path first (higher priority for foreign parts)
-      if (subtitleFile && subtitleFile.fullPath) {
-        shouldBeForeignParts = checkFeatureFromPath(subtitleFile.fullPath, 'foreign');
-      }
-      
-      // If not found in subtitle, check video file path
-      if (!shouldBeForeignParts && pairedVideoFile && pairedVideoFile.fullPath) {
-        shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
-      }
-      
-      if (shouldBeForeignParts) {
-        setLocalForeignPartsValue('1');
-        setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
-        setHasSetForeignParts(true);
-        processedForeignPartsRef.current = true;
-      }
-    }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts]);
+  // Pre-fill foreign parts checkbox based on full file path analysis - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts && !processedForeignPartsRef.current) {
+  //     let shouldBeForeignParts = false;
+  //     
+  //     // Check subtitle file path first (higher priority for foreign parts)
+  //     if (subtitleFile && subtitleFile.fullPath) {
+  //       shouldBeForeignParts = checkFeatureFromPath(subtitleFile.fullPath, 'foreign');
+  //     }
+  //     
+  //     // If not found in subtitle, check video file path
+  //     if (!shouldBeForeignParts && pairedVideoFile && pairedVideoFile.fullPath) {
+  //       shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
+  //     }
+  //     
+  //     if (shouldBeForeignParts) {
+  //       setLocalForeignPartsValue('1');
+  //       setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
+  //       setHasSetForeignParts(true);
+  //       processedForeignPartsRef.current = true;
+  //     }
+  //   }
+  // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts]);
 
-  // Pre-fill high definition checkbox based on full file path analysis
-  useEffect(() => {
-    if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile) && !processedHdRef.current) {
-      let shouldBeHighDefinition = false;
-      
-      // Check video file path first (higher priority for HD)
-      if (pairedVideoFile && pairedVideoFile.fullPath) {
-        shouldBeHighDefinition = checkFeatureFromPath(pairedVideoFile.fullPath, 'hd');
-      }
-      
-      // If not found in video, check subtitle file path
-      if (!shouldBeHighDefinition && subtitleFile && subtitleFile.fullPath) {
-        shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
-      }
-      
-      if (shouldBeHighDefinition) {
-        setLocalHdValue('1');
-        setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
-        setHasSetHighDefinition(true);
-        processedHdRef.current = true;
-      }
-    }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
+  // Pre-fill high definition checkbox based on full file path analysis - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile) && !processedHdRef.current) {
+  //     let shouldBeHighDefinition = false;
+  //     
+  //     // Check video file path first (higher priority for HD)
+  //     if (pairedVideoFile && pairedVideoFile.fullPath) {
+  //       shouldBeHighDefinition = checkFeatureFromPath(pairedVideoFile.fullPath, 'hd');
+  //     }
+  //     
+  //     // If not found in video, check subtitle file path
+  //     if (!shouldBeHighDefinition && subtitleFile && subtitleFile.fullPath) {
+  //       shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
+  //     }
+  //     
+  //     if (shouldBeHighDefinition) {
+  //       setLocalHdValue('1');
+  //       setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
+  //       setHasSetHighDefinition(true);
+  //       processedHdRef.current = true;
+  //     }
+  //   }
+  // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
 
   // Pre-fill hearing impaired checkbox based on full file path analysis - DISABLED FOR DEBUGGING
   // useEffect(() => {
@@ -183,18 +183,18 @@ export const SubtitleUploadOptions = ({
   //   }
   // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
 
-  // Pre-fill automatic translation checkbox based on subtitle content
-  useEffect(() => {
-    if (subtitleContent && !hasSetAutoTranslation) {
-      const shouldBeAutoTranslation = checkAutoTranslationFromContent(subtitleContent);
-      
-      if (shouldBeAutoTranslation && !uploadOptions.automatictranslation) {
-        setLocalAutoTranslationValue('1');
-        handleFieldChange('automatictranslation', '1');
-        setHasSetAutoTranslation(true);
-      }
-    }
-  }, [subtitleContent, hasSetAutoTranslation, uploadOptions.automatictranslation]);
+  // Pre-fill automatic translation checkbox based on subtitle content - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (subtitleContent && !hasSetAutoTranslation) {
+  //     const shouldBeAutoTranslation = checkAutoTranslationFromContent(subtitleContent);
+  //     
+  //     if (shouldBeAutoTranslation && !uploadOptions.automatictranslation) {
+  //       setLocalAutoTranslationValue('1');
+  //       handleFieldChange('automatictranslation', '1');
+  //       setHasSetAutoTranslation(true);
+  //     }
+  //   }
+  // }, [subtitleContent, hasSetAutoTranslation, uploadOptions.automatictranslation]);
 
   // Pre-fill release name on component mount
   useEffect(() => {
