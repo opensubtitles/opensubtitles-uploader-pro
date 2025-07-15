@@ -130,6 +130,18 @@ export const MovieDisplay = ({
     if (movieData && featuresData && guessItVideoData && typeof guessItVideoData === 'object') {
       const episodeMatch = findEpisodeMatch(featuresData, guessItVideoData);
       if (episodeMatch) {
+        // Check if we have episode-specific features data
+        const episodeFeaturesData = featuresByImdbId?.[episodeMatch.imdbid];
+        if (episodeFeaturesData?.data?.[0]) {
+          // Use episode-specific features data to create proper title
+          const episodeAttributes = episodeFeaturesData.data[0].attributes;
+          return {
+            ...episodeMatch,
+            title: episodeAttributes.title || episodeMatch.title,
+            year: episodeAttributes.year || episodeMatch.year,
+            reason: 'Episode matched with full features data'
+          };
+        }
         return episodeMatch;
       }
     }
@@ -151,6 +163,9 @@ export const MovieDisplay = ({
   // Effect to fetch episode-specific features when episode IMDb ID is available
   React.useEffect(() => {
     if (bestMovieData?.kind === 'episode' && bestMovieData.imdbid && fetchFeaturesByImdbId && !episodeFeaturesData) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Fetching episode features for IMDb ID:', bestMovieData.imdbid);
+      }
       fetchFeaturesByImdbId(bestMovieData.imdbid);
     }
   }, [bestMovieData?.imdbid, bestMovieData?.kind, fetchFeaturesByImdbId]);
