@@ -28,12 +28,12 @@ export const SubtitleUploadOptions = ({
   const processedHdRef = useRef(false);
   const processedHearingImpairedRef = useRef(false);
   
-  // Reset processing flags when subtitle path changes
-  useEffect(() => {
-    processedForeignPartsRef.current = false;
-    processedHdRef.current = false;
-    processedHearingImpairedRef.current = false;
-  }, [subtitlePath]);
+  // Reset processing flags when subtitle path changes - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   processedForeignPartsRef.current = false;
+  //   processedHdRef.current = false;
+  //   processedHearingImpairedRef.current = false;
+  // }, [subtitlePath]);
 
   // Enhanced detection function that checks all file path elements
   const checkFeatureFromPath = (filePath, featureType) => {
@@ -89,27 +89,27 @@ export const SubtitleUploadOptions = ({
     return autoTranslationRegex.test(content);
   };
 
-  // Load subtitle content for analysis
-  useEffect(() => {
-    if (subtitleFile && !subtitleContent && !hasSetAutoTranslation) {
-      const loadSubtitleContent = async () => {
-        try {
-          // Read the subtitle file content
-          const file = subtitleFile.file || subtitleFile;
-          if (file && typeof file.text === 'function') {
-            const content = await file.text();
-            setSubtitleContent(content);
-          } else if (file && file.content) {
-            setSubtitleContent(file.content);
-          }
-        } catch (error) {
-          console.error('Error reading subtitle file:', error);
-        }
-      };
-      
-      loadSubtitleContent();
-    }
-  }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
+  // Load subtitle content for analysis - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (subtitleFile && !subtitleContent && !hasSetAutoTranslation) {
+  //     const loadSubtitleContent = async () => {
+  //       try {
+  //         // Read the subtitle file content
+  //         const file = subtitleFile.file || subtitleFile;
+  //         if (file && typeof file.text === 'function') {
+  //           const content = await file.text();
+  //           setSubtitleContent(content);
+  //         } else if (file && file.content) {
+  //           setSubtitleContent(file.content);
+  //         }
+  //       } catch (error) {
+  //         console.error('Error reading subtitle file:', error);
+  //       }
+  //     };
+  //     
+  //     loadSubtitleContent();
+  //   }
+  // }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
 
   // Pre-fill foreign parts checkbox based on full file path analysis - DISABLED FOR DEBUGGING
   // useEffect(() => {
@@ -196,30 +196,30 @@ export const SubtitleUploadOptions = ({
   //   }
   // }, [subtitleContent, hasSetAutoTranslation, uploadOptions.automatictranslation]);
 
-  // Pre-fill release name on component mount
-  useEffect(() => {
-    // Only set release name if this component instance hasn't set it yet
-    if ((subtitleFile || pairedVideoFile) && !hasSetReleaseName) {
-      let detectionName;
-      
-      if (pairedVideoFile) {
-        // For matched pairs, use video file name directly (has precedence)
-        detectionName = pairedVideoFile.name;
-      } else {
-        // For orphaned subtitles, use smart detection (directory-based for generic names)
-        detectionName = getBestMovieDetectionName(subtitleFile);
-      }
-      
-      // Remove file extension if it exists (only common video/subtitle extensions)
-      const releaseNameWithoutExtension = detectionName.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|3gp|srt|ass|ssa|vtt|sub|idx|sup)$/i, '');
-      
-      // Only set if we have a meaningful name (not empty)
-      if (releaseNameWithoutExtension.trim()) {
-        handleFieldChange('moviereleasename', releaseNameWithoutExtension);
-        setHasSetReleaseName(true); // Mark that this component instance has set the release name
-      }
-    }
-  }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
+  // Pre-fill release name on component mount - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   // Only set release name if this component instance hasn't set it yet
+  //   if ((subtitleFile || pairedVideoFile) && !hasSetReleaseName) {
+  //     let detectionName;
+  //     
+  //     if (pairedVideoFile) {
+  //       // For matched pairs, use video file name directly (has precedence)
+  //       detectionName = pairedVideoFile.name;
+  //     } else {
+  //       // For orphaned subtitles, use smart detection (directory-based for generic names)
+  //       detectionName = getBestMovieDetectionName(subtitleFile);
+  //     }
+  //     
+  //     // Remove file extension if it exists (only common video/subtitle extensions)
+  //     const releaseNameWithoutExtension = detectionName.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|3gp|srt|ass|ssa|vtt|sub|idx|sup)$/i, '');
+  //     
+  //     // Only set if we have a meaningful name (not empty)
+  //     if (releaseNameWithoutExtension.trim()) {
+  //       handleFieldChange('moviereleasename', releaseNameWithoutExtension);
+  //       setHasSetReleaseName(true); // Mark that this component instance has set the release name
+  //     }
+  //   }
+  // }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
 
   const handleFieldChange = useCallback((field, value) => {
     const newOptions = {
@@ -274,22 +274,22 @@ export const SubtitleUploadOptions = ({
   
   // Debug logging for currentOptions
   
-  // Watch for changes in uploadOptions prop
-  useEffect(() => {
-    // Props changed - no logging needed
-  }, [uploadOptions]);
+  // Watch for changes in uploadOptions prop - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   // Props changed - no logging needed
+  // }, [uploadOptions]);
 
-  // Notify parent component of local state changes
-  useEffect(() => {
-    if (onLocalStateChange) {
-      onLocalStateChange(subtitlePath, {
-        localHdValue,
-        localForeignPartsValue,
-        localHearingImpairedValue,
-        localAutoTranslationValue
-      });
-    }
-  }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
+  // Notify parent component of local state changes - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (onLocalStateChange) {
+  //     onLocalStateChange(subtitlePath, {
+  //       localHdValue,
+  //       localForeignPartsValue,
+  //       localHearingImpairedValue,
+  //       localAutoTranslationValue
+  //     });
+  //   }
+  // }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
 
 
   return (
