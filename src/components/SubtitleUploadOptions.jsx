@@ -89,137 +89,137 @@ export const SubtitleUploadOptions = ({
     return autoTranslationRegex.test(content);
   };
 
-  // Load subtitle content for analysis - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (subtitleFile && !subtitleContent && !hasSetAutoTranslation) {
-  //     const loadSubtitleContent = async () => {
-  //       try {
-  //         // Read the subtitle file content
-  //         const file = subtitleFile.file || subtitleFile;
-  //         if (file && typeof file.text === 'function') {
-  //           const content = await file.text();
-  //           setSubtitleContent(content);
-  //         } else if (file && file.content) {
-  //           setSubtitleContent(file.content);
-  //         }
-  //       } catch (error) {
-  //         console.error('Error reading subtitle file:', error);
-  //       }
-  //     };
-  //     
-  //     loadSubtitleContent();
-  //   }
-  // }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
+  // Load subtitle content for analysis
+  useEffect(() => {
+    if (subtitleFile && !subtitleContent && !hasSetAutoTranslation) {
+      const loadSubtitleContent = async () => {
+        try {
+          // Read the subtitle file content
+          const file = subtitleFile.file || subtitleFile;
+          if (file && typeof file.text === 'function') {
+            const content = await file.text();
+            setSubtitleContent(content);
+          } else if (file && file.content) {
+            setSubtitleContent(file.content);
+          }
+        } catch (error) {
+          console.error('Error reading subtitle file:', error);
+        }
+      };
+      
+      loadSubtitleContent();
+    }
+  }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
 
-  // Pre-fill foreign parts checkbox based on full file path analysis - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts && !processedForeignPartsRef.current) {
-  //     let shouldBeForeignParts = false;
-  //     
-  //     // Check subtitle file path first (higher priority for foreign parts)
-  //     if (subtitleFile && subtitleFile.fullPath) {
-  //       shouldBeForeignParts = checkFeatureFromPath(subtitleFile.fullPath, 'foreign');
-  //     }
-  //     
-  //     // If not found in subtitle, check video file path
-  //     if (!shouldBeForeignParts && pairedVideoFile && pairedVideoFile.fullPath) {
-  //       shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
-  //     }
-  //     
-  //     if (shouldBeForeignParts) {
-  //       setLocalForeignPartsValue('1');
-  //       setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
-  //       setHasSetForeignParts(true);
-  //       processedForeignPartsRef.current = true;
-  //     }
-  //   }
-  // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts]);
+  // Pre-fill foreign parts checkbox based on full file path analysis
+  useEffect(() => {
+    if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts && !processedForeignPartsRef.current) {
+      let shouldBeForeignParts = false;
+      
+      // Check subtitle file path first (higher priority for foreign parts)
+      if (subtitleFile && subtitleFile.fullPath) {
+        shouldBeForeignParts = checkFeatureFromPath(subtitleFile.fullPath, 'foreign');
+      }
+      
+      // If not found in subtitle, check video file path
+      if (!shouldBeForeignParts && pairedVideoFile && pairedVideoFile.fullPath) {
+        shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
+      }
+      
+      if (shouldBeForeignParts) {
+        setLocalForeignPartsValue('1');
+        setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
+        setHasSetForeignParts(true);
+        processedForeignPartsRef.current = true;
+      }
+    }
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts]);
 
-  // Pre-fill high definition checkbox based on full file path analysis - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile) && !processedHdRef.current) {
-  //     let shouldBeHighDefinition = false;
-  //     
-  //     // Check video file path first (higher priority for HD)
-  //     if (pairedVideoFile && pairedVideoFile.fullPath) {
-  //       shouldBeHighDefinition = checkFeatureFromPath(pairedVideoFile.fullPath, 'hd');
-  //     }
-  //     
-  //     // If not found in video, check subtitle file path
-  //     if (!shouldBeHighDefinition && subtitleFile && subtitleFile.fullPath) {
-  //       shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
-  //     }
-  //     
-  //     if (shouldBeHighDefinition) {
-  //       setLocalHdValue('1');
-  //       setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
-  //       setHasSetHighDefinition(true);
-  //       processedHdRef.current = true;
-  //     }
-  //   }
-  // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
+  // Pre-fill high definition checkbox based on full file path analysis
+  useEffect(() => {
+    if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile) && !processedHdRef.current) {
+      let shouldBeHighDefinition = false;
+      
+      // Check video file path first (higher priority for HD)
+      if (pairedVideoFile && pairedVideoFile.fullPath) {
+        shouldBeHighDefinition = checkFeatureFromPath(pairedVideoFile.fullPath, 'hd');
+      }
+      
+      // If not found in video, check subtitle file path
+      if (!shouldBeHighDefinition && subtitleFile && subtitleFile.fullPath) {
+        shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
+      }
+      
+      if (shouldBeHighDefinition) {
+        setLocalHdValue('1');
+        setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
+        setHasSetHighDefinition(true);
+        processedHdRef.current = true;
+      }
+    }
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
 
-  // Pre-fill hearing impaired checkbox based on full file path analysis - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile) && !processedHearingImpairedRef.current) {
-  //     let shouldBeHearingImpaired = false;
-  //     
-  //     // Check video file path first (higher priority for HI)
-  //     if (pairedVideoFile && pairedVideoFile.fullPath) {
-  //       shouldBeHearingImpaired = checkFeatureFromPath(pairedVideoFile.fullPath, 'hearingimpaired');
-  //     }
-  //     
-  //     // If not found in video, check subtitle file path
-  //     if (!shouldBeHearingImpaired && subtitleFile && subtitleFile.fullPath) {
-  //       shouldBeHearingImpaired = checkFeatureFromPath(subtitleFile.fullPath, 'hearingimpaired');
-  //     }
-  //     
-  //     if (shouldBeHearingImpaired) {
-  //       setLocalHearingImpairedValue('1');
-  //       setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
-  //       setHasSetHearingImpaired(true);
-  //       processedHearingImpairedRef.current = true;
-  //     }
-  //   }
-  // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
+  // Pre-fill hearing impaired checkbox based on full file path analysis
+  useEffect(() => {
+    if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile) && !processedHearingImpairedRef.current) {
+      let shouldBeHearingImpaired = false;
+      
+      // Check video file path first (higher priority for HI)
+      if (pairedVideoFile && pairedVideoFile.fullPath) {
+        shouldBeHearingImpaired = checkFeatureFromPath(pairedVideoFile.fullPath, 'hearingimpaired');
+      }
+      
+      // If not found in video, check subtitle file path
+      if (!shouldBeHearingImpaired && subtitleFile && subtitleFile.fullPath) {
+        shouldBeHearingImpaired = checkFeatureFromPath(subtitleFile.fullPath, 'hearingimpaired');
+      }
+      
+      if (shouldBeHearingImpaired) {
+        setLocalHearingImpairedValue('1');
+        setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
+        setHasSetHearingImpaired(true);
+        processedHearingImpairedRef.current = true;
+      }
+    }
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
 
-  // Pre-fill automatic translation checkbox based on subtitle content - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   if (subtitleContent && !hasSetAutoTranslation) {
-  //     const shouldBeAutoTranslation = checkAutoTranslationFromContent(subtitleContent);
-  //     
-  //     if (shouldBeAutoTranslation && !uploadOptions.automatictranslation) {
-  //       setLocalAutoTranslationValue('1');
-  //       handleFieldChange('automatictranslation', '1');
-  //       setHasSetAutoTranslation(true);
-  //     }
-  //   }
-  // }, [subtitleContent, hasSetAutoTranslation, uploadOptions.automatictranslation]);
+  // Pre-fill automatic translation checkbox based on subtitle content
+  useEffect(() => {
+    if (subtitleContent && !hasSetAutoTranslation) {
+      const shouldBeAutoTranslation = checkAutoTranslationFromContent(subtitleContent);
+      
+      if (shouldBeAutoTranslation) {
+        setLocalAutoTranslationValue('1');
+        setTimeout(() => handleFieldChange('automatictranslation', '1'), 0);
+        setHasSetAutoTranslation(true);
+      }
+    }
+  }, [subtitleContent, hasSetAutoTranslation]);
 
-  // Pre-fill release name on component mount - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   // Only set release name if this component instance hasn't set it yet
-  //   if ((subtitleFile || pairedVideoFile) && !hasSetReleaseName) {
-  //     let detectionName;
-  //     
-  //     if (pairedVideoFile) {
-  //       // For matched pairs, use video file name directly (has precedence)
-  //       detectionName = pairedVideoFile.name;
-  //     } else {
-  //       // For orphaned subtitles, use smart detection (directory-based for generic names)
-  //       detectionName = getBestMovieDetectionName(subtitleFile);
-  //     }
-  //     
-  //     // Remove file extension if it exists (only common video/subtitle extensions)
-  //     const releaseNameWithoutExtension = detectionName.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|3gp|srt|ass|ssa|vtt|sub|idx|sup)$/i, '');
-  //     
-  //     // Only set if we have a meaningful name (not empty)
-  //     if (releaseNameWithoutExtension.trim()) {
-  //       handleFieldChange('moviereleasename', releaseNameWithoutExtension);
-  //       setHasSetReleaseName(true); // Mark that this component instance has set the release name
-  //     }
-  //   }
-  // }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
+  // Pre-fill release name on component mount
+  useEffect(() => {
+    // Only set release name if this component instance hasn't set it yet
+    if ((subtitleFile || pairedVideoFile) && !hasSetReleaseName) {
+      let detectionName;
+      
+      if (pairedVideoFile) {
+        // For matched pairs, use video file name directly (has precedence)
+        detectionName = pairedVideoFile.name;
+      } else {
+        // For orphaned subtitles, use smart detection (directory-based for generic names)
+        detectionName = getBestMovieDetectionName(subtitleFile);
+      }
+      
+      // Remove file extension if it exists (only common video/subtitle extensions)
+      const releaseNameWithoutExtension = detectionName.replace(/\.(mp4|mkv|avi|mov|wmv|flv|webm|m4v|3gp|srt|ass|ssa|vtt|sub|idx|sup)$/i, '');
+      
+      // Only set if we have a meaningful name (not empty)
+      if (releaseNameWithoutExtension.trim()) {
+        setTimeout(() => handleFieldChange('moviereleasename', releaseNameWithoutExtension), 0);
+        setHasSetReleaseName(true); // Mark that this component instance has set the release name
+      }
+    }
+  }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
 
   const handleFieldChange = useCallback((field, value) => {
     const newOptions = {
@@ -289,7 +289,7 @@ export const SubtitleUploadOptions = ({
         localAutoTranslationValue
       });
     }
-  }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
+  }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath]);
 
 
   return (
