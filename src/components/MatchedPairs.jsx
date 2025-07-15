@@ -2,6 +2,7 @@ import React from 'react';
 import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
+import { SubtitleUploadOptions } from './SubtitleUploadOptions.jsx';
 
 export const MatchedPairs = ({ 
   pairedFiles,
@@ -28,6 +29,8 @@ export const MatchedPairs = ({
   fetchFeaturesByImdbId, // New prop for fetching features by IMDb ID
   uploadResults, // New prop for upload results
   hashCheckResults, // New prop for CheckSubHash results
+  uploadOptions, // New prop for upload options
+  onUpdateUploadOptions, // New prop for updating upload options
   colors, // Theme colors
   isDark // Dark mode flag
 }) => {
@@ -670,9 +673,11 @@ export const MatchedPairs = ({
                           
                         </div>
                         
-                        {/* Language Selection - Only show if upload is enabled */}
+                        {/* Language Selection and Upload Options - Only show if upload is enabled */}
                         {getUploadEnabled(subtitle.fullPath) && (
-                          <div className="relative ml-20" data-dropdown={subtitle.fullPath}>
+                          <div className="flex items-start gap-3 ml-20">
+                            {/* Language Selection */}
+                            <div className="relative" data-dropdown={subtitle.fullPath}>
                             <button
                               onClick={() => onToggleDropdown(subtitle.fullPath)}
                               className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between"
@@ -757,6 +762,18 @@ export const MatchedPairs = ({
                                 </div>
                               </div>
                             )}
+                            </div>
+                            
+                            {/* Upload Options */}
+                            <div className="flex-shrink-0">
+                              <SubtitleUploadOptions
+                                subtitlePath={subtitle.fullPath}
+                                uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                                onUpdateOptions={onUpdateUploadOptions}
+                                colors={themeColors}
+                                isDark={isDark}
+                              />
+                            </div>
                           </div>
                         )}
 

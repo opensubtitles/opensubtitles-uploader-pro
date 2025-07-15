@@ -38,6 +38,7 @@ function SubtitleUploaderInner() {
   const [uploadStates, setUploadStates] = useState({}); // New state for upload enable/disable
   const [uploadResults, setUploadResults] = useState({}); // New state for upload results
   const [subcontentData, setSubcontentData] = useState({}); // New state for subcontent data
+  const [uploadOptions, setUploadOptions] = useState({}); // New state for upload options (release name, comments, etc.)
   const [uploadProgress, setUploadProgress] = useState({ isUploading: false, processed: 0, total: 0 }); // Upload progress tracking
 
   // Custom hooks
@@ -160,6 +161,15 @@ function SubtitleUploaderInner() {
       [subtitlePath]: enabled
     }));
     addDebugInfo(`Upload ${enabled ? 'enabled' : 'disabled'} for: ${subtitlePath}`);
+  }, [addDebugInfo]);
+
+  // Handle upload options update
+  const handleUploadOptionsUpdate = useCallback((subtitlePath, options) => {
+    setUploadOptions(prev => ({
+      ...prev,
+      [subtitlePath]: options
+    }));
+    addDebugInfo(`Upload options updated for: ${subtitlePath}`);
   }, [addDebugInfo]);
 
   // Get upload status for subtitle (default to true)
@@ -321,6 +331,7 @@ function SubtitleUploaderInner() {
       setUploadResults({}); // Clear previous upload results
       setSubcontentData({}); // Clear previous subcontent data
       setUploadStates({}); // Reset upload enable/disable states
+      setUploadOptions({}); // Reset upload options states
       setOpenDropdowns({}); // Close any open dropdowns
       setDropdownSearch({}); // Clear dropdown search states
       setPreviewSubtitle(null); // Close any preview
@@ -694,6 +705,7 @@ function SubtitleUploaderInner() {
     setOpenDropdowns({});
     setDropdownSearch({});
     setUploadStates({}); // Clear upload states
+    setUploadOptions({}); // Clear upload options
     setUploadResults({}); // Clear upload results
     setSubcontentData({}); // Clear subcontent data
     
@@ -961,6 +973,8 @@ function SubtitleUploaderInner() {
             fetchFeaturesByImdbId={fetchFeaturesByImdbId}
             uploadResults={uploadResults}
             hashCheckResults={hashCheckResults}
+            uploadOptions={uploadOptions}
+            onUpdateUploadOptions={handleUploadOptionsUpdate}
             colors={colors}
             isDark={isDark}
           />
@@ -992,6 +1006,8 @@ function SubtitleUploaderInner() {
             getFormattedTags={getFormattedTags}
             fetchFeaturesByImdbId={fetchFeaturesByImdbId}
             uploadResults={uploadResults}
+            uploadOptions={uploadOptions}
+            onUpdateUploadOptions={handleUploadOptionsUpdate}
             colors={colors}
             isDark={isDark}
           />

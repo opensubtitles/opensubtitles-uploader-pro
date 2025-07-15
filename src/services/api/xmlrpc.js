@@ -783,6 +783,11 @@ export class XmlRpcService {
                   <name>sublanguageid</name>
                   <value><string>${baseinfo.sublanguageid}</string></value>
                 </member>` : ''}
+                ${baseinfo.movieaka ? `
+                <member>
+                  <name>movieaka</name>
+                  <value><string>${this.escapeXmlContent(baseinfo.movieaka)}</string></value>
+                </member>` : ''}
                 ${baseinfo.subauthorcomment ? `
                 <member>
                   <name>subauthorcomment</name>
@@ -801,6 +806,11 @@ export class XmlRpcService {
                   <name>automatictranslation</name>
                   <value><string>${baseinfo.automatictranslation || '0'}</string></value>
                 </member>
+                ${baseinfo.subtranslator ? `
+                <member>
+                  <name>subtranslator</name>
+                  <value><string>${this.escapeXmlContent(baseinfo.subtranslator)}</string></value>
+                </member>` : ''}
                 <member>
                   <name>foreignpartsonly</name>
                   <value><string>${baseinfo.foreignpartsonly || '0'}</string></value>

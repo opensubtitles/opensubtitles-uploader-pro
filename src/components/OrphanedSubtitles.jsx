@@ -1,5 +1,6 @@
 import React from 'react';
 import { MovieDisplay } from './MovieDisplay.jsx';
+import { SubtitleUploadOptions } from './SubtitleUploadOptions.jsx';
 
 export const OrphanedSubtitles = ({
   orphanedSubtitles,
@@ -25,6 +26,8 @@ export const OrphanedSubtitles = ({
   getFormattedTags,
   fetchFeaturesByImdbId,
   uploadResults,
+  uploadOptions,
+  onUpdateUploadOptions,
   colors,
   isDark
 }) => {
@@ -294,6 +297,15 @@ export const OrphanedSubtitles = ({
                 hideSelectAllCheckbox={true} // Hide the "All Selected" checkbox for orphaned subtitles
                 getGuessItProcessingStatus={getGuessItProcessingStatus}
                 getFormattedTags={getFormattedTags}
+              />
+              
+              {/* Upload Options */}
+              <SubtitleUploadOptions
+                subtitlePath={subtitle.fullPath}
+                uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                onUpdateOptions={onUpdateUploadOptions}
+                colors={themeColors}
+                isDark={isDark}
               />
               
               {/* Movie Search Interface for orphaned subtitles */}
