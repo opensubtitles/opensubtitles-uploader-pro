@@ -128,6 +128,7 @@ export const SubtitleUploadOptions = ({
       
       if (shouldBeForeignParts && !uploadOptions.foreignpartsonly) {
         setLocalForeignPartsValue('1');
+        setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
         setHasSetForeignParts(true);
         processedForeignPartsRef.current = true;
       }
@@ -151,6 +152,7 @@ export const SubtitleUploadOptions = ({
       
       if (shouldBeHighDefinition && !uploadOptions.highdefinition) {
         setLocalHdValue('1');
+        setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
         setHasSetHighDefinition(true);
         processedHdRef.current = true;
       }
@@ -174,6 +176,7 @@ export const SubtitleUploadOptions = ({
       
       if (shouldBeHearingImpaired && !uploadOptions.hearingimpaired) {
         setLocalHearingImpairedValue('1');
+        setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
         setHasSetHearingImpaired(true);
         processedHearingImpairedRef.current = true;
       }
@@ -288,24 +291,6 @@ export const SubtitleUploadOptions = ({
     }
   }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
 
-  // Sync local values to uploadOptions when they change (with timeout to prevent infinite loops)
-  useEffect(() => {
-    if (localForeignPartsValue === '1' && !uploadOptions.foreignpartsonly) {
-      setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
-    }
-  }, [localForeignPartsValue, uploadOptions.foreignpartsonly]);
-
-  useEffect(() => {
-    if (localHdValue === '1' && !uploadOptions.highdefinition) {
-      setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
-    }
-  }, [localHdValue, uploadOptions.highdefinition]);
-
-  useEffect(() => {
-    if (localHearingImpairedValue === '1' && !uploadOptions.hearingimpaired) {
-      setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
-    }
-  }, [localHearingImpairedValue, uploadOptions.hearingimpaired]);
 
   return (
     <div className="mt-2" data-interactive>
