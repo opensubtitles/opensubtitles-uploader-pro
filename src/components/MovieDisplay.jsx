@@ -77,7 +77,19 @@ export const MovieDisplay = ({
     const seasonNumber = parseInt(guessItData.season);
     const episodeNumber = parseInt(guessItData.episode);
 
+    // Debug logging to see what we're getting
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Episode matching debug:', {
+        guessItData,
+        seasonNumber,
+        episodeNumber,
+        seasonRaw: guessItData.season,
+        episodeRaw: guessItData.episode
+      });
+    }
+
     if (isNaN(seasonNumber) || isNaN(episodeNumber)) {
+      console.warn('Invalid season/episode numbers:', { seasonNumber, episodeNumber, guessItData });
       return null;
     }
 
