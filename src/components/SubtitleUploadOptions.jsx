@@ -28,12 +28,12 @@ export const SubtitleUploadOptions = ({
   const processedHdRef = useRef(false);
   const processedHearingImpairedRef = useRef(false);
   
-  // Reset processing flags when subtitle path changes - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   processedForeignPartsRef.current = false;
-  //   processedHdRef.current = false;
-  //   processedHearingImpairedRef.current = false;
-  // }, [subtitlePath]);
+  // Reset processing flags when subtitle path changes
+  useEffect(() => {
+    processedForeignPartsRef.current = false;
+    processedHdRef.current = false;
+    processedHearingImpairedRef.current = false;
+  }, [subtitlePath]);
 
   // Enhanced detection function that checks all file path elements
   const checkFeatureFromPath = (filePath, featureType) => {
@@ -274,10 +274,10 @@ export const SubtitleUploadOptions = ({
   
   // Debug logging for currentOptions
   
-  // Watch for changes in uploadOptions prop - DISABLED FOR DEBUGGING
-  // useEffect(() => {
-  //   // Props changed - no logging needed
-  // }, [uploadOptions]);
+  // Watch for changes in uploadOptions prop
+  useEffect(() => {
+    // Props changed - no logging needed
+  }, [uploadOptions]);
 
   // Notify parent component of local state changes - DISABLED FOR DEBUGGING
   // useEffect(() => {
