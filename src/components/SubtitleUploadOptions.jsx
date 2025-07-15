@@ -143,7 +143,7 @@ export const SubtitleUploadOptions = ({
         setHasSetHighDefinition(true);
       }
     }
-  }, [subtitleFile, pairedVideoFile, hasSetHighDefinition, uploadOptions.highdefinition, onUpdateOptions, subtitlePath]);
+  }, [subtitleFile, pairedVideoFile, hasSetHighDefinition, uploadOptions.highdefinition, subtitlePath]);
 
   // Pre-fill hearing impaired checkbox based on full file path analysis
   useEffect(() => {
@@ -166,7 +166,7 @@ export const SubtitleUploadOptions = ({
         setHasSetHearingImpaired(true);
       }
     }
-  }, [subtitleFile, pairedVideoFile, hasSetHearingImpaired, uploadOptions.hearingimpaired, onUpdateOptions, subtitlePath]);
+  }, [subtitleFile, pairedVideoFile, hasSetHearingImpaired, uploadOptions.hearingimpaired, subtitlePath]);
 
   // Pre-fill automatic translation checkbox based on subtitle content
   useEffect(() => {
