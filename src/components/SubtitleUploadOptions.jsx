@@ -114,16 +114,6 @@ export const SubtitleUploadOptions = ({
         shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
       }
       
-      // Debug logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Foreign Parts Detection Debug:', {
-          subtitlePath: subtitleFile?.fullPath,
-          videoPath: pairedVideoFile?.fullPath,
-          shouldBeForeignParts,
-          hasSetForeignParts
-        });
-      }
-      
       if (shouldBeForeignParts && !uploadOptions.foreignpartsonly) {
         setLocalForeignPartsValue('1');
         handleFieldChange('foreignpartsonly', '1');
@@ -147,21 +137,7 @@ export const SubtitleUploadOptions = ({
         shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
       }
       
-      // Debug logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('HD Detection Debug:', {
-          videoPath: pairedVideoFile?.fullPath,
-          subtitlePath: subtitleFile?.fullPath,
-          shouldBeHighDefinition,
-          currentHDValue: uploadOptions.highdefinition,
-          hasSetHighDefinition
-        });
-      }
-      
       if (shouldBeHighDefinition && !uploadOptions.highdefinition) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('Setting HD to 1 via handleFieldChange and local state');
-        }
         setLocalHdValue('1');
         handleFieldChange('highdefinition', '1');
         setHasSetHighDefinition(true);
