@@ -159,29 +159,29 @@ export const SubtitleUploadOptions = ({
     }
   }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
 
-  // Pre-fill hearing impaired checkbox based on full file path analysis
-  useEffect(() => {
-    if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile) && !processedHearingImpairedRef.current) {
-      let shouldBeHearingImpaired = false;
-      
-      // Check video file path first (higher priority for HI)
-      if (pairedVideoFile && pairedVideoFile.fullPath) {
-        shouldBeHearingImpaired = checkFeatureFromPath(pairedVideoFile.fullPath, 'hearingimpaired');
-      }
-      
-      // If not found in video, check subtitle file path
-      if (!shouldBeHearingImpaired && subtitleFile && subtitleFile.fullPath) {
-        shouldBeHearingImpaired = checkFeatureFromPath(subtitleFile.fullPath, 'hearingimpaired');
-      }
-      
-      if (shouldBeHearingImpaired) {
-        setLocalHearingImpairedValue('1');
-        setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
-        setHasSetHearingImpaired(true);
-        processedHearingImpairedRef.current = true;
-      }
-    }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
+  // Pre-fill hearing impaired checkbox based on full file path analysis - DISABLED FOR DEBUGGING
+  // useEffect(() => {
+  //   if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile) && !processedHearingImpairedRef.current) {
+  //     let shouldBeHearingImpaired = false;
+  //     
+  //     // Check video file path first (higher priority for HI)
+  //     if (pairedVideoFile && pairedVideoFile.fullPath) {
+  //       shouldBeHearingImpaired = checkFeatureFromPath(pairedVideoFile.fullPath, 'hearingimpaired');
+  //     }
+  //     
+  //     // If not found in video, check subtitle file path
+  //     if (!shouldBeHearingImpaired && subtitleFile && subtitleFile.fullPath) {
+  //       shouldBeHearingImpaired = checkFeatureFromPath(subtitleFile.fullPath, 'hearingimpaired');
+  //     }
+  //     
+  //     if (shouldBeHearingImpaired) {
+  //       setLocalHearingImpairedValue('1');
+  //       setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
+  //       setHasSetHearingImpaired(true);
+  //       processedHearingImpairedRef.current = true;
+  //     }
+  //   }
+  // }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
 
   // Pre-fill automatic translation checkbox based on subtitle content
   useEffect(() => {
