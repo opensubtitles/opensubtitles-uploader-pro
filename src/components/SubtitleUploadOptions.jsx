@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { getBestMovieDetectionName } from '../utils/fileUtils.js';
 
 export const SubtitleUploadOptions = ({
@@ -116,11 +116,10 @@ export const SubtitleUploadOptions = ({
       
       if (shouldBeForeignParts && !uploadOptions.foreignpartsonly) {
         setLocalForeignPartsValue('1');
-        handleFieldChange('foreignpartsonly', '1');
         setHasSetForeignParts(true);
       }
     }
-  }, [subtitleFile, pairedVideoFile, hasSetForeignParts, uploadOptions.foreignpartsonly]);
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts, uploadOptions.foreignpartsonly]);
 
   // Pre-fill high definition checkbox based on full file path analysis
   useEffect(() => {
@@ -139,11 +138,10 @@ export const SubtitleUploadOptions = ({
       
       if (shouldBeHighDefinition && !uploadOptions.highdefinition) {
         setLocalHdValue('1');
-        handleFieldChange('highdefinition', '1');
         setHasSetHighDefinition(true);
       }
     }
-  }, [subtitleFile, pairedVideoFile, hasSetHighDefinition, uploadOptions.highdefinition, subtitlePath]);
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition, uploadOptions.highdefinition]);
 
   // Pre-fill hearing impaired checkbox based on full file path analysis
   useEffect(() => {
@@ -162,11 +160,10 @@ export const SubtitleUploadOptions = ({
       
       if (shouldBeHearingImpaired && !uploadOptions.hearingimpaired) {
         setLocalHearingImpairedValue('1');
-        handleFieldChange('hearingimpaired', '1');
         setHasSetHearingImpaired(true);
       }
     }
-  }, [subtitleFile, pairedVideoFile, hasSetHearingImpaired, uploadOptions.hearingimpaired, subtitlePath]);
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired, uploadOptions.hearingimpaired]);
 
   // Pre-fill automatic translation checkbox based on subtitle content
   useEffect(() => {
@@ -206,7 +203,7 @@ export const SubtitleUploadOptions = ({
     }
   }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
 
-  const handleFieldChange = (field, value) => {
+  const handleFieldChange = useCallback((field, value) => {
     const newOptions = {
       ...uploadOptions,
       [field]: value
@@ -253,7 +250,7 @@ export const SubtitleUploadOptions = ({
     if (field === 'automatictranslation' && value !== uploadOptions.automatictranslation) {
       setHasSetAutoTranslation(false);
     }
-  };
+  }, [uploadOptions, subtitlePath]);
 
   const currentOptions = uploadOptions || {};
   
@@ -275,6 +272,25 @@ export const SubtitleUploadOptions = ({
       });
     }
   }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath, onLocalStateChange]);
+
+  // Sync local values to uploadOptions when they change
+  useEffect(() => {
+    if (localForeignPartsValue === '1' && !uploadOptions.foreignpartsonly) {
+      handleFieldChange('foreignpartsonly', '1');
+    }
+  }, [localForeignPartsValue, uploadOptions.foreignpartsonly, handleFieldChange]);
+
+  useEffect(() => {
+    if (localHdValue === '1' && !uploadOptions.highdefinition) {
+      handleFieldChange('highdefinition', '1');
+    }
+  }, [localHdValue, uploadOptions.highdefinition, handleFieldChange]);
+
+  useEffect(() => {
+    if (localHearingImpairedValue === '1' && !uploadOptions.hearingimpaired) {
+      handleFieldChange('hearingimpaired', '1');
+    }
+  }, [localHearingImpairedValue, uploadOptions.hearingimpaired, handleFieldChange]);
 
   return (
     <div className="mt-2" data-interactive>
