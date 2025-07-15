@@ -196,6 +196,7 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
         episode: episode,
         episode_title: episodeTitle,
         title: seriesTitle,
+        show_title: seriesTitle, // Add show_title for consistent access
         formatted_title: guessItData.formatted_title || `${seriesTitle} - S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')} - ${episodeTitle}`,
         series_imdb_id: movieGuess.imdbid, // Keep original series IMDB ID
         // For orphaned subtitles, we create episode-like data but keep series IMDB ID for features

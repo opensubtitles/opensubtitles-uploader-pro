@@ -338,7 +338,16 @@ export const MovieDisplay = ({
                       const seasonEpisode = `S${episodeAttrs.season_number?.toString().padStart(2, '0') || '??'}E${episodeAttrs.episode_number?.toString().padStart(2, '0') || '??'}`;
                       return `${parentTitle} - ${seasonEpisode} - ${originalTitle}`;
                     }
-                    // Otherwise use the bestMovieData title
+                    
+                    // If this is an episode with season/episode info from bestMovieData, format it properly
+                    if (bestMovieData.kind === 'episode' && bestMovieData.season && bestMovieData.episode) {
+                      const seasonEpisode = `S${bestMovieData.season.toString().padStart(2, '0')}E${bestMovieData.episode.toString().padStart(2, '0')}`;
+                      const showTitle = bestMovieData.show_title || bestMovieData.title;
+                      const episodeTitle = bestMovieData.episode_title || `Episode ${bestMovieData.episode}`;
+                      return `${showTitle} - ${seasonEpisode} - ${episodeTitle}`;
+                    }
+                    
+                    // Otherwise use the bestMovieData title as-is
                     const mainTitle = bestMovieData.title;
                     return mainTitle;
                   })()}
