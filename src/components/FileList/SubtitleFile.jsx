@@ -44,7 +44,8 @@ export const SubtitleFile = ({
       }}
       onClick={(e) => {
         // Prevent toggle when clicking on interactive elements
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'A' || e.target.closest('button, a, select, input')) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT' || e.target.tagName === 'A' || e.target.tagName === 'TEXTAREA' || 
+            e.target.closest('button, a, select, input, textarea, [role="button"], [data-interactive]')) {
           return;
         }
         onToggleUpload && onToggleUpload(subtitle.fullPath, !uploadEnabled);

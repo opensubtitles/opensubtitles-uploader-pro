@@ -10,7 +10,7 @@ import { useCheckSubHash } from "../hooks/useCheckSubHash.js";
 import { CacheService } from "../services/cache.js";
 import { MovieHashService } from "../services/movieHash.js";
 import { SubtitleUploadService } from "../services/subtitleUploadService.js";
-import { detectVideoFileInfo, formatFileSize } from "../utils/fileUtils.js";
+import { detectVideoFileInfo, formatFileSize, getBestMovieDetectionName } from "../utils/fileUtils.js";
 import { DropZone } from "./DropZone.jsx";
 import { FileList } from "./FileList/FileList.jsx";
 import { MatchedPairs } from "./MatchedPairs.jsx";
@@ -621,6 +621,43 @@ function SubtitleUploaderInner() {
       }
     });
   }, [movieGuesses, extractGuessItFromMovieData, getGuessItProcessingStatus, processGuessIt, files, addDebugInfo]);
+
+  // Process GuessIt data for orphaned subtitles
+  useEffect(() => {
+    orphanedSubtitles.forEach(async (subtitleFile) => {
+      const filePath = subtitleFile.fullPath;
+      const status = getGuessItProcessingStatus(filePath);
+      
+      // Skip if already processed or processing
+      if (status.isComplete || status.isProcessing) {
+        return;
+      }
+      
+      try {
+        // Get the best name for movie detection (use parent directory for generic names)
+        const detectionName = getBestMovieDetectionName(subtitleFile);
+        const originalName = subtitleFile.name.replace(/\.[^/.]+$/, ''); // Remove extension
+        
+        // Log what name we're using for detection
+        if (detectionName !== originalName) {
+          addDebugInfo(`GuessIt using parent directory "${detectionName}" for generic subtitle "${originalName}"`);
+        }
+        
+        // Create modified subtitle file with detection name (same as movie detection)
+        const modifiedSubtitleFile = {
+          ...subtitleFile,
+          name: detectionName + '.srt', // Add .srt extension for processing
+          detectionReason: detectionName !== originalName ? 'parent-directory' : 'filename'
+        };
+        
+        // Process GuessIt data for orphaned subtitle using the same name logic as movie detection
+        await processGuessIt(modifiedSubtitleFile, movieGuesses);
+        addDebugInfo(`✅ GuessIt processing completed for orphaned subtitle: ${subtitleFile.name} (using: ${detectionName})`);
+      } catch (error) {
+        addDebugInfo(`❌ GuessIt processing failed for orphaned subtitle ${subtitleFile.name}: ${error.message}`);
+      }
+    });
+  }, [orphanedSubtitles, getGuessItProcessingStatus, processGuessIt, movieGuesses, addDebugInfo]);
 
   // Handle subtitle preview
   const handleSubtitlePreview = async (subtitle) => {
