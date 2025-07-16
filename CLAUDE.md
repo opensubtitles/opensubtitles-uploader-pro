@@ -11,6 +11,23 @@ This is a React-based subtitle uploader application that integrates with the Ope
 - `npm run dev` - Start development server with Vite
 - `npm run build` - Build production version
 - `npm run preview` - Preview production build locally
+- `npm run update-version` - **IMPORTANT**: Update version references across codebase (run after changing version in package.json)
+
+## Version Management
+
+**CRITICAL**: When updating the version in `package.json`, you MUST run `npm run update-version` to sync version references across the codebase.
+
+The application displays version information in multiple places:
+- `src/utils/constants.js` - APP_VERSION constant (displayed on the page)
+- `README.md` - Version badge
+- `package.json` - Main version source
+
+**Process for version updates:**
+1. Update version in `package.json`
+2. Run `npm run update-version` to sync all version references
+3. Commit and push changes
+
+**Why this matters:** Without running the update script, the page will display the old version from `constants.js` while `package.json` has the new version, causing user confusion.
 
 ## Architecture
 
