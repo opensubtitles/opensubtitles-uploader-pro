@@ -81,34 +81,23 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
         <span className="text-2xl">🎬</span>
         <div className="flex-1">
           <div className="font-semibold" style={{color: colors?.text || '#000'}}>{video.name}</div>
-          <div className="text-sm flex items-center gap-4 mt-1" style={{color: colors?.textSecondary || '#454545'}}>
-            <span>📏 {formatFileSize(video.size)}</span>
-            
-            {/* Video File Type and Kind */}
-            {video.file_type && (
-              <span className="flex items-center gap-1">
-                <span>📄</span>
-                <span>{video.file_kind || video.file_type}</span>
-              </span>
-            )}
+          <div className="text-sm flex items-center gap-2 mt-1" style={{color: colors?.textSecondary || '#454545'}}>
+            <span title={`File Size: ${formatFileSize(video.size)}`}>📁{formatFileSize(video.size)}</span>
             
             {/* Only show movie hash for actual video files, not orphaned subtitles */}
             {!isOrphanedSubtitle && video.movieHash && video.movieHash !== 'error' && (
-              <span className="flex items-center gap-1">
-                <span>🔗</span>
-                <span className="font-mono text-xs">{video.movieHash}</span>
-              </span>
+              <span title={`Movie Hash: ${video.movieHash}`}>🔗{video.movieHash}</span>
             )}
             
             {!isOrphanedSubtitle && video.movieHash === 'error' && (
-              <span className="flex items-center gap-1" style={{color: colors?.textMuted || '#808080'}}>
+              <span title="Hash calculation failed" style={{color: colors?.textMuted || '#808080'}}>
                 <span>❌</span>
                 <span className="text-xs">Hash calculation failed</span>
               </span>
             )}
             
             {!isOrphanedSubtitle && !video.movieHash && (
-              <span className="flex items-center gap-1" style={{color: colors?.link || '#2878C0'}}>
+              <span title="Calculating hash..." style={{color: colors?.link || '#2878C0'}}>
                 <div className="w-3 h-3 border rounded-full animate-spin" style={{borderColor: colors?.link || '#2878C0', borderTopColor: 'transparent'}}></div>
                 <span className="text-xs">Calculating hash...</span>
               </span>

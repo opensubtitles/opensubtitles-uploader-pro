@@ -4,6 +4,17 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
+  
+  // Add worker configuration for FFmpeg WebAssembly
+  worker: {
+    format: 'es',
+    plugins: () => [react()]
+  },
+  
+  // Optimize dependencies for FFmpeg
+  optimizeDeps: {
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
+  },
   build: {
     sourcemap: false,
     rollupOptions: {
@@ -23,7 +34,8 @@ export default defineConfig({
             'src/services/subtitleHash.js',
             'src/services/fileProcessing.js',
             'src/services/guessItService.js',
-            'src/services/subtitleUploadService.js'
+            'src/services/subtitleUploadService.js',
+            'src/services/videoMetadataService.js'
           ],
           'hooks': [
             'src/hooks/useDebugMode.js',
@@ -33,7 +45,8 @@ export default defineConfig({
             'src/hooks/useMovieGuess.js',
             'src/hooks/useGuessIt.js',
             'src/hooks/useUserSession.js',
-            'src/hooks/useCheckSubHash.js'
+            'src/hooks/useCheckSubHash.js',
+            'src/hooks/useVideoMetadata.js'
           ],
           'components': [
             'src/components/FileList/FileList.jsx',
@@ -44,7 +57,8 @@ export default defineConfig({
             'src/components/OrphanedSubtitles.jsx',
             'src/components/DebugPanel.jsx',
             'src/components/SubtitlePreview.jsx',
-            'src/components/UploadButton.jsx'
+            'src/components/UploadButton.jsx',
+            'src/components/VideoMetadataDisplay.jsx'
           ],
           'utils': [
             'src/utils/fileUtils.js',
@@ -61,7 +75,11 @@ export default defineConfig({
   server: {
     sourcemapIgnoreList: () => true,
     host: true, // Allow external connections
-    allowedHosts: ['uploader.opensubtitles.org']
+    allowedHosts: ['uploader.opensubtitles.org'],
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin'
+    }
   },
   preview: {
     host: true, // Allow external connections

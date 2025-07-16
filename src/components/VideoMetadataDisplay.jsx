@@ -69,33 +69,21 @@ export const VideoMetadataDisplay = ({
   return (
     <div className="space-y-2">
       {/* Main metadata row - always shown */}
-      <div className="flex items-center gap-4 text-sm" style={{ color: colors.text }}>
+      <div className="flex items-center gap-2 text-sm" style={{ color: colors.text }}>
         {durationFormatted && durationFormatted !== 'unknown' && (
-          <div className="flex items-center gap-1">
-            <span>⏱️</span>
-            <span className="font-medium">{durationFormatted}</span>
-          </div>
+          <span title={`Duration: ${durationFormatted}`}>⏱️{durationFormatted}</span>
         )}
         
         {fps && (
-          <div className="flex items-center gap-1">
-            <span>📽️</span>
-            <span className="font-medium">{fps} FPS</span>
-          </div>
+          <span title={`Frame Rate: ${fps} FPS`}>📽️{fps} FPS</span>
         )}
         
         {resolution && resolution !== 'unknown' && (
-          <div className="flex items-center gap-1">
-            <span>📺</span>
-            <span className="font-medium">{resolution}</span>
-          </div>
+          <span title={`Resolution: ${resolution}`}>📺{resolution}</span>
         )}
         
         {filesize && (
-          <div className="flex items-center gap-1">
-            <span>📁</span>
-            <span className="font-medium">{formatFileSize(filesize)}</span>
-          </div>
+          <span title={`File Size: ${formatFileSize(filesize)}`}>📁{formatFileSize(filesize)}</span>
         )}
       </div>
 

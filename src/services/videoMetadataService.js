@@ -73,37 +73,70 @@ class VideoMetadataService {
       const chunkSize = 32 * 1024 * 1024; // 32MB
       const fileData = file.size <= chunkSize ? file : file.slice(0, chunkSize);
       
-      // Write file to FFmpeg virtual filesystem
-      await this.ffmpeg.writeFile('input.video', await fetchFile(fileData));
-
-      // Capture FFmpeg log output
-      let ffmpegLogs = [];
-      const logHandler = ({ message }) => {
-        ffmpegLogs.push(message);
-      };
-
-      this.ffmpeg.on('log', logHandler);
-
+      // Generate unique filename to avoid conflicts
+      const uniqueFilename = `input_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.video`;
+      
       try {
-        // Use -i to get metadata info (this will "fail" but produce metadata logs)
-        await this.ffmpeg.exec(['-i', 'input.video']);
-      } catch (error) {
-        // Expected "error" for metadata extraction
+        // Write file to FFmpeg virtual filesystem
+        await this.ffmpeg.writeFile(uniqueFilename, await fetchFile(fileData));
+
+        // Capture FFmpeg log output
+        let ffmpegLogs = [];
+        const logHandler = ({ message }) => {
+          ffmpegLogs.push(message);
+        };
+
+        this.ffmpeg.on('log', logHandler);
+
+        try {
+          // Use -i to get metadata info (this will "fail" but produce metadata logs)
+          await this.ffmpeg.exec(['-i', uniqueFilename]);
+        } catch (error) {
+          // Expected "error" for metadata extraction
+        }
+
+        this.ffmpeg.off('log', logHandler);
+
+        // Parse metadata from logs
+        const metadata = this._parseFFmpegLogs(ffmpegLogs.join('\n'), file);
+
+        return metadata;
+
+      } finally {
+        // Always clean up the file, even if there's an error
+        try {
+          await this.ffmpeg.deleteFile(uniqueFilename);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup FFmpeg file:', cleanupError);
+        }
       }
-
-      this.ffmpeg.off('log', logHandler);
-
-      // Parse metadata from logs
-      const metadata = this._parseFFmpegLogs(ffmpegLogs.join('\n'), file);
-
-      // Clean up
-      await this.ffmpeg.deleteFile('input.video');
-
-      return metadata;
 
     } catch (error) {
       console.error('Video metadata extraction failed:', error);
-      throw error;
+      
+      // Return basic metadata if FFmpeg fails
+      return {
+        filename: file.name,
+        filesize: file.size,
+        fps: 25.0, // Default FPS
+        duration: null,
+        durationFormatted: 'unknown',
+        width: 1920,
+        height: 1080,
+        resolution: 'unknown',
+        videoCodec: 'unknown',
+        bitrate: null,
+        audioCodec: 'unknown',
+        sampleRate: 48000,
+        moviebytesize: file.size,
+        movietimems: null,
+        moviefps: 25.0,
+        movieframes: null,
+        moviefilename: file.name,
+        extractedAt: new Date().toISOString(),
+        method: 'fallback',
+        error: error.message
+      };
     }
   }
 

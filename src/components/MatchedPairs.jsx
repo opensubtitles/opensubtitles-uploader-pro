@@ -266,50 +266,81 @@ export const MatchedPairs = ({
                 
                 {/* Video File */}
                 <div>
-                  <div className="font-medium" style={{color: themeColors.text}}>{pair.video.name}</div>
-                    <div className="text-sm" style={{color: themeColors.textSecondary}}>
-                      {(() => {
-                        const fullPath = pair.video.fullPath;
-                        const pathParts = fullPath.split('/');
-                        const directoryParts = pathParts.slice(0, -1);
-                        
-                        // Remove duplicate adjacent directories
-                        if (directoryParts.length >= 2 && 
-                            directoryParts[directoryParts.length - 1] === directoryParts[directoryParts.length - 2]) {
-                          directoryParts.pop();
-                        }
-                        
-                        const directoryPath = directoryParts.length > 0 ? '/' + directoryParts.join('/') : '';
-                        const hasDirectory = directoryPath.length > 0;
-                        
+                  <div className="font-medium" style={{color: themeColors.text}}>
+                    {(() => {
+                      const fullPath = pair.video.fullPath;
+                      const pathParts = fullPath.split('/');
+                      const directoryParts = pathParts.slice(0, -1);
+                      
+                      // Remove duplicate adjacent directories
+                      if (directoryParts.length >= 2 && 
+                          directoryParts[directoryParts.length - 1] === directoryParts[directoryParts.length - 2]) {
+                        directoryParts.pop();
+                      }
+                      
+                      const directoryPath = directoryParts.length > 0 ? '/' + directoryParts.join('/') : '';
+                      const hasDirectory = directoryPath.length > 0;
+                      
+                      return hasDirectory ? directoryPath : pair.video.name;
+                    })()}
+                  </div>
+                  <div className="text-sm flex items-center gap-2" style={{color: themeColors.textSecondary}}>
+                    <span title={`File Size: ${formatFileSize(pair.video.size)}`}>📁 {formatFileSize(pair.video.size)}</span>
+                    
+                    {pair.video.movieHash && pair.video.movieHash !== 'error' && (
+                      <span title={`Movie Hash: ${pair.video.movieHash}`}>🔗 {pair.video.movieHash}</span>
+                    )}
+                    
+                    {pair.video.movieHash === 'error' && (
+                      <span title="Hash calculation failed" style={{color: themeColors.textMuted}}>❌ Hash calculation failed</span>
+                    )}
+                    
+                    {!pair.video.movieHash && (
+                      <span title="Calculating hash..." style={{color: themeColors.link}}>🔗 Calculating hash...</span>
+                    )}
+                    
+                    {/* Video Metadata Inline */}
+                    {(() => {
+                      const metadata = getVideoMetadata ? getVideoMetadata(pair.video.fullPath) : null;
+                      const isLoading = isMetadataLoading ? isMetadataLoading(pair.video.fullPath) : false;
+                      const error = getMetadataError ? getMetadataError(pair.video.fullPath) : null;
+                      
+                      if (isLoading) {
+                        return <span title="Extracting video metadata...">📹 Extracting metadata...</span>;
+                      }
+                      
+                      if (error) {
+                        return <span title={`Metadata extraction failed: ${error}`}>⚠️ Metadata failed</span>;
+                      }
+                      
+                      if (metadata) {
                         return (
                           <>
-                            {hasDirectory && <span>{directoryPath} • </span>}
-                            <span>{formatFileSize(pair.video.size)}</span>
-                            {pair.video.movieHash && pair.video.movieHash !== 'error' && (
-                              <span> • MovieHash: <span className="font-mono">{pair.video.movieHash}</span></span>
+                            {metadata.durationFormatted && metadata.durationFormatted !== 'unknown' && (
+                              <span title={`Duration: ${metadata.durationFormatted}`}>⏱️ {metadata.durationFormatted}</span>
                             )}
-                            {pair.video.movieHash === 'error' && (
-                              <span style={{color: themeColors.textMuted}}> • Hash calculation failed</span>
+                            {metadata.fps && (
+                              <span title={`Frame Rate: ${metadata.fps} FPS`}>📽️ {metadata.fps} FPS</span>
                             )}
-                            {!pair.video.movieHash && (
-                              <span style={{color: themeColors.link}}> • Calculating hash...</span>
+                            {metadata.resolution && metadata.resolution !== 'unknown' && (
+                              <span title={`Resolution: ${metadata.resolution}`}>📺 {metadata.resolution}</span>
+                            )}
+                            {metadata.movieframes && (
+                              <span title={`Movie Frames: ${metadata.movieframes}`}>🎞️ {metadata.movieframes}</span>
+                            )}
+                            {metadata.videoCodec && metadata.videoCodec !== 'unknown' && (
+                              <span title={`Video Codec: ${metadata.videoCodec}`}>🎬 {metadata.videoCodec}</span>
+                            )}
+                            {metadata.bitrate && (
+                              <span title={`Bitrate: ${Math.round(metadata.bitrate / 1000)} kbps`}>📊 {Math.round(metadata.bitrate / 1000)} kbps</span>
                             )}
                           </>
                         );
-                      })()}
-                    </div>
-                    
-                    {/* Video Metadata Display */}
-                    <div className="mt-2">
-                      <VideoMetadataDisplay
-                        filePath={pair.video.fullPath}
-                        metadata={getVideoMetadata ? getVideoMetadata(pair.video.fullPath) : null}
-                        isLoading={isMetadataLoading ? isMetadataLoading(pair.video.fullPath) : false}
-                        error={getMetadataError ? getMetadataError(pair.video.fullPath) : null}
-                      />
-                    </div>
-                    
+                      }
+                      
+                      return null;
+                    })()}
+                  </div>
                 </div>
                 
                 {/* GuessIt Metadata Tags */}

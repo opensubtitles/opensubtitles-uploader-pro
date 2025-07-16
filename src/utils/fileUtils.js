@@ -3,7 +3,8 @@ import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VIDEO_MIME_TYPES, SUBTITLE_MIME_
 /**
  * Check if a file is a video file based on extension
  */
-export const isVideoFile = (fileName) => {
+export const isVideoFile = (fileOrName) => {
+  const fileName = typeof fileOrName === 'string' ? fileOrName : fileOrName.name;
   const lower = fileName.toLowerCase();
   return VIDEO_EXTENSIONS.some(ext => lower.endsWith(ext));
 };
@@ -82,7 +83,8 @@ export const isSubtitleContent = (content) => {
 /**
  * Check if a file is a subtitle file based on extension (excluding .txt)
  */
-export const isSubtitleFile = (fileName) => {
+export const isSubtitleFile = (fileOrName) => {
+  const fileName = typeof fileOrName === 'string' ? fileOrName : fileOrName.name;
   const lower = fileName.toLowerCase();
   
   // For .txt files, we cannot determine from filename alone
