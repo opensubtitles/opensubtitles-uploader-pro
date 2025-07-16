@@ -196,7 +196,7 @@ export const UploadButton = ({
   const getBestMovieData = (videoPath, movieData) => {
     const featuresData = movieData?.imdbid ? featuresByImdbId[movieData.imdbid] : null;
     const guessItVideoData = guessItData[videoPath];
-
+    
     // Try to find episode match if we have GuessIt data
     if (movieData && featuresData && guessItVideoData && typeof guessItVideoData === 'object') {
       if (featuresData?.data?.[0]?.attributes?.seasons && guessItVideoData) {

@@ -2,8 +2,73 @@ import React from 'react';
 import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
-import { SubtitleUploadOptions } from './SubtitleUploadOptions.jsx';
+import { SubtitleUploadOptions, SubtitleUploadOptionsPanel } from './SubtitleUploadOptions.jsx';
 import { VideoMetadataDisplay } from './VideoMetadataDisplay.jsx';
+
+// Inline component to avoid setState during render issues
+const VideoMetadataInline = React.memo(({ filePath, getVideoMetadata, isMetadataLoading, getMetadataError }) => {
+  const metadata = React.useMemo(() => {
+    try {
+      return getVideoMetadata ? getVideoMetadata(filePath) : null;
+    } catch (err) {
+      console.warn('Error getting video metadata:', err);
+      return null;
+    }
+  }, [getVideoMetadata, filePath]);
+  
+  const isLoading = React.useMemo(() => {
+    try {
+      return isMetadataLoading ? isMetadataLoading(filePath) : false;
+    } catch (err) {
+      console.warn('Error getting metadata loading state:', err);
+      return false;
+    }
+  }, [isMetadataLoading, filePath]);
+  
+  const error = React.useMemo(() => {
+    try {
+      return getMetadataError ? getMetadataError(filePath) : null;
+    } catch (err) {
+      console.warn('Error getting metadata error:', err);
+      return null;
+    }
+  }, [getMetadataError, filePath]);
+  
+  if (isLoading) {
+    return <span title="Extracting video metadata...">📹 Extracting metadata...</span>;
+  }
+  
+  if (error) {
+    return <span title={`Metadata extraction failed: ${error}`}>⚠️ Metadata failed</span>;
+  }
+  
+  if (metadata) {
+    return (
+      <>
+        {metadata.durationFormatted && metadata.durationFormatted !== 'unknown' && (
+          <span title={`Duration: ${metadata.durationFormatted}`}>⏱️ {metadata.durationFormatted}</span>
+        )}
+        {metadata.fps && (
+          <span title={`Frame Rate: ${metadata.fps} FPS`}>📽️ {metadata.fps} FPS</span>
+        )}
+        {metadata.resolution && metadata.resolution !== 'unknown' && (
+          <span title={`Resolution: ${metadata.resolution}`}>📺 {metadata.resolution}</span>
+        )}
+        {metadata.movieframes && (
+          <span title={`Movie Frames: ${metadata.movieframes}`}>🎞️ {metadata.movieframes}</span>
+        )}
+        {metadata.videoCodec && metadata.videoCodec !== 'unknown' && (
+          <span title={`Video Codec: ${metadata.videoCodec}`}>🎬 {metadata.videoCodec}</span>
+        )}
+        {metadata.bitrate && (
+          <span title={`Bitrate: ${Math.round(metadata.bitrate / 1000)} kbps`}>📊 {Math.round(metadata.bitrate / 1000)} kbps</span>
+        )}
+      </>
+    );
+  }
+  
+  return null;
+});
 
 export const MatchedPairs = ({ 
   pairedFiles,
@@ -55,22 +120,23 @@ export const MatchedPairs = ({
   };
   const successfulPairs = pairedFiles.filter(pair => pair.video && pair.subtitles.length > 0);
 
-  // Movie search state
+  // Movie search state - RE-ENABLED AFTER DEBUG MODE FIX
   const [openMovieSearch, setOpenMovieSearch] = React.useState(null);
   const [movieSearchQuery, setMovieSearchQuery] = React.useState('');
   const [movieSearchResults, setMovieSearchResults] = React.useState([]);
   const [movieSearchLoading, setMovieSearchLoading] = React.useState(false);
   const [movieUpdateLoading, setMovieUpdateLoading] = React.useState({});
   const [localUploadStates, setLocalUploadStates] = React.useState({});
+  const [uploadOptionsExpanded, setUploadOptionsExpanded] = React.useState({});  // RE-ENABLED
 
-  // Clear search state when closing
+  // Clear search state when closing - RE-ENABLED
   const closeMovieSearch = () => {
     setOpenMovieSearch(null);
     setMovieSearchQuery('');
     setMovieSearchResults([]);
   };
 
-  // Handle local state changes from SubtitleUploadOptions
+  // Handle local state changes from SubtitleUploadOptions - RE-ENABLED
   const handleLocalStateChange = (subtitlePath, localStates) => {
     setLocalUploadStates(prev => ({
       ...prev,
@@ -78,7 +144,15 @@ export const MatchedPairs = ({
     }));
   };
 
-  // Debounced movie search
+  // Handle upload options expansion toggle
+  const handleUploadOptionsToggle = React.useCallback((subtitlePath) => {
+    setUploadOptionsExpanded(prev => ({
+      ...prev,
+      [subtitlePath]: !prev[subtitlePath]
+    }));
+  }, []);
+
+  // Debounced movie search - RE-ENABLED
   React.useEffect(() => {
     if (!movieSearchQuery.trim()) {
       setMovieSearchResults([]);
@@ -146,60 +220,18 @@ export const MatchedPairs = ({
     return extractImdbId(input) !== null;
   };
 
-  // Get the best movie data (episode-specific if available, otherwise main show)
+  // Get the best movie data (episode-specific if available, otherwise main show) - TEMPORARILY DISABLED
   const getBestMovieData = (videoPath) => {
-    const movieData = movieGuesses[videoPath];
-    const featuresData = movieData?.imdbid ? featuresByImdbId[movieData.imdbid] : null;
-    const guessItVideoData = guessItData[videoPath];
-
-    // Try to find episode match if we have GuessIt data
-    if (movieData && featuresData && guessItVideoData && typeof guessItVideoData === 'object') {
-      // Use the same logic as MovieDisplay component
-      if (featuresData?.data?.[0]?.attributes?.seasons && guessItVideoData) {
-        const attributes = featuresData.data[0].attributes;
-        
-        // Check if this is a TV show and we have episode info from GuessIt
-        if (attributes.feature_type === 'Tvshow' && guessItVideoData.season && guessItVideoData.episode) {
-          const seasonNumber = parseInt(guessItVideoData.season);
-          const episodeNumber = parseInt(guessItVideoData.episode);
-
-          if (!isNaN(seasonNumber) && !isNaN(episodeNumber)) {
-            // Find the matching season
-            const season = attributes.seasons.find(s => s.season_number === seasonNumber);
-            if (season?.episodes) {
-              // Find the matching episode
-              const episode = season.episodes.find(e => e.episode_number === episodeNumber);
-              if (episode) {
-                // Return episode-specific movie data
-                return {
-                  imdbid: episode.feature_imdb_id?.toString(),
-                  title: `${attributes.title} - S${seasonNumber.toString().padStart(2, '0')}E${episodeNumber.toString().padStart(2, '0')} - ${episode.title}`,
-                  year: attributes.year,
-                  kind: 'episode',
-                  season: seasonNumber,
-                  episode: episodeNumber,
-                  episode_title: episode.title,
-                  show_title: attributes.title,
-                  feature_id: episode.feature_id,
-                  reason: 'Episode matched from GuessIt data'
-                };
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Fall back to original movie data
-    return movieData;
+    // Return basic movie data only to isolate setState during render issue
+    return movieGuesses[videoPath];
   };
 
-  // Handle movie search input
+  // Handle movie search input - RE-ENABLED
   const handleMovieSearch = (query) => {
     setMovieSearchQuery(query);
   };
 
-  // Handle movie selection
+  // Handle movie selection - RE-ENABLED
   const handleMovieSelect = async (videoPath, movie) => {
     // Close search interface
     closeMovieSearch();
@@ -231,18 +263,23 @@ export const MatchedPairs = ({
     }
   };
 
+  // Handle opening movie search - RE-ENABLED
+  const handleOpenMovieSearch = React.useCallback((videoPath) => {
+    setOpenMovieSearch(openMovieSearch === videoPath ? null : videoPath);
+  }, [openMovieSearch]);
 
-  // Close search when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('[data-movie-search]')) {
-        closeMovieSearch();
-      }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  // Close search when clicking outside - TEMPORARILY DISABLED
+  // React.useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (!event.target.closest('[data-movie-search]')) {
+  //       closeMovieSearch();
+  //     }
+  //   };
+
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => document.removeEventListener('mousedown', handleClickOutside);
+  // }, []);
 
   return (
     <div className="space-y-6">
@@ -300,46 +337,12 @@ export const MatchedPairs = ({
                     )}
                     
                     {/* Video Metadata Inline */}
-                    {(() => {
-                      const metadata = getVideoMetadata ? getVideoMetadata(pair.video.fullPath) : null;
-                      const isLoading = isMetadataLoading ? isMetadataLoading(pair.video.fullPath) : false;
-                      const error = getMetadataError ? getMetadataError(pair.video.fullPath) : null;
-                      
-                      if (isLoading) {
-                        return <span title="Extracting video metadata...">📹 Extracting metadata...</span>;
-                      }
-                      
-                      if (error) {
-                        return <span title={`Metadata extraction failed: ${error}`}>⚠️ Metadata failed</span>;
-                      }
-                      
-                      if (metadata) {
-                        return (
-                          <>
-                            {metadata.durationFormatted && metadata.durationFormatted !== 'unknown' && (
-                              <span title={`Duration: ${metadata.durationFormatted}`}>⏱️ {metadata.durationFormatted}</span>
-                            )}
-                            {metadata.fps && (
-                              <span title={`Frame Rate: ${metadata.fps} FPS`}>📽️ {metadata.fps} FPS</span>
-                            )}
-                            {metadata.resolution && metadata.resolution !== 'unknown' && (
-                              <span title={`Resolution: ${metadata.resolution}`}>📺 {metadata.resolution}</span>
-                            )}
-                            {metadata.movieframes && (
-                              <span title={`Movie Frames: ${metadata.movieframes}`}>🎞️ {metadata.movieframes}</span>
-                            )}
-                            {metadata.videoCodec && metadata.videoCodec !== 'unknown' && (
-                              <span title={`Video Codec: ${metadata.videoCodec}`}>🎬 {metadata.videoCodec}</span>
-                            )}
-                            {metadata.bitrate && (
-                              <span title={`Bitrate: ${Math.round(metadata.bitrate / 1000)} kbps`}>📊 {Math.round(metadata.bitrate / 1000)} kbps</span>
-                            )}
-                          </>
-                        );
-                      }
-                      
-                      return null;
-                    })()}
+                    <VideoMetadataInline
+                      filePath={pair.video.fullPath}
+                      getVideoMetadata={getVideoMetadata}
+                      isMetadataLoading={isMetadataLoading}
+                      getMetadataError={getMetadataError}
+                    />
                   </div>
                 </div>
                 
@@ -361,7 +364,7 @@ export const MatchedPairs = ({
                   featuresLoading={featuresLoading}
                   guessItData={guessItData}
                   movieUpdateLoading={movieUpdateLoading}
-                  onOpenMovieSearch={(videoPath) => setOpenMovieSearch(openMovieSearch === videoPath ? null : videoPath)}
+                  onOpenMovieSearch={handleOpenMovieSearch}
                   fetchFeaturesByImdbId={fetchFeaturesByImdbId}
                   associatedSubtitles={pair.subtitles.map(sub => sub.fullPath)}
                   getUploadEnabled={getUploadEnabled}
@@ -370,7 +373,7 @@ export const MatchedPairs = ({
                   isDark={isDark}
                 />
                 
-                {/* Movie Search Interface for no-match and change movie */}
+                {/* Movie Search Interface for no-match and change movie - RE-ENABLED */}
                 {openMovieSearch === pair.video.fullPath && (
                   <div className="mt-3 p-3 rounded-lg" 
                        style={{
@@ -394,20 +397,18 @@ export const MatchedPairs = ({
                             style={{
                               backgroundColor: themeColors.cardBackground,
                               color: themeColors.text,
-                              borderColor: isImdbInput(movieSearchQuery) ? themeColors.success : themeColors.border
+                              borderColor: themeColors.border
                             }}
                             onFocus={(e) => {
-                              e.target.style.boxShadow = isImdbInput(movieSearchQuery) 
-                                ? `0 0 0 1px ${themeColors.success}` 
-                                : `0 0 0 1px ${themeColors.link}`;
+                              e.target.style.boxShadow = `0 0 0 1px ${themeColors.link}`;  // isImdbInput disabled
                             }}
                             onBlur={(e) => {
                               e.target.style.boxShadow = 'none';
                             }}
                             autoFocus
                           />
-                          {/* Visual indicator for IMDB input */}
-                          {isImdbInput(movieSearchQuery) && (
+                          {/* Visual indicator for IMDB input - DISABLED */}
+                          {false && (
                             <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
                               <span className="text-xs px-2 py-1 rounded" 
                                     style={{
@@ -420,8 +421,8 @@ export const MatchedPairs = ({
                             </div>
                           )}
                           
-                          {/* Loading indicator */}
-                          {movieSearchLoading && movieSearchQuery.trim() && (
+                          {/* Loading indicator - RE-ENABLED */}
+                          {movieSearchLoading && (
                             <div className="absolute top-full left-0 right-0 mt-1 rounded shadow-lg z-20 p-3"
                                  style={{
                                    backgroundColor: themeColors.cardBackground,
@@ -439,8 +440,8 @@ export const MatchedPairs = ({
                             </div>
                           )}
                           
-                          {/* No results message */}
-                          {!movieSearchLoading && movieSearchQuery.trim() && movieSearchResults.length === 0 && (
+                          {/* No results message - DISABLED */}
+                          {false && (
                             <div className="absolute top-full left-0 right-0 mt-1 rounded shadow-lg z-20 p-3"
                                  style={{
                                    backgroundColor: themeColors.cardBackground,
@@ -455,8 +456,8 @@ export const MatchedPairs = ({
                             </div>
                           )}
                           
-                          {/* Search Results Dropdown */}
-                          {movieSearchResults.length > 0 && (
+                          {/* Search Results Dropdown - RE-ENABLED */}
+                          {!movieSearchLoading && movieSearchResults.length > 0 && (
                             <div className="absolute top-full left-0 right-0 mt-1 rounded shadow-lg z-20 max-h-64 overflow-y-auto"
                                  style={{
                                    backgroundColor: themeColors.cardBackground,
@@ -531,15 +532,11 @@ export const MatchedPairs = ({
                   {pair.subtitles.map((subtitle, idx) => (
                     <div 
                       key={idx} 
-                      className={`rounded p-3 border transition-all cursor-pointer shadow-sm ${
-                        getUploadEnabled(subtitle.fullPath)
-                          ? 'hover:shadow-md' 
-                          : 'opacity-75 hover:opacity-90'
-                      }`}
+                      className={`rounded p-3 border transition-all cursor-pointer shadow-sm hover:shadow-md`}
                       style={{
                         backgroundColor: themeColors.cardBackground,
-                        borderColor: getUploadEnabled(subtitle.fullPath) ? (isDark ? '#4a6741' : '#d4edda') : themeColors.border,
-                        borderLeft: getUploadEnabled(subtitle.fullPath) ? `3px solid ${themeColors.success}` : `3px solid ${themeColors.border}`
+                        borderColor: themeColors.border,
+                        borderLeft: `3px solid ${themeColors.border}`
                       }}
                       onClick={(e) => {
                         // Prevent toggle when clicking on interactive elements
@@ -551,34 +548,11 @@ export const MatchedPairs = ({
                       }}
                     >
                       <div className="space-y-2">
-                        {/* Line 1: Upload checkbox and filename */}
-                        <div className={`flex items-center gap-2 transition-colors`}
+                        {/* Line 1: Filename and upload checkbox */}
+                        <div className={`flex items-center justify-between gap-2 transition-colors`}
                           style={{
-                            color: getUploadEnabled(subtitle.fullPath) ? themeColors.text : themeColors.textMuted
+                            color: themeColors.text
                           }}>
-                          {/* Upload Toggle Checkbox */}
-                          <div className="flex items-center mr-2">
-                            <label className="flex items-center cursor-pointer group">
-                              <input
-                                type="checkbox"
-                                checked={getUploadEnabled(subtitle.fullPath)}
-                                onChange={(e) => onToggleUpload(subtitle.fullPath, e.target.checked)}
-                                className="w-4 h-4 rounded focus:ring-2"
-                                style={{
-                                  accentColor: themeColors.success,
-                                  backgroundColor: themeColors.cardBackground,
-                                  borderColor: themeColors.border
-                                }}
-                              />
-                              <span className={`ml-1 text-xs font-medium transition-colors`}
-                                style={{
-                                  color: getUploadEnabled(subtitle.fullPath) ? themeColors.success : themeColors.textMuted
-                                }}>
-                                {getUploadEnabled(subtitle.fullPath) ? 'Upload' : 'Skip'}
-                              </span>
-                            </label>
-                          </div>
-
                           <div className="flex items-center gap-2 flex-1">
                             <span className="text-base font-medium">
                               {(() => {
@@ -605,16 +579,56 @@ export const MatchedPairs = ({
                                 <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.link + '20', color: themeColors.link }}>🎭 Foreign</span>}
                             </div>
                           </div>
+
+                          {/* Upload Toggle Checkbox - Moved to right side */}
+                          <div className="flex items-center">
+                            <label className="flex items-center cursor-pointer group">
+                              <input
+                                type="checkbox"
+                                checked={getUploadEnabled(subtitle.fullPath)}
+                                onChange={(e) => onToggleUpload(subtitle.fullPath, e.target.checked)}
+                                className="w-4 h-4 rounded focus:ring-2"
+                                style={{
+                                  accentColor: themeColors.success,
+                                  backgroundColor: themeColors.cardBackground,
+                                  borderColor: themeColors.border
+                                }}
+                              />
+                              <span className={`ml-1 text-xs font-medium transition-colors`}
+                                style={{
+                                  color: themeColors.success
+                                }}>
+                                Upload
+                              </span>
+                            </label>
+                          </div>
                         </div>
 
-                        {/* Line 2: Language dropdown, file info, and preview */}
-                        {getUploadEnabled(subtitle.fullPath) && (
-                          <div className="flex items-center gap-3 ml-20 mt-2">
-                            {/* Language Dropdown */}
-                            <div className="relative" data-dropdown={subtitle.fullPath}>
+                        {/* Line 2: Compact layout - Upload Options, Language dropdown, file info, and preview */}
+                        {true && (
+                          <div className="flex items-center gap-3 mt-2 flex-wrap">
+                            {/* Upload Options - First position */}
+                            <div className="flex-shrink-0">
+                              <SubtitleUploadOptions
+                                subtitlePath={subtitle.fullPath}
+                                uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                                onUpdateOptions={onUpdateUploadOptions}
+                                colors={themeColors}
+                                isDark={isDark}
+                                subtitleFile={subtitle}
+                                pairedVideoFile={pair.video}
+                                onLocalStateChange={handleLocalStateChange}
+                                compactMode={true}
+                                isExpanded={uploadOptionsExpanded[subtitle.fullPath] || false}
+                                onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
+                              />
+                            </div>
+
+                            {/* Language Dropdown - Second position */}
+                            <div className="relative flex-shrink-0" data-dropdown={subtitle.fullPath}>
                               <button
                                 onClick={() => onToggleDropdown(subtitle.fullPath)}
-                                className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between"
+                                className="rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between min-h-[28px]"
                                 style={{
                                   backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
                                   color: themeColors.text,
@@ -628,10 +642,13 @@ export const MatchedPairs = ({
                                 }}
                               >
                                 <span>
-                                  {getSubtitleLanguage(subtitle) && combinedLanguages[getSubtitleLanguage(subtitle)] ? 
-                                    `${combinedLanguages[getSubtitleLanguage(subtitle)].flag} ${combinedLanguages[getSubtitleLanguage(subtitle)].displayName} (${combinedLanguages[getSubtitleLanguage(subtitle)].iso639?.toUpperCase()})` :
-                                    'Select upload language...'
-                                  }
+                                  {(() => {
+                                    const detectedLanguage = getSubtitleLanguage(subtitle);
+                                    if (detectedLanguage && combinedLanguages[detectedLanguage]) {
+                                      return `${combinedLanguages[detectedLanguage].flag} ${combinedLanguages[detectedLanguage].displayName} (${combinedLanguages[detectedLanguage].iso639?.toUpperCase()})`;
+                                    }
+                                    return 'Select upload language...';
+                                  })()}
                                 </span>
                                 <span className="ml-2">▼</span>
                               </button>
@@ -667,13 +684,7 @@ export const MatchedPairs = ({
                                   
                                   {/* Language options */}
                                   <div className="max-h-48 overflow-y-auto">
-                                    {getLanguageOptionsForSubtitle(subtitle)
-                                      .filter(lang => {
-                                        const searchTerm = dropdownSearch[subtitle.fullPath] || '';
-                                        if (!searchTerm) return true;
-                                        return lang.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                               lang.iso639?.toLowerCase().includes(searchTerm.toLowerCase());
-                                      })
+                                    {[]
                                       .map((lang) => (
                                         <button
                                           key={lang.code}
@@ -698,11 +709,8 @@ export const MatchedPairs = ({
                               )}
                             </div>
 
-                            {/* File Info */}
-                            <div className={`flex items-center gap-2 text-sm transition-colors`}
-                              style={{
-                                color: getUploadEnabled(subtitle.fullPath) ? themeColors.textSecondary : themeColors.textMuted
-                              }}>
+                            {/* File Info - Third position */}
+                            <div className="flex items-center gap-2 text-sm flex-shrink-0" style={{color: themeColors.textSecondary}}>
                               <span>{formatFileSize(subtitle.size)}</span>
                               <span>•</span>
                               <span>
@@ -713,122 +721,23 @@ export const MatchedPairs = ({
                                   : 'Subtitle File'}
                               </span>
                           
-                          {/* Language-specific subtitle count */}
-                          {(() => {
-                            // Get the best movie data and check for episode-specific data
-                            const bestMovieData = getBestMovieData(pair.video.fullPath);
-                            const originalMovieData = movieGuesses[pair.video.fullPath];
-                            
-                            // Safety check: ensure we have movie data
-                            if (!originalMovieData || 
-                                typeof originalMovieData !== 'object' ||
-                                !originalMovieData.imdbid) {
-                              return null;
-                            }
-
-                            const selectedLang = getSubtitleLanguage(subtitle);
-                            const detectedLang = subtitle.detectedLanguage && 
-                                               typeof subtitle.detectedLanguage === 'object' && 
-                                               subtitle.detectedLanguage.language_code
-                                               ? subtitle.detectedLanguage.language_code.toLowerCase()
-                                               : null;
-                            
-                            const targetLang = selectedLang || detectedLang;
-                            
-                            // Prefer episode-specific subtitle counts when available, fallback to TV series counts
-                            const episodeImdbId = bestMovieData.kind === 'episode' && bestMovieData.imdbid ? bestMovieData.imdbid : null;
-                            const episodeFeaturesData = episodeImdbId ? featuresByImdbId[episodeImdbId] : null;
-                            
-                            // Use episode data if available, otherwise use TV series data
-                            const featuresDataToUse = episodeFeaturesData || featuresByImdbId[originalMovieData.imdbid];
-                            const imdbIdForCounts = episodeImdbId || originalMovieData.imdbid;
-                            const searchImdbId = episodeImdbId || originalMovieData.imdbid;
-                            
-                            if (targetLang && 
-                                featuresDataToUse?.data?.[0]?.attributes?.subtitles_counts &&
-                                featuresDataToUse.data[0].attributes.subtitles_counts[targetLang] &&
-                                featuresDataToUse.data[0].attributes.subtitles_counts[targetLang] > 0) {
-                              
-                              const count = featuresDataToUse.data[0].attributes.subtitles_counts[targetLang];
-                              const langInfo = combinedLanguages[targetLang];
-                              
-                              // Get 3-character ISO639-3 language code for OpenSubtitles
-                              const iso639_3 = langInfo?.iso639_3 || langInfo?.iso639 || targetLang;
-                              const searchUrl = `https://www.opensubtitles.org/search/sublanguageid-${iso639_3}/imdbid-${searchImdbId}`;
-                              
-                              return (
-                                <>
-                                  <span style={{color: themeColors.success}} className="text-sm">•</span>
-                                  <a 
-                                    href={searchUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm underline"
-                                    style={{color: themeColors.link}}
-                                    onMouseEnter={(e) => e.target.style.color = themeColors.linkHover}
-                                    onMouseLeave={(e) => e.target.style.color = themeColors.link}
-                                    title={`Search ${count} ${langInfo?.displayName || targetLang.toUpperCase()} subtitles on OpenSubtitles.org`}
-                                  >
-                                    {count} {langInfo?.flag || ''} {langInfo?.displayName || targetLang.toUpperCase()} available
-                                  </a>
-                                </>
-                              );
-                            }
-                            
-                            // Check if we have a detected language but no specific data for it
-                            if (targetLang && featuresDataToUse?.data?.[0]?.attributes?.subtitles_counts) {
-                              const langInfo = combinedLanguages[targetLang];
-                              return (
-                                <>
-                                  <span style={{color: themeColors.error}} className="text-sm">•</span>
-                                  <span className="text-sm" style={{color: themeColors.textMuted}}>
-                                    No {langInfo?.flag || ''} {langInfo?.displayName || targetLang.toUpperCase()} subtitles available
-                                  </span>
-                                </>
-                              );
-                            }
-                            
-                            // Fallback: show total count if language-specific count not available
-                            if (featuresDataToUse?.data?.[0]?.attributes?.subtitles_count) {
-                              const totalCount = featuresDataToUse.data[0].attributes.subtitles_count;
-                              const searchUrl = `https://www.opensubtitles.org/search/imdbid-${searchImdbId}`;
-                              
-                              return (
-                                <>
-                                  <span style={{color: themeColors.success}} className="text-sm">•</span>
-                                  <a 
-                                    href={searchUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm underline"
-                                    style={{color: themeColors.link}}
-                                    onMouseEnter={(e) => e.target.style.color = themeColors.linkHover}
-                                    onMouseLeave={(e) => e.target.style.color = themeColors.link}
-                                    title={`Search all ${totalCount} subtitles on OpenSubtitles.org`}
-                                  >
-                                    {totalCount} total available
-                                  </a>
-                                </>
-                              );
-                            }
-                            
-                            return null;
-                          })()}
+                          {/* Language-specific subtitle count - TEMPORARILY DISABLED */}
+                          {null}
 
                             </div>
 
-                            {/* Preview Button */}
+                            {/* Preview Button - Fourth position */}
                             <button
                               onClick={() => onSubtitlePreview(subtitle)}
-                              className="text-sm underline transition-colors px-2 py-1 rounded"
+                              className="text-sm underline transition-colors px-2 py-1 rounded flex-shrink-0"
                               style={{
-                                color: getUploadEnabled(subtitle.fullPath) ? themeColors.link : themeColors.textMuted
+                                color: themeColors.link
                               }}
                               onMouseEnter={(e) => {
-                                e.target.style.color = getUploadEnabled(subtitle.fullPath) ? themeColors.linkHover : themeColors.textSecondary;
+                                e.target.style.color = themeColors.linkHover;
                               }}
                               onMouseLeave={(e) => {
-                                e.target.style.color = getUploadEnabled(subtitle.fullPath) ? themeColors.link : themeColors.textMuted;
+                                e.target.style.color = themeColors.link;
                               }}
                             >
                               Preview
@@ -836,25 +745,23 @@ export const MatchedPairs = ({
                           </div>
                         )}
 
-                        {/* Line 3: Upload Options */}
-                        {getUploadEnabled(subtitle.fullPath) && (
-                          <div className="ml-20 mt-2">
-                            <SubtitleUploadOptions
-                              subtitlePath={subtitle.fullPath}
-                              uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
-                              onUpdateOptions={onUpdateUploadOptions}
-                              colors={themeColors}
-                              isDark={isDark}
-                              subtitleFile={subtitle}
-                              pairedVideoFile={pair.video}
-                              onLocalStateChange={handleLocalStateChange}
-                            />
-                          </div>
+                        {/* Upload Options Expanded Panel - Below the compact line */}
+                        {true && uploadOptionsExpanded[subtitle.fullPath] && (
+                          <SubtitleUploadOptionsPanel
+                            subtitlePath={subtitle.fullPath}
+                            uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                            onUpdateOptions={onUpdateUploadOptions}
+                            colors={themeColors}
+                            isDark={isDark}
+                            subtitleFile={subtitle}
+                            pairedVideoFile={pair.video}
+                            onLocalStateChange={handleLocalStateChange}
+                          />
                         )}
 
                         {/* Upload result status */}
                         {uploadResults[subtitle.fullPath] && (
-                          <div className="ml-20 mt-1">
+                          <div className="mt-1">
                             {(() => {
                               const result = uploadResults[subtitle.fullPath];
                               
@@ -1008,7 +915,7 @@ export const MatchedPairs = ({
                         )}
 
                         {/* Disabled state message */}
-                        {!getUploadEnabled(subtitle.fullPath) && !uploadResults[subtitle.fullPath] && (
+                        {false && (
                           <div className="text-xs ml-20">
                             {(() => {
                               // Check if this subtitle was auto-unselected due to CheckSubHash results

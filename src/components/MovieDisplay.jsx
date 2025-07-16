@@ -256,22 +256,24 @@ export const MovieDisplay = ({
         id={`movie-${videoPath.replace(/[^a-zA-Z0-9]/g, '-')}`}
       >
         <div className="flex gap-4">
-          {/* Movie Poster */}
-          {finalMovieData.imdbid && (
-            <div className="flex-shrink-0">
-              <div className="relative w-16 h-24 rounded border border-gray-300 bg-gray-100 overflow-hidden">
-                {/* Loading placeholder - always show initially */}
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse">
-                  <div className="text-gray-500 text-xs text-center">
-                    <div className="w-8 h-8 mx-auto mb-1 bg-gray-300 rounded flex items-center justify-center">
-                      🎬
-                    </div>
-                    Loading...
+          {/* Movie Poster - Always show with fixed size to prevent layout shift */}
+          <div className="flex-shrink-0">
+            <div className="relative w-16 h-24 rounded border border-gray-300 bg-gray-100 overflow-hidden">
+              {/* Loading placeholder - always show initially */}
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse">
+                <div className="text-gray-500 text-xs text-center">
+                  <div className="w-8 h-8 mx-auto mb-1 bg-gray-300 rounded flex items-center justify-center">
+                    🎬
                   </div>
+                  Loading...
                 </div>
+              </div>
                 
                 {/* Actual image - prefer episode poster, fallback to series poster */}
                 {(() => {
+                  // Only show image if we have a valid IMDB ID and image URL
+                  if (!finalMovieData.imdbid) return null;
+                  
                   // Use episode poster if available, otherwise use series poster
                   const posterData = episodeFeaturesData?.data?.[0]?.attributes?.img_url ? episodeFeaturesData : featuresData;
                   const imgUrl = posterData?.data?.[0]?.attributes?.img_url;
@@ -310,7 +312,6 @@ export const MovieDisplay = ({
                 })()}
               </div>
             </div>
-          )}
           
           {/* Movie Information */}
           <div className="flex-1 min-w-0">
@@ -524,7 +525,7 @@ export const MovieDisplay = ({
                 </div>
                 <div className="text-xs mt-1" style={{color: themeColors.warning}}>
                   {mainFeaturesHasError && `Main features: ${featuresByImdbId[originalMovieData.imdbid]?.error}`}
-                  {episodeFeaturesHasError && `Episode features: ${featuresByImdbId[bestMovieData.imdbid]?.error}`}
+                  {episodeFeaturesHasError && `Episode features: ${featuresByImdbId[finalMovieData.imdbid]?.error}`}
                 </div>
               </div>
             )}
@@ -550,13 +551,13 @@ export const MovieDisplay = ({
             {featuresData?.data?.[0]?.attributes ? (
               <div className="space-y-1 text-xs">
                 {/* Show Episode IMDb first (for upload) if available, otherwise TV IMDb */}
-                {bestMovieData.kind === 'episode' && bestMovieData.imdbid ? (
+                {finalMovieData.kind === 'episode' && finalMovieData.imdbid ? (
                   <>
-                    {/* Episode IMDb - Primary for upload */}
+                    {/* Episode IMDb and TV Series IMDb on same line */}
                     <div>
                       <span className="font-semibold" style={{color: themeColors.success}}>🎯 Upload IMDb:</span>{" "}
                       <a 
-                        href={`https://www.imdb.com/title/tt${bestMovieData.imdbid}/`}
+                        href={`https://www.imdb.com/title/tt${finalMovieData.imdbid}/`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline font-mono font-bold"
@@ -564,13 +565,12 @@ export const MovieDisplay = ({
                       onMouseEnter={(e) => e.target.style.color = themeColors.success}
                       onMouseLeave={(e) => e.target.style.color = themeColors.success}
                       >
-                        {bestMovieData.imdbid}
+                        {finalMovieData.imdbid}
                       </a>
                       <span className="text-xs ml-2" style={{color: themeColors.success}}>(Episode)</span>
-                    </div>
-                    
-                    {/* TV Series IMDb - Reference */}
-                    <div>
+                      
+                      <span style={{color: themeColors.textMuted}}> • </span>
+                      
                       <span style={{color: themeColors.link}}>TV Series:</span>{" "}
                       <a 
                         href={`https://www.imdb.com/title/tt${originalMovieData.imdbid}/`}
@@ -623,27 +623,34 @@ export const MovieDisplay = ({
             ) : (
               /* Fallback to XML-RPC data only */
               <div className="grid grid-cols-1 gap-2 text-xs">
-                {bestMovieData.season && bestMovieData.season > 0 && (
+                {(bestMovieData.season && bestMovieData.season > 0) || (bestMovieData.episode && bestMovieData.episode > 0) ? (
                   <div>
-                    <span style={{color: themeColors.link}}>Season:</span>{" "}
-                    <span style={{color: themeColors.text}}>{bestMovieData.season}</span>
+                    {bestMovieData.season && bestMovieData.season > 0 && (
+                      <>
+                        <span style={{color: themeColors.link}}>Season:</span>{" "}
+                        <span style={{color: themeColors.text}}>{bestMovieData.season}</span>
+                      </>
+                    )}
+                    {bestMovieData.season && bestMovieData.episode && bestMovieData.season > 0 && bestMovieData.episode > 0 && (
+                      <span style={{color: themeColors.textMuted}}> • </span>
+                    )}
+                    {bestMovieData.episode && bestMovieData.episode > 0 && (
+                      <>
+                        <span style={{color: themeColors.link}}>Episode:</span>{" "}
+                        <span style={{color: themeColors.text}}>{bestMovieData.episode}</span>
+                      </>
+                    )}
                   </div>
-                )}
-                {bestMovieData.episode && bestMovieData.episode > 0 && (
-                  <div>
-                    <span style={{color: themeColors.link}}>Episode:</span>{" "}
-                    <span style={{color: themeColors.text}}>{bestMovieData.episode}</span>
-                  </div>
-                )}
+                ) : null}
                 
                 {/* Show Episode IMDb first (for upload) if available, otherwise TV IMDb */}
-                {bestMovieData.kind === 'episode' && bestMovieData.imdbid ? (
+                {finalMovieData.kind === 'episode' && finalMovieData.imdbid ? (
                   <>
-                    {/* Episode IMDb - Primary for upload */}
+                    {/* Episode IMDb and TV Series IMDb on same line */}
                     <div>
                       <span className="font-semibold" style={{color: themeColors.success}}>🎯 Upload IMDb:</span>{" "}
                       <a 
-                        href={`https://www.imdb.com/title/tt${bestMovieData.imdbid}/`}
+                        href={`https://www.imdb.com/title/tt${finalMovieData.imdbid}/`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline font-mono font-bold"
@@ -651,13 +658,12 @@ export const MovieDisplay = ({
                       onMouseEnter={(e) => e.target.style.color = themeColors.success}
                       onMouseLeave={(e) => e.target.style.color = themeColors.success}
                       >
-                        {bestMovieData.imdbid}
+                        {finalMovieData.imdbid}
                       </a>
                       <span className="text-xs ml-2" style={{color: themeColors.success}}>(Episode)</span>
-                    </div>
-                    
-                    {/* TV Series IMDb - Reference */}
-                    <div>
+                      
+                      <span style={{color: themeColors.textMuted}}> • </span>
+                      
                       <span style={{color: themeColors.link}}>TV Series:</span>{" "}
                       <a 
                         href={`https://www.imdb.com/title/tt${originalMovieData.imdbid}/`}

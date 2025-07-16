@@ -42,7 +42,7 @@ function SubtitleUploaderInner() {
   const [uploadOptions, setUploadOptions] = useState({}); // New state for upload options (release name, comments, etc.)
   const [uploadProgress, setUploadProgress] = useState({ isUploading: false, processed: 0, total: 0 }); // Upload progress tracking
 
-  // Custom hooks
+  // Custom hooks - DEBUG MODE RE-ENABLED AFTER FIX
   const { 
     debugMode, 
     debugInfo, 
@@ -50,6 +50,13 @@ function SubtitleUploaderInner() {
     clearDebugInfo, 
     toggleDebugMode 
   } = useDebugMode();
+  
+  // Mock debug functions to prevent errors (commented out)
+  // const debugMode = false;
+  // const debugInfo = [];
+  // const addDebugInfo = () => {};
+  // const clearDebugInfo = () => {};
+  // const toggleDebugMode = () => {};
 
   const {
     files,
@@ -83,6 +90,7 @@ function SubtitleUploaderInner() {
     clearAllLanguageState
   } = useLanguageDetection(addDebugInfo, updateFile);
 
+  // RE-ENABLED: GuessIt hook (debug mode was the actual cause)
   const {
     guessItData,
     processGuessIt,
@@ -93,6 +101,16 @@ function SubtitleUploaderInner() {
     extractGuessItFromMovieData,
     setGuessItDataForFile
   } = useGuessIt(addDebugInfo);
+  
+  // Mock GuessIt functions to prevent errors (commented out)
+  // const guessItData = {};
+  // const processGuessIt = () => {};
+  // const clearGuessItProcessingState = () => {};
+  // const clearAllGuessItState = () => {};
+  // const getGuessItProcessingStatus = () => 'none';
+  // const getFormattedTags = () => [];
+  // const extractGuessItFromMovieData = () => {};
+  // const setGuessItDataForFile = () => {};
 
   const { 
     movieGuesses, 
@@ -115,6 +133,7 @@ function SubtitleUploaderInner() {
     getUserRank
   } = useUserSession(addDebugInfo);
 
+  // RE-ENABLED: CheckSubHash hook (debug mode was the actual cause)
   const {
     hashCheckResults,
     hashCheckLoading,
@@ -125,7 +144,18 @@ function SubtitleUploaderInner() {
     getHashCheckSummary,
     clearHashCheckResults
   } = useCheckSubHash(addDebugInfo);
+  
+  // Mock CheckSubHash functions to prevent errors (commented out)
+  // const hashCheckResults = {};
+  // const hashCheckLoading = {};
+  // const hashCheckProcessed = {};
+  // const processSubtitleHashes = () => {};
+  // const getHashCheckResult = () => null;
+  // const fileExistsInDatabase = () => false;
+  // const getHashCheckSummary = () => ({});
+  // const clearHashCheckResults = () => {};
 
+  // RE-ENABLED: VideoMetadata hook (debug mode was the actual cause)
   const {
     videoMetadata,
     isFFmpegLoaded,
@@ -142,6 +172,22 @@ function SubtitleUploaderInner() {
     errorCount: metadataErrorCount,
     processedCount: metadataProcessedCount
   } = useVideoMetadata();
+  
+  // Mock VideoMetadata functions to prevent errors (commented out)
+  // const videoMetadata = {};
+  // const isFFmpegLoaded = false;
+  // const extractVideoMetadata = () => {};
+  // const processVideoFiles = () => {};
+  // const clearVideoMetadata = () => {};
+  // const clearAllVideoMetadata = () => {};
+  // const getVideoMetadata = () => null;
+  // const isMetadataLoading = () => false;
+  // const getMetadataError = () => null;
+  // const getUploadParameters = () => ({});
+  // const hasAnyMetadata = () => false;
+  // const metadataLoadingCount = 0;
+  // const metadataErrorCount = 0;
+  // const metadataProcessedCount = 0;
 
   // Track processed files to prevent reprocessing
   const processedFiles = useRef(new Set());
@@ -199,12 +245,14 @@ function SubtitleUploaderInner() {
   const handleUpload = useCallback(async (validationResult) => {
     addDebugInfo(`🚀 Starting upload of ${validationResult.readySubtitlesCount} subtitles`);
     
-    // Set initial upload progress
-    setUploadProgress({ 
-      isUploading: true, 
-      processed: 0, 
-      total: validationResult.readySubtitlesCount 
-    });
+    // Set initial upload progress - defer to avoid setState during render
+    setTimeout(() => {
+      setUploadProgress({ 
+        isUploading: true, 
+        processed: 0, 
+        total: validationResult.readySubtitlesCount 
+      });
+    }, 0);
     
     try {
       const uploadResults = await SubtitleUploadService.processUpload({
@@ -219,7 +267,9 @@ function SubtitleUploaderInner() {
         combinedLanguages,
         addDebugInfo,
         onProgress: (processed, total) => {
-          setUploadProgress({ isUploading: true, processed, total });
+          setTimeout(() => {
+            setUploadProgress({ isUploading: true, processed, total });
+          }, 0);
         },
         getVideoMetadata
       });
@@ -240,8 +290,11 @@ function SubtitleUploaderInner() {
         }
       });
       
-      setUploadResults(newUploadResults);
-      setSubcontentData(newSubcontentData);
+      // Defer state updates to avoid setState during render warnings
+      setTimeout(() => {
+        setUploadResults(newUploadResults);
+        setSubcontentData(newSubcontentData);
+      }, 0);
 
       // Log results to debug panel
       addDebugInfo('📊 UPLOAD RESULTS SUMMARY:');
@@ -264,11 +317,11 @@ function SubtitleUploaderInner() {
               } else if (response.alreadyindb === 1 || response.alreadyindb === '1') {
                 // When alreadyindb=1, subtitle already exists in database (duplicate)
                 const subtitleUrl = response.data;
-                if (subtitleUrl && subtitleUrl.startsWith('http')) {
-                  addDebugInfo(`   - ${subtitleResult.subtitle}: ⚠️ Already in database (duplicate)`);
+                if (subtitleUrl && typeof subtitleUrl === 'string' && subtitleUrl.startsWith('http')) {
+                  addDebugInfo(`   - ${subtitleResult.subtitle}: ⚠️ Duplicate found`);
                   addDebugInfo(`     🔗 View existing at: ${subtitleUrl}`);
                 } else {
-                  addDebugInfo(`   - ${subtitleResult.subtitle}: ⚠️ Already in database (ID: ${subtitleUrl})`);
+                  addDebugInfo(`   - ${subtitleResult.subtitle}: ⚠️ Duplicate found (ID: ${subtitleUrl})`);
                 }
               } else if (response.alreadyindb === 0 || response.alreadyindb === '0') {
                 // When alreadyindb=0, subtitle not uploaded yet, but found existing match
@@ -306,8 +359,10 @@ function SubtitleUploaderInner() {
       addDebugInfo(`💥 Upload process failed: ${error.message}`);
       console.error('Upload error:', error);
     } finally {
-      // Reset upload progress
-      setUploadProgress({ isUploading: false, processed: 0, total: 0 });
+      // Reset upload progress - defer to avoid setState during render
+      setTimeout(() => {
+        setUploadProgress({ isUploading: false, processed: 0, total: 0 });
+      }, 0);
     }
   }, [addDebugInfo, pairedFiles, orphanedSubtitles, movieGuesses, featuresByImdbId, guessItData, getSubtitleLanguage, getUploadEnabled, combinedLanguages]);
 
@@ -316,8 +371,11 @@ function SubtitleUploaderInner() {
     try {
       addDebugInfo(`Updating movie for ${videoPath}: ${newMovieGuess.title} (${newMovieGuess.imdbid})`);
       
-      // Update the movie guess immediately
-      setMovieGuess(videoPath, newMovieGuess);
+      // Defer state updates to avoid setState during render warnings
+      setTimeout(() => {
+        // Update the movie guess
+        setMovieGuess(videoPath, newMovieGuess);
+      }, 0);
       
       // Fetch new features data for the new IMDb ID
       if (newMovieGuess.imdbid) {

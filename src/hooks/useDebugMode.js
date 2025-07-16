@@ -19,13 +19,13 @@ export const useDebugMode = () => {
   const messageCache = useRef(new Map());
   
   
-  // Store original console methods
-  const originalConsole = {
+  // Store original console methods - use useRef to avoid creating new object on every render
+  const originalConsole = useRef({
     log: console.log,
     warn: console.warn,
     error: console.error,
     info: console.info
-  };
+  });
 
   // Persist debug mode to localStorage
   useEffect(() => {
@@ -106,59 +106,66 @@ export const useDebugMode = () => {
         
         const finalMessage = rawMessage;
         
-        setDebugInfo(prev => [
-          ...prev.slice(-(DEFAULT_SETTINGS.DEBUG_LOG_LIMIT - 1)), 
-          `${timestamp}: ${finalMessage}`
-        ]);
+        // Defer the setState update to prevent setState during render warnings
+        setTimeout(() => {
+          setDebugInfo(prev => [
+            ...prev.slice(-(DEFAULT_SETTINGS.DEBUG_LOG_LIMIT - 1)), 
+            `${timestamp}: ${finalMessage}`
+          ]);
+        }, 0);
       };
 
       // Override console methods
       console.log = (...args) => {
-        originalConsole.log(...args);
+        originalConsole.current.log(...args);
         addConsoleMessage('log', args);
       };
 
       console.warn = (...args) => {
-        originalConsole.warn(...args);
+        originalConsole.current.warn(...args);
         addConsoleMessage('warn', args);
       };
 
       console.error = (...args) => {
-        originalConsole.error(...args);
+        originalConsole.current.error(...args);
         addConsoleMessage('error', args);
       };
 
       console.info = (...args) => {
-        originalConsole.info(...args);
+        originalConsole.current.info(...args);
         addConsoleMessage('info', args);
       };
 
       // Cleanup function to restore original console
       return () => {
-        console.log = originalConsole.log;
-        console.warn = originalConsole.warn;
-        console.error = originalConsole.error;
-        console.info = originalConsole.info;
+        console.log = originalConsole.current.log;
+        console.warn = originalConsole.current.warn;
+        console.error = originalConsole.current.error;
+        console.info = originalConsole.current.info;
       };
     }
-  }, [debugMode, originalConsole]);
+  }, [debugMode]); // Removed originalConsole from deps since it's now a useRef
 
-  // Add debug info with timestamp - DEDUPLICATION TEMPORARILY DISABLED
+  // Add debug info with timestamp - DEFERRED TO PREVENT setState DURING RENDER
   const addDebugInfo = useCallback((message, isBasic = false) => {
     const timestamp = new Date().toLocaleTimeString();
     
-    // Always add to debug panel directly (deduplication disabled for debugging)
-    setDebugInfo(prev => [
-      ...prev.slice(-(DEFAULT_SETTINGS.DEBUG_LOG_LIMIT - 1)), 
-      `${timestamp}: ${message}`
-    ]);
+    // Defer the setState update to prevent setState during render warnings
+    setTimeout(() => {
+      setDebugInfo(prev => [
+        ...prev.slice(-(DEFAULT_SETTINGS.DEBUG_LOG_LIMIT - 1)), 
+        `${timestamp}: ${message}`
+      ]);
+    }, 0);
     
     // Don't log to browser console to avoid duplication with console intercept
   }, []); // Empty dependency array to make it stable
 
-  // Clear debug info
+  // Clear debug info - DEFERRED TO PREVENT setState DURING RENDER
   const clearDebugInfo = useCallback(() => {
-    setDebugInfo([]);
+    setTimeout(() => {
+      setDebugInfo([]);
+    }, 0);
   }, []);
 
   // Toggle debug mode

@@ -7,11 +7,23 @@ export const SubtitleUploadOptions = ({
   onUpdateOptions,
   colors,
   isDark,
-  subtitleFile, // Add subtitleFile prop to get file info
-  pairedVideoFile, // Add pairedVideoFile prop for matched pairs
-  onLocalStateChange // Add callback to expose local state changes
+  subtitleFile,
+  pairedVideoFile,
+  onLocalStateChange,
+  compactMode = false,
+  isExpanded = false,
+  onToggleExpanded = null,
+  showExpandedInline = false // New prop to show expanded content inline
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [internalIsExpanded, setInternalIsExpanded] = useState(false);
+  
+  // Use external state if in compact mode, otherwise use internal state
+  const currentIsExpanded = compactMode ? isExpanded : internalIsExpanded;
+  const toggleExpanded = compactMode ? onToggleExpanded : (() => setInternalIsExpanded(!internalIsExpanded));
+  
+  // If showExpandedInline is true, always show expanded content without toggle
+  const shouldShowExpanded = showExpandedInline || (!compactMode && currentIsExpanded);
+  
   const [hasSetReleaseName, setHasSetReleaseName] = useState(false);
   const [hasSetForeignParts, setHasSetForeignParts] = useState(false);
   const [hasSetHighDefinition, setHasSetHighDefinition] = useState(false);
@@ -41,6 +53,14 @@ export const SubtitleUploadOptions = ({
     
     // Split path into all components (directory parts + filename)
     const pathParts = filePath.split('/').filter(part => part.length > 0);
+    
+    // For hearing impaired, check filename-specific pattern first
+    if (featureType === 'hearingimpaired' && pathParts.length > 0) {
+      const filename = pathParts[pathParts.length - 1]; // Last part is the filename
+      if (checkHearingImpairedFromFilename(filename)) {
+        return true;
+      }
+    }
     
     // Check each part of the path
     for (const part of pathParts) {
@@ -81,6 +101,18 @@ export const SubtitleUploadOptions = ({
     return hiRegex.test(str);
   };
 
+  // Check if subtitle filename (without extension) ends with HI pattern
+  const checkHearingImpairedFromFilename = (filename) => {
+    if (!filename) return false;
+    
+    // Remove file extension
+    const nameWithoutExtension = filename.replace(/\.(srt|ass|ssa|vtt|sub|idx|sup)$/i, '');
+    
+    // Check if it ends with HI pattern: [-_.]HI (case insensitive)
+    const hiEndRegex = /[-_.]hi$/i;
+    return hiEndRegex.test(nameWithoutExtension);
+  };
+
   // Check if subtitle content indicates automatic translation
   const checkAutoTranslationFromContent = (content) => {
     if (!content) return false;
@@ -111,57 +143,35 @@ export const SubtitleUploadOptions = ({
     }
   }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
 
-  // Pre-fill foreign parts checkbox based on full file path analysis
+  // Initialize local state from uploadOptions on mount only
   useEffect(() => {
-    if ((subtitleFile || pairedVideoFile) && !hasSetForeignParts && !processedForeignPartsRef.current) {
-      let shouldBeForeignParts = false;
-      
-      // Check subtitle file path first (higher priority for foreign parts)
-      if (subtitleFile && subtitleFile.fullPath) {
-        shouldBeForeignParts = checkFeatureFromPath(subtitleFile.fullPath, 'foreign');
-      }
-      
-      // If not found in subtitle, check video file path
-      if (!shouldBeForeignParts && pairedVideoFile && pairedVideoFile.fullPath) {
-        shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
-      }
-      
-      if (shouldBeForeignParts) {
-        setLocalForeignPartsValue('1');
-        setTimeout(() => handleFieldChange('foreignpartsonly', '1'), 0);
-        setHasSetForeignParts(true);
-        processedForeignPartsRef.current = true;
-      }
+    if (uploadOptions?.hearingimpaired === '1') {
+      setLocalHearingImpairedValue('1');
+      setHasSetHearingImpaired(true);
     }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetForeignParts]);
-
-  // Pre-fill high definition checkbox based on full file path analysis
-  useEffect(() => {
-    if (!hasSetHighDefinition && (subtitleFile || pairedVideoFile) && !processedHdRef.current) {
-      let shouldBeHighDefinition = false;
-      
-      // Check video file path first (higher priority for HD)
-      if (pairedVideoFile && pairedVideoFile.fullPath) {
-        shouldBeHighDefinition = checkFeatureFromPath(pairedVideoFile.fullPath, 'hd');
-      }
-      
-      // If not found in video, check subtitle file path
-      if (!shouldBeHighDefinition && subtitleFile && subtitleFile.fullPath) {
-        shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
-      }
-      
-      if (shouldBeHighDefinition) {
-        setLocalHdValue('1');
-        setTimeout(() => handleFieldChange('highdefinition', '1'), 0);
-        setHasSetHighDefinition(true);
-        processedHdRef.current = true;
-      }
+    if (uploadOptions?.highdefinition === '1') {
+      setLocalHdValue('1');
+      setHasSetHighDefinition(true);
     }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHighDefinition]);
+    if (uploadOptions?.foreignpartsonly === '1') {
+      setLocalForeignPartsValue('1');
+      setHasSetForeignParts(true);
+    }
+    if (uploadOptions?.automatictranslation === '1') {
+      setLocalAutoTranslationValue('1');
+      setHasSetAutoTranslation(true);
+    }
+  }, [subtitlePath]); // Only run when subtitlePath changes (new file)
 
-  // Pre-fill hearing impaired checkbox based on full file path analysis
+  // Comprehensive upload options initialization - detects new features from file paths
   useEffect(() => {
-    if (!hasSetHearingImpaired && (subtitleFile || pairedVideoFile) && !processedHearingImpairedRef.current) {
+    if (!subtitleFile && !pairedVideoFile) return;
+    
+    let needsUpdate = false;
+    const updates = {};
+    
+    // HEARING IMPAIRED
+    if (!hasSetHearingImpaired && !processedHearingImpairedRef.current) {
       let shouldBeHearingImpaired = false;
       
       // Check video file path first (higher priority for HI)
@@ -175,26 +185,90 @@ export const SubtitleUploadOptions = ({
       }
       
       if (shouldBeHearingImpaired) {
+        updates.hearingimpaired = '1';
         setLocalHearingImpairedValue('1');
-        setTimeout(() => handleFieldChange('hearingimpaired', '1'), 0);
         setHasSetHearingImpaired(true);
         processedHearingImpairedRef.current = true;
+        needsUpdate = true;
       }
     }
-  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, hasSetHearingImpaired]);
-
-  // Pre-fill automatic translation checkbox based on subtitle content
-  useEffect(() => {
-    if (subtitleContent && !hasSetAutoTranslation) {
-      const shouldBeAutoTranslation = checkAutoTranslationFromContent(subtitleContent);
+    
+    // HIGH DEFINITION
+    if (!hasSetHighDefinition && !processedHdRef.current) {
+      let shouldBeHighDefinition = false;
+      
+      // Check video file path first (higher priority for HD)
+      if (pairedVideoFile && pairedVideoFile.fullPath) {
+        shouldBeHighDefinition = checkFeatureFromPath(pairedVideoFile.fullPath, 'hd');
+      }
+      
+      // If not found in video, check subtitle file path
+      if (!shouldBeHighDefinition && subtitleFile && subtitleFile.fullPath) {
+        shouldBeHighDefinition = checkFeatureFromPath(subtitleFile.fullPath, 'hd');
+      }
+      
+      if (shouldBeHighDefinition) {
+        updates.highdefinition = '1';
+        setLocalHdValue('1');
+        setHasSetHighDefinition(true);
+        processedHdRef.current = true;
+        needsUpdate = true;
+      }
+    }
+    
+    // FOREIGN PARTS ONLY
+    if (!hasSetForeignParts && !processedForeignPartsRef.current) {
+      let shouldBeForeignParts = false;
+      
+      // Check subtitle file path first (higher priority for foreign parts)
+      if (subtitleFile && subtitleFile.fullPath) {
+        shouldBeForeignParts = checkFeatureFromPath(subtitleFile.fullPath, 'foreign');
+      }
+      
+      // If not found in subtitle, check video file path
+      if (!shouldBeForeignParts && pairedVideoFile && pairedVideoFile.fullPath) {
+        shouldBeForeignParts = checkFeatureFromPath(pairedVideoFile.fullPath, 'foreign');
+      }
+      
+      if (shouldBeForeignParts) {
+        updates.foreignpartsonly = '1';
+        setLocalForeignPartsValue('1');
+        setHasSetForeignParts(true);
+        processedForeignPartsRef.current = true;
+        needsUpdate = true;
+      }
+    }
+    
+    // AUTO TRANSLATION (from subtitle content analysis)
+    if (!hasSetAutoTranslation && subtitleContent) {
+      let shouldBeAutoTranslation = false;
+      
+      // Check subtitle content for auto translation indicators
+      shouldBeAutoTranslation = checkAutoTranslationFromContent(subtitleContent);
       
       if (shouldBeAutoTranslation) {
+        updates.automatictranslation = '1';
         setLocalAutoTranslationValue('1');
-        setTimeout(() => handleFieldChange('automatictranslation', '1'), 0);
         setHasSetAutoTranslation(true);
+        needsUpdate = true;
       }
     }
-  }, [subtitleContent, hasSetAutoTranslation]);
+    
+    // Batch update all detected options
+    if (needsUpdate) {
+      const newOptions = {
+        ...uploadOptions,
+        ...updates
+      };
+      
+      if (typeof onUpdateOptions === 'function') {
+        setTimeout(() => {
+          onUpdateOptions(subtitlePath, newOptions);
+        }, 0);
+      }
+    }
+    
+  }, [subtitleFile?.fullPath, pairedVideoFile?.fullPath, subtitleContent, hasSetHearingImpaired, hasSetHighDefinition, hasSetForeignParts, hasSetAutoTranslation]);
 
   // Pre-fill release name on component mount
   useEffect(() => {
@@ -215,7 +289,8 @@ export const SubtitleUploadOptions = ({
       
       // Only set if we have a meaningful name (not empty)
       if (releaseNameWithoutExtension.trim()) {
-        setTimeout(() => handleFieldChange('moviereleasename', releaseNameWithoutExtension), 0);
+        // Use React 18's automatic batching instead of setTimeout
+        handleFieldChange('moviereleasename', releaseNameWithoutExtension);
         setHasSetReleaseName(true); // Mark that this component instance has set the release name
       }
     }
@@ -228,7 +303,9 @@ export const SubtitleUploadOptions = ({
     };
     
     if (typeof onUpdateOptions === 'function') {
-      onUpdateOptions(subtitlePath, newOptions);
+      setTimeout(() => {
+        onUpdateOptions(subtitlePath, newOptions);
+      }, 0);
     } else {
       console.error('onUpdateOptions is not a function:', onUpdateOptions);
     }
@@ -249,9 +326,9 @@ export const SubtitleUploadOptions = ({
       setHasSetReleaseName(false);
     }
     
-    // If user manually changes foreign parts, reset the flag so it can be recalculated if needed
+    // If user manually changes foreign parts, mark it as manually set to prevent auto-detection
     if (field === 'foreignpartsonly' && value !== uploadOptions.foreignpartsonly) {
-      setHasSetForeignParts(false);
+      setHasSetForeignParts(true);
     }
     
     // If user manually changes high definition, mark it as manually set to prevent auto-detection
@@ -264,188 +341,193 @@ export const SubtitleUploadOptions = ({
       setHasSetHearingImpaired(true);
     }
     
-    // If user manually changes automatic translation, reset the flag so it can be recalculated if needed
+    // If user manually changes automatic translation, mark it as manually set to prevent auto-detection
     if (field === 'automatictranslation' && value !== uploadOptions.automatictranslation) {
-      setHasSetAutoTranslation(false);
+      setHasSetAutoTranslation(true);
     }
   }, [uploadOptions, subtitlePath]);
 
   const currentOptions = uploadOptions || {};
-  
-  // Debug logging for currentOptions
-  
-  // Watch for changes in uploadOptions prop
-  useEffect(() => {
-    // Props changed - no logging needed
-  }, [uploadOptions]);
 
   // Notify parent component of local state changes
   useEffect(() => {
     if (onLocalStateChange) {
-      onLocalStateChange(subtitlePath, {
-        localHdValue,
-        localForeignPartsValue,
-        localHearingImpairedValue,
-        localAutoTranslationValue
-      });
+      setTimeout(() => {
+        onLocalStateChange(subtitlePath, {
+          localHdValue,
+          localForeignPartsValue,
+          localHearingImpairedValue,
+          localAutoTranslationValue
+        });
+      }, 0);
     }
   }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath]);
 
+  // Expanded content component
+  const ExpandedContent = () => (
+    <div className="mt-2 p-3 rounded border space-y-2" 
+         style={{
+           backgroundColor: isDark ? '#2a2a2a' : '#f8f9fa',
+           borderColor: colors.border
+         }}
+         onClick={(e) => e.stopPropagation()}>
+      
+      {/* Author Comment - First and multiline */}
+      <div className="flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
+        <span className="text-xs w-6 mt-1" title="Comment from subtitle author">💬</span>
+        <textarea
+          value={currentOptions.subauthorcomment || ''}
+          onChange={(e) => handleFieldChange('subauthorcomment', e.target.value)}
+          placeholder="Comment from subtitle author (can be multiple lines)"
+          rows={2}
+          className="flex-1 px-2 py-1 text-xs rounded border resize-none"
+          style={{
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border,
+            color: colors.text,
+            minHeight: '2.5rem',
+            maxHeight: '8rem',
+            overflow: 'hidden'
+          }}
+          onInput={(e) => {
+            // Auto-resize textarea based on content
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+          }}
+        />
+      </div>
+
+      {/* Release Name */}
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <span className="text-xs w-6" title="Movie Release Name">📦</span>
+        <input
+          type="text"
+          value={currentOptions.moviereleasename || ''}
+          onChange={(e) => handleFieldChange('moviereleasename', e.target.value)}
+          placeholder="Release name (e.g., Movie.2023.1080p.BluRay.x264-GROUP)"
+          className="flex-1 px-2 py-1 text-xs rounded border"
+          style={{
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border,
+            color: colors.text
+          }}
+        />
+      </div>
+
+      {/* Translator */}
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <span className="text-xs w-6" title="Subtitle Translator">🌐</span>
+        <input
+          type="text"
+          value={currentOptions.subtranslator || ''}
+          onChange={(e) => handleFieldChange('subtranslator', e.target.value)}
+          placeholder="Who translated the subtitles"
+          className="flex-1 px-2 py-1 text-xs rounded border"
+          style={{
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border,
+            color: colors.text
+          }}
+        />
+      </div>
+
+      {/* Checkboxes Row 1 */}
+      <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentOptions.hearingimpaired === '1' || localHearingImpairedValue === '1'}
+            onChange={(e) => handleFieldChange('hearingimpaired', e.target.checked ? '1' : '0')}
+            className="w-3 h-3"
+            style={{ accentColor: colors.link }}
+          />
+          <span className="text-xs" title="Hearing Impaired">🦻</span>
+          <span className="text-xs" style={{ color: colors.textSecondary }}>
+            Hearing Impaired
+          </span>
+        </label>
+
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentOptions.highdefinition === '1' || localHdValue === '1'}
+            onChange={(e) => handleFieldChange('highdefinition', e.target.checked ? '1' : '0')}
+            className="w-3 h-3"
+            style={{ accentColor: colors.link }}
+          />
+          <span className="text-xs" title="High Definition">📺</span>
+          <span className="text-xs" style={{ color: colors.textSecondary }}>
+            High Definition
+          </span>
+        </label>
+      </div>
+
+      {/* Checkboxes Row 2 */}
+      <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentOptions.automatictranslation === '1' || localAutoTranslationValue === '1'}
+            onChange={(e) => handleFieldChange('automatictranslation', e.target.checked ? '1' : '0')}
+            className="w-3 h-3"
+            style={{ accentColor: colors.link }}
+          />
+          <span className="text-xs" title="Automatic Translation">🤖</span>
+          <span className="text-xs" style={{ color: colors.textSecondary }}>
+            Auto Translation
+          </span>
+        </label>
+
+        <label className="flex items-center gap-1 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentOptions.foreignpartsonly === '1' || localForeignPartsValue === '1'}
+            onChange={(e) => handleFieldChange('foreignpartsonly', e.target.checked ? '1' : '0')}
+            className="w-3 h-3"
+            style={{ accentColor: colors.link }}
+          />
+          <span className="text-xs" title="Foreign Parts Only">🎭</span>
+          <span className="text-xs" style={{ color: colors.textSecondary }}>
+            Foreign Parts Only
+          </span>
+        </label>
+      </div>
+
+    </div>
+  );
 
   return (
-    <div className="mt-2" data-interactive>
-      {/* Toggle Button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center gap-2 text-xs px-2 py-1 rounded border transition-colors"
-        style={{
-          color: colors.textSecondary,
-          borderColor: colors.border,
-          backgroundColor: isExpanded ? colors.background : 'transparent'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.backgroundColor = colors.background;
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.backgroundColor = isExpanded ? colors.background : 'transparent';
-        }}
-      >
-        <span>{isExpanded ? '⚙️' : '⚙️'}</span>
-        <span>Upload Options</span>
-        <span className="text-xs">{isExpanded ? '▲' : '▼'}</span>
-      </button>
+    <div className="" data-interactive>
+      {/* Show toggle button only if not in inline mode */}
+      {!showExpandedInline && (
+        <button
+          onClick={toggleExpanded}
+          className="flex items-center gap-2 text-xs px-2 py-1.5 rounded border transition-colors min-h-[28px]"
+          style={{
+            color: colors.textSecondary,
+            borderColor: colors.border,
+            backgroundColor: currentIsExpanded ? colors.background : 'transparent'
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = colors.background;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = currentIsExpanded ? colors.background : 'transparent';
+          }}
+        >
+          <span>{currentIsExpanded ? '⚙️' : '⚙️'}</span>
+          <span>Upload Options</span>
+          <span className="text-xs">{currentIsExpanded ? '▲' : '▼'}</span>
+        </button>
+      )}
 
       {/* Expanded Options */}
-      {isExpanded && (
-        <div className="mt-2 p-3 rounded border space-y-2" 
-             style={{
-               backgroundColor: isDark ? '#2a2a2a' : '#f8f9fa',
-               borderColor: colors.border
-             }}>
-          
-          {/* Author Comment - First and multiline */}
-          <div className="flex items-start gap-2">
-            <span className="text-xs w-6 mt-1" title="Comment from subtitle author">💬</span>
-            <textarea
-              value={currentOptions.subauthorcomment || ''}
-              onChange={(e) => handleFieldChange('subauthorcomment', e.target.value)}
-              placeholder="Comment from subtitle author (can be multiple lines)"
-              rows={2}
-              className="flex-1 px-2 py-1 text-xs rounded border resize-none"
-              style={{
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
-                color: colors.text,
-                minHeight: '2.5rem',
-                maxHeight: '8rem',
-                overflow: 'hidden'
-              }}
-              onInput={(e) => {
-                // Auto-resize textarea based on content
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
-              }}
-            />
-          </div>
-
-          {/* Release Name */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs w-6" title="Movie Release Name">📦</span>
-            <input
-              type="text"
-              value={currentOptions.moviereleasename || ''}
-              onChange={(e) => handleFieldChange('moviereleasename', e.target.value)}
-              placeholder="Release name (e.g., Movie.2023.1080p.BluRay.x264-GROUP)"
-              className="flex-1 px-2 py-1 text-xs rounded border"
-              style={{
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
-                color: colors.text
-              }}
-            />
-          </div>
-
-          {/* Translator */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs w-6" title="Subtitle Translator">🌐</span>
-            <input
-              type="text"
-              value={currentOptions.subtranslator || ''}
-              onChange={(e) => handleFieldChange('subtranslator', e.target.value)}
-              placeholder="Who translated the subtitles"
-              className="flex-1 px-2 py-1 text-xs rounded border"
-              style={{
-                backgroundColor: colors.cardBackground,
-                borderColor: colors.border,
-                color: colors.text
-              }}
-            />
-          </div>
-
-          {/* Checkboxes Row 1 */}
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={currentOptions.hearingimpaired === '1' || localHearingImpairedValue === '1'}
-                onChange={(e) => handleFieldChange('hearingimpaired', e.target.checked ? '1' : '0')}
-                className="w-3 h-3"
-                style={{ accentColor: colors.link }}
-              />
-              <span className="text-xs" title="Hearing Impaired">🦻</span>
-              <span className="text-xs" style={{ color: colors.textSecondary }}>
-                Hearing Impaired
-              </span>
-            </label>
-
-            <label className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={currentOptions.highdefinition === '1' || localHdValue === '1'}
-                onChange={(e) => handleFieldChange('highdefinition', e.target.checked ? '1' : '0')}
-                className="w-3 h-3"
-                style={{ accentColor: colors.link }}
-              />
-              <span className="text-xs" title="High Definition">📺</span>
-              <span className="text-xs" style={{ color: colors.textSecondary }}>
-                High Definition
-              </span>
-            </label>
-          </div>
-
-          {/* Checkboxes Row 2 */}
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={currentOptions.automatictranslation === '1' || localAutoTranslationValue === '1'}
-                onChange={(e) => handleFieldChange('automatictranslation', e.target.checked ? '1' : '0')}
-                className="w-3 h-3"
-                style={{ accentColor: colors.link }}
-              />
-              <span className="text-xs" title="Automatic Translation">🤖</span>
-              <span className="text-xs" style={{ color: colors.textSecondary }}>
-                Auto Translation
-              </span>
-            </label>
-
-            <label className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={currentOptions.foreignpartsonly === '1' || localForeignPartsValue === '1'}
-                onChange={(e) => handleFieldChange('foreignpartsonly', e.target.checked ? '1' : '0')}
-                className="w-3 h-3"
-                style={{ accentColor: colors.link }}
-              />
-              <span className="text-xs" title="Foreign Parts Only">🎭</span>
-              <span className="text-xs" style={{ color: colors.textSecondary }}>
-                Foreign Parts Only
-              </span>
-            </label>
-          </div>
-
-        </div>
-      )}
+      {shouldShowExpanded && <ExpandedContent />}
     </div>
   );
 };
+
+// Alias for backward compatibility
+export const SubtitleUploadOptionsPanel = (props) => (
+  <SubtitleUploadOptions {...props} showExpandedInline={true} />
+);

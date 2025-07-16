@@ -2,7 +2,7 @@ import React from 'react';
 import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
-import { SubtitleUploadOptions } from './SubtitleUploadOptions.jsx';
+import { SubtitleUploadOptions, SubtitleUploadOptionsPanel } from './SubtitleUploadOptions.jsx';
 
 export const OrphanedSubtitles = ({
   orphanedSubtitles,
@@ -88,6 +88,7 @@ export const OrphanedSubtitles = ({
   const [movieSearchLoading, setMovieSearchLoading] = React.useState(false);
   const [movieUpdateLoading, setMovieUpdateLoading] = React.useState({});
   const [localUploadStates, setLocalUploadStates] = React.useState({});
+  const [uploadOptionsExpanded, setUploadOptionsExpanded] = React.useState({});
 
   // Clear search state when closing
   const closeMovieSearch = () => {
@@ -178,6 +179,14 @@ export const OrphanedSubtitles = ({
     }));
   }, []);
 
+  // Handle upload options expansion toggle
+  const handleUploadOptionsToggle = React.useCallback((subtitlePath) => {
+    setUploadOptionsExpanded(prev => ({
+      ...prev,
+      [subtitlePath]: !prev[subtitlePath]
+    }));
+  }, []);
+
   // DISABLED: Simplified movie guesses - no enhancement to prevent setState issues
   // const enhancedMovieGuesses = React.useMemo(() => {
   //   return movieGuesses || {};
@@ -248,17 +257,6 @@ export const OrphanedSubtitles = ({
                 <div>
                   <div className="font-medium flex items-center gap-2" style={{color: themeColors.text}}>
                     <span>{subtitleName}</span>
-                    {/* Upload option badges */}
-                    <div className="flex gap-1">
-                      {(uploadOptions?.[subtitle.fullPath]?.hearingimpaired === '1' || localUploadStates?.[subtitle.fullPath]?.localHearingImpairedValue === '1') && 
-                        <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.info + '20', color: themeColors.info }}>🦻 HI</span>}
-                      {(uploadOptions?.[subtitle.fullPath]?.highdefinition === '1' || localUploadStates?.[subtitle.fullPath]?.localHdValue === '1') && 
-                        <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.success + '20', color: themeColors.success }}>📺 HD</span>}
-                      {(uploadOptions?.[subtitle.fullPath]?.automatictranslation === '1' || localUploadStates?.[subtitle.fullPath]?.localAutoTranslationValue === '1') && 
-                        <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.warning + '20', color: themeColors.warning }}>🤖 Auto</span>}
-                      {(uploadOptions?.[subtitle.fullPath]?.foreignpartsonly === '1' || localUploadStates?.[subtitle.fullPath]?.localForeignPartsValue === '1') && 
-                        <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.link + '20', color: themeColors.link }}>🎭 Foreign</span>}
-                    </div>
                     <span className="text-xs px-2 py-1 rounded ml-2" 
                       style={{
                         backgroundColor: themeColors.warning + '20',
@@ -346,13 +344,30 @@ export const OrphanedSubtitles = ({
                     }}
                   >
                     <div className="space-y-2">
-                      {/* Line 1: Upload checkbox and filename */}
-                      <div className={`flex items-center gap-2 transition-colors`}
+                      {/* Line 1: Filename and upload checkbox */}
+                      <div className={`flex items-center justify-between gap-2 transition-colors`}
                         style={{
                           color: isUploadEnabled ? themeColors.text : themeColors.textMuted
                         }}>
-                        {/* Upload Toggle Checkbox */}
-                        <div className="flex items-center mr-2">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-base font-medium">
+                            {subtitleName}
+                          </span>
+                          {/* Upload option badges */}
+                          <div className="flex gap-1">
+                            {(uploadOptions?.[subtitle.fullPath]?.hearingimpaired === '1' || localUploadStates?.[subtitle.fullPath]?.localHearingImpairedValue === '1') && 
+                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.info + '20', color: themeColors.info }}>🦻 HI</span>}
+                            {(uploadOptions?.[subtitle.fullPath]?.highdefinition === '1' || localUploadStates?.[subtitle.fullPath]?.localHdValue === '1') && 
+                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.success + '20', color: themeColors.success }}>📺 HD</span>}
+                            {(uploadOptions?.[subtitle.fullPath]?.automatictranslation === '1' || localUploadStates?.[subtitle.fullPath]?.localAutoTranslationValue === '1') && 
+                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.warning + '20', color: themeColors.warning }}>🤖 Auto</span>}
+                            {(uploadOptions?.[subtitle.fullPath]?.foreignpartsonly === '1' || localUploadStates?.[subtitle.fullPath]?.localForeignPartsValue === '1') && 
+                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.link + '20', color: themeColors.link }}>🎭 Foreign</span>}
+                          </div>
+                        </div>
+
+                        {/* Upload Toggle Checkbox - Moved to right side */}
+                        <div className="flex items-center">
                           <label className="flex items-center cursor-pointer group">
                             <input
                               type="checkbox"
@@ -373,33 +388,32 @@ export const OrphanedSubtitles = ({
                             </span>
                           </label>
                         </div>
-
-                        <div className="flex items-center gap-2 flex-1">
-                          <span className="text-base font-medium">
-                            {subtitleName}
-                          </span>
-                          {/* Upload option badges */}
-                          <div className="flex gap-1">
-                            {(uploadOptions?.[subtitle.fullPath]?.hearingimpaired === '1' || localUploadStates?.[subtitle.fullPath]?.localHearingImpairedValue === '1') && 
-                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.info + '20', color: themeColors.info }}>🦻 HI</span>}
-                            {(uploadOptions?.[subtitle.fullPath]?.highdefinition === '1' || localUploadStates?.[subtitle.fullPath]?.localHdValue === '1') && 
-                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.success + '20', color: themeColors.success }}>📺 HD</span>}
-                            {(uploadOptions?.[subtitle.fullPath]?.automatictranslation === '1' || localUploadStates?.[subtitle.fullPath]?.localAutoTranslationValue === '1') && 
-                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.warning + '20', color: themeColors.warning }}>🤖 Auto</span>}
-                            {(uploadOptions?.[subtitle.fullPath]?.foreignpartsonly === '1' || localUploadStates?.[subtitle.fullPath]?.localForeignPartsValue === '1') && 
-                              <span className="text-xs px-1 py-0.5 rounded" style={{ backgroundColor: themeColors.link + '20', color: themeColors.link }}>🎭 Foreign</span>}
-                          </div>
-                        </div>
                       </div>
 
-                      {/* Line 2: Language dropdown, file info, and preview */}
+                      {/* Line 2: Compact layout - Upload Options, Language dropdown, file info, and preview */}
                       {isUploadEnabled && (
-                        <div className="flex items-center gap-3 ml-20 mt-2">
-                          {/* Language Dropdown - reusing same code as MatchedPairs */}
-                          <div className="relative" data-dropdown={subtitle.fullPath}>
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                          {/* Upload Options - First position */}
+                          <div className="flex-shrink-0">
+                            <SubtitleUploadOptions
+                              subtitlePath={subtitle.fullPath}
+                              uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                              onUpdateOptions={onUpdateUploadOptions}
+                              colors={themeColors}
+                              isDark={isDark}
+                              subtitleFile={subtitle}
+                              onLocalStateChange={handleLocalStateChange}
+                              compactMode={true}
+                              isExpanded={uploadOptionsExpanded[subtitle.fullPath] || false}
+                              onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
+                            />
+                          </div>
+
+                          {/* Language Dropdown - Second position */}
+                          <div className="relative flex-shrink-0" data-dropdown={subtitle.fullPath}>
                             <button
                               onClick={() => onToggleDropdown(subtitle.fullPath)}
-                              className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between"
+                              className="rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 min-w-[180px] flex items-center justify-between min-h-[28px]"
                               style={{
                                 backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
                                 color: themeColors.text,
@@ -520,24 +534,22 @@ export const OrphanedSubtitles = ({
                         </div>
                       )}
 
-                      {/* Line 3: Upload Options */}
-                      {isUploadEnabled && (
-                        <div className="ml-20 mt-2">
-                          <SubtitleUploadOptions
-                            subtitlePath={subtitle.fullPath}
-                            uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
-                            onUpdateOptions={onUpdateUploadOptions}
-                            colors={themeColors}
-                            isDark={isDark}
-                            subtitleFile={subtitle}
-                            onLocalStateChange={handleLocalStateChange}
-                          />
-                        </div>
+                      {/* Upload Options Expanded Panel - Below the compact line */}
+                      {isUploadEnabled && uploadOptionsExpanded[subtitle.fullPath] && (
+                        <SubtitleUploadOptionsPanel
+                          subtitlePath={subtitle.fullPath}
+                          uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
+                          onUpdateOptions={onUpdateUploadOptions}
+                          colors={themeColors}
+                          isDark={isDark}
+                          subtitleFile={subtitle}
+                          onLocalStateChange={handleLocalStateChange}
+                        />
                       )}
 
                       {/* Upload result status */}
                       {uploadResults[subtitle.fullPath] && (
-                        <div className="ml-20 mt-1">
+                        <div className="mt-1">
                           {(() => {
                             const result = uploadResults[subtitle.fullPath];
                             
@@ -647,7 +659,7 @@ export const OrphanedSubtitles = ({
 
                       {/* Disabled state message */}
                       {!isUploadEnabled && !uploadResults[subtitle.fullPath] && (
-                        <div className="text-xs ml-20">
+                        <div className="text-xs">
                           <div className="italic" style={{color: themeColors.textMuted}}>
                             This subtitle will not be uploaded
                           </div>
