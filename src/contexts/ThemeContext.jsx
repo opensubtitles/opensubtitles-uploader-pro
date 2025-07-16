@@ -13,11 +13,46 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
   const [isDark, setIsDark] = useState(false);
 
+  // Detect system preference and cache for 1 hour
+  const detectSystemTheme = () => {
+    const now = Date.now();
+    const cacheKey = 'opensubtitles-uploader-theme-cache';
+    const cacheData = localStorage.getItem(cacheKey);
+    
+    if (cacheData) {
+      try {
+        const { theme, timestamp } = JSON.parse(cacheData);
+        // Check if cache is less than 1 hour old (3600000 ms)
+        if (now - timestamp < 3600000) {
+          return theme === 'dark';
+        }
+      } catch (e) {
+        // Invalid cache data, continue with detection
+      }
+    }
+    
+    // Detect system preference
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Cache the detected preference
+    localStorage.setItem(cacheKey, JSON.stringify({
+      theme: prefersDark ? 'dark' : 'light',
+      timestamp: now
+    }));
+    
+    return prefersDark;
+  };
+
   // Load theme preference from localStorage on mount
   useEffect(() => {
     const savedTheme = localStorage.getItem('opensubtitles-uploader-theme');
     if (savedTheme) {
+      // User has manually set a theme preference
       setIsDark(savedTheme === 'dark');
+    } else {
+      // No manual preference, detect system theme
+      const systemPrefersDark = detectSystemTheme();
+      setIsDark(systemPrefersDark);
     }
   }, []);
 

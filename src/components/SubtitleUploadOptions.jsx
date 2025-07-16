@@ -34,6 +34,7 @@ export const SubtitleUploadOptions = ({
   const [localForeignPartsValue, setLocalForeignPartsValue] = useState(null);
   const [localHearingImpairedValue, setLocalHearingImpairedValue] = useState(null);
   const [localAutoTranslationValue, setLocalAutoTranslationValue] = useState(null);
+  const [localReleaseNameValue, setLocalReleaseNameValue] = useState('');
   
   // Refs to track if we've already processed auto-detection for this file
   const processedForeignPartsRef = useRef(false);
@@ -160,6 +161,9 @@ export const SubtitleUploadOptions = ({
     if (uploadOptions?.automatictranslation === '1') {
       setLocalAutoTranslationValue('1');
       setHasSetAutoTranslation(true);
+    }
+    if (uploadOptions?.moviereleasename) {
+      setLocalReleaseNameValue(uploadOptions.moviereleasename);
     }
   }, [subtitlePath]); // Only run when subtitlePath changes (new file)
 
@@ -319,11 +323,13 @@ export const SubtitleUploadOptions = ({
       setLocalHearingImpairedValue(value);
     } else if (field === 'automatictranslation') {
       setLocalAutoTranslationValue(value);
+    } else if (field === 'moviereleasename') {
+      setLocalReleaseNameValue(value);
     }
     
-    // If user manually changes release name, reset the flag so it can be recalculated if needed
-    if (field === 'moviereleasename' && value !== uploadOptions.moviereleasename) {
-      setHasSetReleaseName(false);
+    // If user manually changes release name, mark it as manually set to prevent auto-detection
+    if (field === 'moviereleasename') {
+      setHasSetReleaseName(true);
     }
     
     // If user manually changes foreign parts, mark it as manually set to prevent auto-detection
@@ -363,18 +369,21 @@ export const SubtitleUploadOptions = ({
     }
   }, [localHdValue, localForeignPartsValue, localHearingImpairedValue, localAutoTranslationValue, subtitlePath]);
 
-  // Expanded content component
-  const ExpandedContent = () => (
+  // Expanded content component - memoized to prevent recreation and focus loss
+  const ExpandedContent = React.useMemo(() => (
     <div className="mt-2 p-3 rounded border space-y-2" 
          style={{
-           backgroundColor: isDark ? '#2a2a2a' : '#f8f9fa',
+           backgroundColor: colors.cardBackground,
            borderColor: colors.border
          }}
          onClick={(e) => e.stopPropagation()}>
       
       {/* Author Comment - First and multiline */}
       <div className="flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
-        <span className="text-xs w-6 mt-1" title="Comment from subtitle author">💬</span>
+        <div className="flex items-center gap-1 text-xs min-w-[80px] mt-1">
+          <span title="Comment from subtitle author">💬</span>
+          <span style={{ color: colors.textSecondary }}>Comment</span>
+        </div>
         <textarea
           value={currentOptions.subauthorcomment || ''}
           onChange={(e) => handleFieldChange('subauthorcomment', e.target.value)}
@@ -399,10 +408,13 @@ export const SubtitleUploadOptions = ({
 
       {/* Release Name */}
       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-        <span className="text-xs w-6" title="Movie Release Name">📦</span>
+        <div className="flex items-center gap-1 text-xs min-w-[80px]">
+          <span title="Movie Release Name">📦</span>
+          <span style={{ color: colors.textSecondary }}>Release</span>
+        </div>
         <input
           type="text"
-          value={currentOptions.moviereleasename || ''}
+          value={localReleaseNameValue !== '' ? localReleaseNameValue : (currentOptions.moviereleasename || '')}
           onChange={(e) => handleFieldChange('moviereleasename', e.target.value)}
           placeholder="Release name (e.g., Movie.2023.1080p.BluRay.x264-GROUP)"
           className="flex-1 px-2 py-1 text-xs rounded border"
@@ -416,7 +428,10 @@ export const SubtitleUploadOptions = ({
 
       {/* Translator */}
       <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-        <span className="text-xs w-6" title="Subtitle Translator">🌐</span>
+        <div className="flex items-center gap-1 text-xs min-w-[80px]">
+          <span title="Subtitle Translator">🌐</span>
+          <span style={{ color: colors.textSecondary }}>Translator</span>
+        </div>
         <input
           type="text"
           value={currentOptions.subtranslator || ''}
@@ -494,7 +509,26 @@ export const SubtitleUploadOptions = ({
       </div>
 
     </div>
-  );
+  ), [
+    isDark, 
+    colors.border, 
+    colors.cardBackground, 
+    colors.text, 
+    colors.textSecondary, 
+    colors.link,
+    currentOptions.subauthorcomment,
+    currentOptions.moviereleasename,
+    currentOptions.subtranslator,
+    currentOptions.hearingimpaired,
+    currentOptions.highdefinition,
+    currentOptions.automatictranslation,
+    currentOptions.foreignpartsonly,
+    localHearingImpairedValue,
+    localHdValue,
+    localAutoTranslationValue,
+    localForeignPartsValue,
+    handleFieldChange
+  ]);
 
   return (
     <div className="" data-interactive>
@@ -502,27 +536,23 @@ export const SubtitleUploadOptions = ({
       {!showExpandedInline && (
         <button
           onClick={toggleExpanded}
-          className="flex items-center gap-2 text-xs px-2 py-1.5 rounded border transition-colors min-h-[28px]"
+          className="rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 flex items-center justify-between min-h-[28px]"
           style={{
-            color: colors.textSecondary,
-            borderColor: colors.border,
-            backgroundColor: currentIsExpanded ? colors.background : 'transparent'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = colors.background;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = currentIsExpanded ? colors.background : 'transparent';
+            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+            color: colors.text,
+            border: `1px solid ${colors.border}`
           }}
         >
-          <span>{currentIsExpanded ? '⚙️' : '⚙️'}</span>
-          <span>Upload Options</span>
-          <span className="text-xs">{currentIsExpanded ? '▲' : '▼'}</span>
+          <div className="flex items-center gap-2">
+            <span>⚙️</span>
+            <span>Upload Options</span>
+          </div>
+          <span>{currentIsExpanded ? '▲' : '▼'}</span>
         </button>
       )}
 
       {/* Expanded Options */}
-      {shouldShowExpanded && <ExpandedContent />}
+      {shouldShowExpanded && ExpandedContent}
     </div>
   );
 };

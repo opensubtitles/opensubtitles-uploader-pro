@@ -113,6 +113,13 @@ export const MovieDisplay = ({
     const featuresData = movieData?.imdbid ? featuresByImdbId?.[movieData.imdbid] : null;
     const guessItVideoData = guessItData?.[videoPath];
 
+    // Clear enhanced episode data when movie data changes (for manual movie selection)
+    if (movieData?.reason === 'User selected') {
+      console.log('Clearing enhanced episode data for user-selected movie');
+      setEnhancedEpisodeData(null);
+      return; // Don't process episode enhancement for manually selected movies
+    }
+
     // Only process if we have all the required data and it's a TV series
     if (movieData && featuresData && guessItVideoData && typeof guessItVideoData === 'object') {
       // Check if this is a TV show with episode info

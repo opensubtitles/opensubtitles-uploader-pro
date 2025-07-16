@@ -97,6 +97,7 @@ export const MatchedPairs = ({
   hashCheckResults, // New prop for CheckSubHash results
   uploadOptions, // New prop for upload options
   onUpdateUploadOptions, // New prop for updating upload options
+  config, // New prop for configuration settings
   colors, // Theme colors
   isDark, // Dark mode flag
   // Video metadata props
@@ -619,7 +620,7 @@ export const MatchedPairs = ({
                                 pairedVideoFile={pair.video}
                                 onLocalStateChange={handleLocalStateChange}
                                 compactMode={true}
-                                isExpanded={uploadOptionsExpanded[subtitle.fullPath] || false}
+                                isExpanded={uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false}
                                 onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
                               />
                             </div>
@@ -684,11 +685,24 @@ export const MatchedPairs = ({
                                   
                                   {/* Language options */}
                                   <div className="max-h-48 overflow-y-auto">
-                                    {[]
+                                    {getLanguageOptionsForSubtitle(subtitle)
+                                      .filter((lang) => {
+                                        const searchTerm = dropdownSearch[subtitle.fullPath] || '';
+                                        if (!searchTerm) return true;
+                                        const search = searchTerm.toLowerCase();
+                                        return (
+                                          lang.displayName?.toLowerCase().includes(search) ||
+                                          lang.iso639?.toLowerCase().includes(search) ||
+                                          lang.languageName?.toLowerCase().includes(search)
+                                        );
+                                      })
                                       .map((lang) => (
                                         <button
                                           key={lang.code}
-                                          onClick={() => onSubtitleLanguageChange(subtitle.fullPath, lang.code)}
+                                          onClick={() => {
+                                            onSubtitleLanguageChange(subtitle.fullPath, lang.code);
+                                            onToggleDropdown(subtitle.fullPath);
+                                          }}
                                           className="w-full text-left px-3 py-2 text-xs flex items-center gap-2"
                                           style={{backgroundColor: 'transparent'}}
                                           onMouseEnter={(e) => e.target.style.backgroundColor = isDark ? '#444444' : '#f8f9fa'}
@@ -746,7 +760,7 @@ export const MatchedPairs = ({
                         )}
 
                         {/* Upload Options Expanded Panel - Below the compact line */}
-                        {true && uploadOptionsExpanded[subtitle.fullPath] && (
+                        {true && (uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false) && (
                           <SubtitleUploadOptionsPanel
                             subtitlePath={subtitle.fullPath}
                             uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}

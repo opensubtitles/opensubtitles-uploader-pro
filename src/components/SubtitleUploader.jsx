@@ -20,6 +20,7 @@ import { StatsPanel } from "./StatsPanel.jsx";
 import { SubtitlePreview } from "./SubtitlePreview.jsx";
 import { UploadButton } from "./UploadButton.jsx";
 import { ApiHealthCheck } from "./ApiHealthCheck.jsx";
+import { ConfigOverlay } from "./ConfigOverlay.jsx";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext.jsx";
 import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
@@ -41,6 +42,34 @@ function SubtitleUploaderInner() {
   const [subcontentData, setSubcontentData] = useState({}); // New state for subcontent data
   const [uploadOptions, setUploadOptions] = useState({}); // New state for upload options (release name, comments, etc.)
   const [uploadProgress, setUploadProgress] = useState({ isUploading: false, processed: 0, total: 0 }); // Upload progress tracking
+  
+  // Config state
+  const [config, setConfig] = useState({
+    uploadOptionsExpanded: false // Default to collapsed (current behavior)
+  });
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+
+  // Load config from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedConfig = localStorage.getItem('opensubtitles-uploader-config');
+      if (savedConfig) {
+        const parsedConfig = JSON.parse(savedConfig);
+        setConfig(prev => ({ ...prev, ...parsedConfig }));
+      }
+    } catch (error) {
+      console.error('Error loading config from localStorage:', error);
+    }
+  }, []);
+
+  // Save config to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('opensubtitles-uploader-config', JSON.stringify(config));
+    } catch (error) {
+      console.error('Error saving config to localStorage:', error);
+    }
+  }, [config]);
 
   // Custom hooks - DEBUG MODE RE-ENABLED AFTER FIX
   const { 
@@ -50,6 +79,20 @@ function SubtitleUploaderInner() {
     clearDebugInfo, 
     toggleDebugMode 
   } = useDebugMode();
+
+  // Config handlers (moved after debug mode hook)
+  const handleConfigChange = useCallback((newConfig) => {
+    setConfig(newConfig);
+    addDebugInfo(`Config updated: ${JSON.stringify(newConfig)}`);
+  }, [addDebugInfo]);
+
+  const handleConfigToggle = useCallback(() => {
+    setIsConfigOpen(prev => !prev);
+  }, []);
+
+  const handleConfigClose = useCallback(() => {
+    setIsConfigOpen(false);
+  }, []);
   
   // Mock debug functions to prevent errors (commented out)
   // const debugMode = false;
@@ -371,11 +414,8 @@ function SubtitleUploaderInner() {
     try {
       addDebugInfo(`Updating movie for ${videoPath}: ${newMovieGuess.title} (${newMovieGuess.imdbid})`);
       
-      // Defer state updates to avoid setState during render warnings
-      setTimeout(() => {
-        // Update the movie guess
-        setMovieGuess(videoPath, newMovieGuess);
-      }, 0);
+      // Update the movie guess immediately (setTimeout removed - debug mode issues fixed)
+      setMovieGuess(videoPath, newMovieGuess);
       
       // Fetch new features data for the new IMDb ID
       if (newMovieGuess.imdbid) {
@@ -976,32 +1016,62 @@ function SubtitleUploaderInner() {
                 )}
               </div>
               
-              {/* Theme Toggle */}
-              <button
-                onClick={toggleTheme}
-                className="flex items-center gap-2 px-3 py-1 rounded-lg transition-all text-xs"
-                style={{
-                  backgroundColor: isDark ? colors.background : colors.cardBackground,
-                  color: colors.textSecondary,
-                  border: `1px solid ${colors.border}`
-                }}
-                {...createHoverHandlers(colors, 
-                  {
+              {/* Action Buttons Row */}
+              <div className="flex items-center gap-2">
+                {/* Config Button */}
+                <button
+                  onClick={handleConfigToggle}
+                  className="flex items-center gap-2 px-3 py-1 rounded-lg transition-all text-xs"
+                  style={{
                     backgroundColor: isDark ? colors.background : colors.cardBackground,
                     color: colors.textSecondary,
-                    borderColor: colors.border
-                  },
-                  {
-                    backgroundColor: colors.background,
-                    color: colors.link,
-                    borderColor: colors.link
-                  }
-                )}
-                title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-              >
-                <span>{isDark ? '☀️' : '🌙'}</span>
-                <span>{isDark ? 'Light' : 'Dark'}</span>
-              </button>
+                    border: `1px solid ${colors.border}`
+                  }}
+                  {...createHoverHandlers(colors, 
+                    {
+                      backgroundColor: isDark ? colors.background : colors.cardBackground,
+                      color: colors.textSecondary,
+                      borderColor: colors.border
+                    },
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.link,
+                      borderColor: colors.link
+                    }
+                  )}
+                  title="Open configuration"
+                >
+                  <span>⚙️</span>
+                  <span>Config</span>
+                </button>
+                
+                {/* Theme Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-2 px-3 py-1 rounded-lg transition-all text-xs"
+                  style={{
+                    backgroundColor: isDark ? colors.background : colors.cardBackground,
+                    color: colors.textSecondary,
+                    border: `1px solid ${colors.border}`
+                  }}
+                  {...createHoverHandlers(colors, 
+                    {
+                      backgroundColor: isDark ? colors.background : colors.cardBackground,
+                      color: colors.textSecondary,
+                      borderColor: colors.border
+                    },
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.link,
+                      borderColor: colors.link
+                    }
+                  )}
+                  title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+                >
+                  <span>{isDark ? '☀️' : '🌙'}</span>
+                  <span>{isDark ? 'Light' : 'Dark'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1104,6 +1174,7 @@ function SubtitleUploaderInner() {
             hashCheckResults={hashCheckResults}
             uploadOptions={uploadOptions}
             onUpdateUploadOptions={handleUploadOptionsUpdate}
+            config={config}
             colors={colors}
             isDark={isDark}
             getVideoMetadata={getVideoMetadata}
@@ -1140,6 +1211,7 @@ function SubtitleUploaderInner() {
             uploadResults={uploadResults}
             uploadOptions={uploadOptions}
             onUpdateUploadOptions={handleUploadOptionsUpdate}
+            config={config}
             colors={colors}
             isDark={isDark}
           />
@@ -1252,6 +1324,16 @@ function SubtitleUploaderInner() {
             isDark={isDark}
           />
         )}
+
+        {/* Config Overlay */}
+        <ConfigOverlay
+          isOpen={isConfigOpen}
+          onClose={handleConfigClose}
+          config={config}
+          onConfigChange={handleConfigChange}
+          colors={colors}
+          isDark={isDark}
+        />
 
         {/* Debug Panel */}
         <Suspense fallback={<div className="mt-6 p-4 rounded-lg text-center" style={{backgroundColor: colors.cardBackground, color: colors.textSecondary}}>Loading debug panel...</div>}>

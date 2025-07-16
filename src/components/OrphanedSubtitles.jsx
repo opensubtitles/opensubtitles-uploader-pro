@@ -30,6 +30,7 @@ export const OrphanedSubtitles = ({
   uploadResults,
   uploadOptions,
   onUpdateUploadOptions,
+  config,
   colors,
   isDark
 }) => {
@@ -404,7 +405,7 @@ export const OrphanedSubtitles = ({
                               subtitleFile={subtitle}
                               onLocalStateChange={handleLocalStateChange}
                               compactMode={true}
-                              isExpanded={uploadOptionsExpanded[subtitle.fullPath] || false}
+                              isExpanded={uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false}
                               onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
                             />
                           </div>
@@ -535,7 +536,7 @@ export const OrphanedSubtitles = ({
                       )}
 
                       {/* Upload Options Expanded Panel - Below the compact line */}
-                      {isUploadEnabled && uploadOptionsExpanded[subtitle.fullPath] && (
+                      {isUploadEnabled && (uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false) && (
                         <SubtitleUploadOptionsPanel
                           subtitlePath={subtitle.fullPath}
                           uploadOptions={uploadOptions?.[subtitle.fullPath] || {}}
