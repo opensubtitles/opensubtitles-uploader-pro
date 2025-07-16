@@ -155,79 +155,81 @@ export const MovieDisplay = ({
     }
   }, [movieGuesses, videoPath, featuresByImdbId, guessItData]);
 
-  if (!movieData) {
-    return null;
-  }
+  // SAFE: Render logic after all hooks to prevent "Rendered fewer hooks than expected" error
+  const renderContent = () => {
+    if (!movieData) {
+      return null;
+    }
 
-  if (movieData === 'guessing') {
-    return (
-      <span className="flex items-center gap-1">
-        <div className="w-3 h-3 border border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-        <span>Identifying movie...</span>
-      </span>
-    );
-  }
+    if (movieData === 'guessing') {
+      return (
+        <span className="flex items-center gap-1">
+          <div className="w-3 h-3 border border-blue-300 border-t-transparent rounded-full animate-spin"></div>
+          <span>Identifying movie...</span>
+        </span>
+      );
+    }
 
-  if (movieData === 'error') {
-    return (
-      <div className="space-y-2" id={`movie-${videoPath.replace(/[^a-zA-Z0-9]/g, '-')}`}>
-        <div className="rounded-lg p-3" 
-             style={{
-               backgroundColor: isDark ? '#3d1a1a' : '#fef2f2',
-               border: `1px solid ${themeColors.error}`
-             }}>
-          <span className="flex items-center gap-1" style={{color: themeColors.error}}>
-            <span>❌</span>
-            <span className="font-semibold">Movie identification failed</span>
-          </span>
-          <div className="text-xs mt-1" style={{color: themeColors.error}}>
-            Unable to identify this video automatically
+    if (movieData === 'error') {
+      return (
+        <div className="space-y-2" id={`movie-${videoPath.replace(/[^a-zA-Z0-9]/g, '-')}`}>
+          <div className="rounded-lg p-3" 
+               style={{
+                 backgroundColor: isDark ? '#3d1a1a' : '#fef2f2',
+                 border: `1px solid ${themeColors.error}`
+               }}>
+            <span className="flex items-center gap-1" style={{color: themeColors.error}}>
+              <span>❌</span>
+              <span className="font-semibold">Movie identification failed</span>
+            </span>
+            <div className="text-xs mt-1" style={{color: themeColors.error}}>
+              Unable to identify this video automatically
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (movieData === 'no-match') {
-    return (
-      <div className="space-y-2" id={`movie-${videoPath.replace(/[^a-zA-Z0-9]/g, '-')}`}>
-        <div className="rounded-lg p-3" 
-             style={{
-               backgroundColor: isDark ? '#3d1a1a' : '#fef2f2',
-               border: `1px solid ${themeColors.error}`
-             }}>
-          <span className="flex items-center gap-1" style={{color: themeColors.error}}>
-            <span>🚫</span>
-            <span className="font-semibold">No movie match found</span>
-            <button
-              onClick={() => onOpenMovieSearch(videoPath)}
-              className="ml-2 text-xs px-2 py-1 rounded border transition-colors"
-              style={{
-                color: themeColors.link,
-                borderColor: themeColors.link
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.color = themeColors.linkHover;
-                e.target.style.borderColor = themeColors.linkHover;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = themeColors.link;
-                e.target.style.borderColor = themeColors.link;
-              }}
-              title="Search for movie manually"
-            >
-              🔍 Search Movie
-            </button>
-          </span>
-          <div className="text-xs mt-1" style={{color: themeColors.error}}>
-            This video needs manual movie identification for upload
+    if (movieData === 'no-match') {
+      return (
+        <div className="space-y-2" id={`movie-${videoPath.replace(/[^a-zA-Z0-9]/g, '-')}`}>
+          <div className="rounded-lg p-3" 
+               style={{
+                 backgroundColor: isDark ? '#3d1a1a' : '#fef2f2',
+                 border: `1px solid ${themeColors.error}`
+               }}>
+            <span className="flex items-center gap-1" style={{color: themeColors.error}}>
+              <span>🚫</span>
+              <span className="font-semibold">No movie match found</span>
+              <button
+                onClick={() => onOpenMovieSearch(videoPath)}
+                className="ml-2 text-xs px-2 py-1 rounded border transition-colors"
+                style={{
+                  color: themeColors.link,
+                  borderColor: themeColors.link
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.color = themeColors.linkHover;
+                  e.target.style.borderColor = themeColors.linkHover;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.color = themeColors.link;
+                  e.target.style.borderColor = themeColors.link;
+                }}
+                title="Search for movie manually"
+              >
+                🔍 Search Movie
+              </button>
+            </span>
+            <div className="text-xs mt-1" style={{color: themeColors.error}}>
+              This video needs manual movie identification for upload
+            </div>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (typeof finalMovieData === 'object' && finalMovieData && !movieUpdateLoading[videoPath]) {
+    if (typeof finalMovieData === 'object' && finalMovieData && !movieUpdateLoading[videoPath]) {
     // Check if we have a valid IMDb ID for upload
     const uploadImdbId = finalMovieData?.kind === 'episode' && finalMovieData.imdbid 
       ? finalMovieData.imdbid 
@@ -707,17 +709,21 @@ export const MovieDisplay = ({
           />
         )}
       </div>
-    );
-  }
+      );
+    }
 
-  if (movieUpdateLoading[videoPath]) {
-    return (
-      <span className="flex items-center gap-1" style={{color: themeColors.link}}>
-        <div className="w-3 h-3 border rounded-full animate-spin" style={{borderColor: themeColors.link, borderTopColor: 'transparent'}}></div>
-        <span>Updating movie information...</span>
-      </span>
-    );
-  }
+    if (movieUpdateLoading[videoPath]) {
+      return (
+        <span className="flex items-center gap-1" style={{color: themeColors.link}}>
+          <div className="w-3 h-3 border rounded-full animate-spin" style={{borderColor: themeColors.link, borderTopColor: 'transparent'}}></div>
+          <span>Updating movie information...</span>
+        </span>
+      );
+    }
 
-  return null;
+    return null;
+  };
+
+  // SAFE: Always call hooks first, then render content
+  return renderContent();
 };

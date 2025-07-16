@@ -230,10 +230,8 @@ export const OrphanedSubtitles = ({
           // DISABLED: Episode data to prevent setState issues
           // const guessItEpisodeData = guessItData?.[subtitle.fullPath];
           
-          // Get upload enabled status directly from uploadStates (memoized per subtitle)
-          const isUploadEnabled = React.useMemo(() => {
-            return uploadStates[subtitle.fullPath] !== false;
-          }, [uploadStates, subtitle.fullPath]);
+          // Get upload enabled status directly from uploadStates (no useMemo needed)
+          const isUploadEnabled = uploadStates[subtitle.fullPath] !== false;
           
           // Debug logging causes setState during render - removed
           
