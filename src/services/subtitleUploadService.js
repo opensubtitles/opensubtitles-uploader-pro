@@ -30,7 +30,8 @@ export class SubtitleUploadService {
     getUploadEnabled,
     combinedLanguages,
     addDebugInfo,
-    onProgress
+    onProgress,
+    getVideoMetadata // Add video metadata getter
   }) {
     const results = {
       success: [],
@@ -82,7 +83,8 @@ export class SubtitleUploadService {
               featuresByImdbId,
               getSubtitleLanguage,
               combinedLanguages,
-              addDebugInfo
+              addDebugInfo,
+              getVideoMetadata
             });
 
             const tryUploadResponse = await XmlRpcService.tryUploadSubtitles(uploadData);
@@ -106,7 +108,8 @@ export class SubtitleUploadService {
                 featuresByImdbId,
                 getSubtitleLanguage,
                 combinedLanguages,
-                addDebugInfo
+                addDebugInfo,
+                getVideoMetadata
               });
               
               actualUploadResponse = await XmlRpcService.uploadSubtitles(actualUploadData);
@@ -266,7 +269,8 @@ export class SubtitleUploadService {
     featuresByImdbId,
     getSubtitleLanguage,
     combinedLanguages,
-    addDebugInfo
+    addDebugInfo,
+    getVideoMetadata
   }) {
     // Get the best movie data (episode-specific if available)
     const bestMovieData = this.getBestMovieData(video.fullPath, movieData, featuresByImdbId, guessItData);
@@ -322,7 +326,8 @@ export class SubtitleUploadService {
     featuresByImdbId,
     getSubtitleLanguage,
     combinedLanguages,
-    addDebugInfo
+    addDebugInfo,
+    getVideoMetadata
   }) {
     // Get the best movie data (episode-specific if available)
     const bestMovieData = this.getBestMovieData(video.fullPath, movieData, featuresByImdbId, guessItData);
@@ -361,6 +366,9 @@ export class SubtitleUploadService {
         foreignpartsonly: '0'
       };
 
+      // Get video metadata for upload parameters
+      const videoMetadata = getVideoMetadata ? getVideoMetadata(video.fullPath) : null;
+      
       // Prepare cd1 section
       const cd1 = {
         subhash: subtitleInfo.hash, // Use same hash as TryUploadSubtitles (MD5 of original content)
@@ -368,7 +376,14 @@ export class SubtitleUploadService {
         moviehash: video.movieHash,
         moviebytesize: video.size.toString(),
         moviefilename: video.name,
-        subcontent: subtitleInfo.contentGzipBase64
+        subcontent: subtitleInfo.contentGzipBase64,
+        
+        // Add video metadata parameters for OpenSubtitles API
+        ...(videoMetadata && {
+          movietimems: videoMetadata.movietimems?.toString(),
+          moviefps: videoMetadata.moviefps?.toString(),
+          movieframes: videoMetadata.movieframes?.toString()
+        })
       };
       
       addDebugInfo(`✅ Prepared actual upload data for: ${subtitle.name}`);
@@ -378,6 +393,16 @@ export class SubtitleUploadService {
       addDebugInfo(`   - HD: ${baseinfo.highdefinition}`);
       addDebugInfo(`   - Content length: ${subtitleInfo.content.length} chars`);
       addDebugInfo(`   - Compressed content length: ${subtitleInfo.contentGzipBase64.length} chars (base64)`);
+      
+      // Log video metadata if available
+      if (videoMetadata) {
+        addDebugInfo(`   - Video metadata:`);
+        addDebugInfo(`     * FPS: ${videoMetadata.moviefps}`);
+        addDebugInfo(`     * Duration: ${videoMetadata.durationFormatted} (${videoMetadata.movietimems}ms)`);
+        addDebugInfo(`     * Frames: ${videoMetadata.movieframes}`);
+      } else {
+        addDebugInfo(`   - Video metadata: not available`);
+      }
       
       // DEBUG: Verify compression round-trip for this specific upload
       try {

@@ -3,6 +3,7 @@ import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
 import { SubtitleUploadOptions } from './SubtitleUploadOptions.jsx';
+import { VideoMetadataDisplay } from './VideoMetadataDisplay.jsx';
 
 export const MatchedPairs = ({ 
   pairedFiles,
@@ -32,7 +33,11 @@ export const MatchedPairs = ({
   uploadOptions, // New prop for upload options
   onUpdateUploadOptions, // New prop for updating upload options
   colors, // Theme colors
-  isDark // Dark mode flag
+  isDark, // Dark mode flag
+  // Video metadata props
+  getVideoMetadata, // Function to get video metadata
+  isMetadataLoading, // Function to check if metadata is loading
+  getMetadataError // Function to get metadata error
 }) => {
   // Default to light theme colors if not provided
   const themeColors = colors || {
@@ -294,6 +299,17 @@ export const MatchedPairs = ({
                         );
                       })()}
                     </div>
+                    
+                    {/* Video Metadata Display */}
+                    <div className="mt-2">
+                      <VideoMetadataDisplay
+                        filePath={pair.video.fullPath}
+                        metadata={getVideoMetadata ? getVideoMetadata(pair.video.fullPath) : null}
+                        isLoading={isMetadataLoading ? isMetadataLoading(pair.video.fullPath) : false}
+                        error={getMetadataError ? getMetadataError(pair.video.fullPath) : null}
+                      />
+                    </div>
+                    
                 </div>
                 
                 {/* GuessIt Metadata Tags */}

@@ -7,6 +7,7 @@ import { useMovieGuess } from "../hooks/useMovieGuess.js";
 import { useGuessIt } from "../hooks/useGuessIt.js";
 import { useUserSession } from "../hooks/useUserSession.js";
 import { useCheckSubHash } from "../hooks/useCheckSubHash.js";
+import { useVideoMetadata } from "../hooks/useVideoMetadata.js";
 import { CacheService } from "../services/cache.js";
 import { MovieHashService } from "../services/movieHash.js";
 import { SubtitleUploadService } from "../services/subtitleUploadService.js";
@@ -125,6 +126,23 @@ function SubtitleUploaderInner() {
     clearHashCheckResults
   } = useCheckSubHash(addDebugInfo);
 
+  const {
+    videoMetadata,
+    isFFmpegLoaded,
+    extractVideoMetadata,
+    processVideoFiles,
+    clearVideoMetadata,
+    clearAllVideoMetadata,
+    getVideoMetadata,
+    isMetadataLoading,
+    getMetadataError,
+    getUploadParameters,
+    hasAnyMetadata,
+    loadingCount: metadataLoadingCount,
+    errorCount: metadataErrorCount,
+    processedCount: metadataProcessedCount
+  } = useVideoMetadata();
+
   // Track processed files to prevent reprocessing
   const processedFiles = useRef(new Set());
   
@@ -202,7 +220,8 @@ function SubtitleUploaderInner() {
         addDebugInfo,
         onProgress: (processed, total) => {
           setUploadProgress({ isUploading: true, processed, total });
-        }
+        },
+        getVideoMetadata
       });
 
       // Process upload results and update state
@@ -326,6 +345,7 @@ function SubtitleUploaderInner() {
       clearAllLanguageState(); // Language detection processing state
       clearSubtitleLanguages(); // Subtitle language selections
       clearHashCheckResults(); // Clear CheckSubHash results
+      clearAllVideoMetadata(); // Clear video metadata
       
       // Reset all UI state when new files are dropped
       setUploadResults({}); // Clear previous upload results
@@ -420,6 +440,20 @@ function SubtitleUploaderInner() {
           console.error(`Hash calculation error for ${videoFile.name}:`, hashError);
           updateFile(videoFile.fullPath, { movieHash: 'error' });
           addDebugInfo(`Hash calculation failed: ${hashError.message}`);
+        }
+
+        // Extract video metadata (FPS, duration, etc.) for upload parameters
+        if (isFFmpegLoaded) {
+          try {
+            addDebugInfo(`🎬 Extracting video metadata for ${videoFile.name}`);
+            await extractVideoMetadata(videoFile.file, videoFile.fullPath);
+            addDebugInfo(`✅ Video metadata extracted successfully for ${videoFile.name}`);
+          } catch (metadataError) {
+            console.error(`Video metadata extraction error for ${videoFile.name}:`, metadataError);
+            addDebugInfo(`❌ Video metadata extraction failed: ${metadataError.message}`);
+          }
+        } else {
+          addDebugInfo(`⏳ FFmpeg not loaded yet, skipping video metadata extraction for ${videoFile.name}`);
         }
 
         // Check if movie guess is needed
@@ -1014,6 +1048,9 @@ function SubtitleUploaderInner() {
             onUpdateUploadOptions={handleUploadOptionsUpdate}
             colors={colors}
             isDark={isDark}
+            getVideoMetadata={getVideoMetadata}
+            isMetadataLoading={isMetadataLoading}
+            getMetadataError={getMetadataError}
           />
         )}
 
