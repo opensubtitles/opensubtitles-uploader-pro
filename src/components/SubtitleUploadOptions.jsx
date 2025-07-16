@@ -35,6 +35,8 @@ export const SubtitleUploadOptions = ({
   const [localHearingImpairedValue, setLocalHearingImpairedValue] = useState(null);
   const [localAutoTranslationValue, setLocalAutoTranslationValue] = useState(null);
   const [localReleaseNameValue, setLocalReleaseNameValue] = useState('');
+  const [localCommentValue, setLocalCommentValue] = useState('');
+  const [localTranslatorValue, setLocalTranslatorValue] = useState('');
   
   // Refs to track if we've already processed auto-detection for this file
   const processedForeignPartsRef = useRef(false);
@@ -144,28 +146,37 @@ export const SubtitleUploadOptions = ({
     }
   }, [subtitleFile, subtitleContent, hasSetAutoTranslation]);
 
-  // Initialize local state from uploadOptions on mount only
+  // Initialize local state from uploadOptions - sync whenever uploadOptions change
   useEffect(() => {
-    if (uploadOptions?.hearingimpaired === '1') {
+    // Only update if there's a meaningful change to prevent cursor jumping
+    if (uploadOptions?.moviereleasename !== localReleaseNameValue) {
+      setLocalReleaseNameValue(uploadOptions?.moviereleasename || '');
+    }
+    if (uploadOptions?.subauthorcomment !== localCommentValue) {
+      setLocalCommentValue(uploadOptions?.subauthorcomment || '');
+    }
+    if (uploadOptions?.subtranslator !== localTranslatorValue) {
+      setLocalTranslatorValue(uploadOptions?.subtranslator || '');
+    }
+    
+    // Update checkboxes
+    if (uploadOptions?.hearingimpaired === '1' && localHearingImpairedValue !== '1') {
       setLocalHearingImpairedValue('1');
       setHasSetHearingImpaired(true);
     }
-    if (uploadOptions?.highdefinition === '1') {
+    if (uploadOptions?.highdefinition === '1' && localHdValue !== '1') {
       setLocalHdValue('1');
       setHasSetHighDefinition(true);
     }
-    if (uploadOptions?.foreignpartsonly === '1') {
+    if (uploadOptions?.foreignpartsonly === '1' && localForeignPartsValue !== '1') {
       setLocalForeignPartsValue('1');
       setHasSetForeignParts(true);
     }
-    if (uploadOptions?.automatictranslation === '1') {
+    if (uploadOptions?.automatictranslation === '1' && localAutoTranslationValue !== '1') {
       setLocalAutoTranslationValue('1');
       setHasSetAutoTranslation(true);
     }
-    if (uploadOptions?.moviereleasename) {
-      setLocalReleaseNameValue(uploadOptions.moviereleasename);
-    }
-  }, [subtitlePath]); // Only run when subtitlePath changes (new file)
+  }, [uploadOptions?.moviereleasename, uploadOptions?.subauthorcomment, uploadOptions?.subtranslator, uploadOptions?.hearingimpaired, uploadOptions?.highdefinition, uploadOptions?.foreignpartsonly, uploadOptions?.automatictranslation]);
 
   // Comprehensive upload options initialization - detects new features from file paths
   useEffect(() => {
@@ -300,6 +311,7 @@ export const SubtitleUploadOptions = ({
     }
   }, [subtitleFile, pairedVideoFile, hasSetReleaseName]);
 
+
   const handleFieldChange = useCallback((field, value) => {
     const newOptions = {
       ...uploadOptions,
@@ -325,6 +337,10 @@ export const SubtitleUploadOptions = ({
       setLocalAutoTranslationValue(value);
     } else if (field === 'moviereleasename') {
       setLocalReleaseNameValue(value);
+    } else if (field === 'subauthorcomment') {
+      setLocalCommentValue(value);
+    } else if (field === 'subtranslator') {
+      setLocalTranslatorValue(value);
     }
     
     // If user manually changes release name, mark it as manually set to prevent auto-detection
@@ -351,7 +367,7 @@ export const SubtitleUploadOptions = ({
     if (field === 'automatictranslation' && value !== uploadOptions.automatictranslation) {
       setHasSetAutoTranslation(true);
     }
-  }, [uploadOptions, subtitlePath]);
+  }, [uploadOptions, subtitlePath, localReleaseNameValue, localCommentValue, localTranslatorValue]);
 
   const currentOptions = uploadOptions || {};
 
@@ -385,8 +401,10 @@ export const SubtitleUploadOptions = ({
           <span style={{ color: colors.textSecondary }}>Comment</span>
         </div>
         <textarea
-          value={currentOptions.subauthorcomment || ''}
-          onChange={(e) => handleFieldChange('subauthorcomment', e.target.value)}
+          value={localCommentValue || currentOptions.subauthorcomment || ''}
+          onChange={(e) => {
+            handleFieldChange('subauthorcomment', e.target.value);
+          }}
           placeholder="Comment from subtitle author (can be multiple lines)"
           rows={2}
           className="flex-1 px-2 py-1 text-xs rounded border resize-none"
@@ -414,8 +432,10 @@ export const SubtitleUploadOptions = ({
         </div>
         <input
           type="text"
-          value={localReleaseNameValue !== '' ? localReleaseNameValue : (currentOptions.moviereleasename || '')}
-          onChange={(e) => handleFieldChange('moviereleasename', e.target.value)}
+          value={localReleaseNameValue || currentOptions.moviereleasename || ''}
+          onChange={(e) => {
+            handleFieldChange('moviereleasename', e.target.value);
+          }}
           placeholder="Release name (e.g., Movie.2023.1080p.BluRay.x264-GROUP)"
           className="flex-1 px-2 py-1 text-xs rounded border"
           style={{
@@ -434,7 +454,7 @@ export const SubtitleUploadOptions = ({
         </div>
         <input
           type="text"
-          value={currentOptions.subtranslator || ''}
+          value={localTranslatorValue || currentOptions.subtranslator || ''}
           onChange={(e) => handleFieldChange('subtranslator', e.target.value)}
           placeholder="Who translated the subtitles"
           className="flex-1 px-2 py-1 text-xs rounded border"
