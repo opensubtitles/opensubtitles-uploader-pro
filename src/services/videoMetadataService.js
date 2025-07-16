@@ -1,6 +1,6 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { toBlobURL, fetchFile } from '@ffmpeg/util';
-import { delayedNetworkRequest } from '../utils/networkUtils.js';
+import { ensureNetworkDelay } from '../utils/networkUtils.js';
 import { DEFAULT_SETTINGS } from '../utils/constants.js';
 
 /**
@@ -222,7 +222,7 @@ class VideoMetadataService {
         
         // Add delay between processing to prevent overwhelming the browser
         if (i > 0) {
-          await delayedNetworkRequest(async () => {}, DEFAULT_SETTINGS.NETWORK_REQUEST_DELAY);
+          await ensureNetworkDelay(DEFAULT_SETTINGS.NETWORK_REQUEST_DELAY);
         }
         
         const metadata = await this.extractMetadata(file);
