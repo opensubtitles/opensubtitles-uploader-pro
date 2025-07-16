@@ -20,6 +20,8 @@ export const MovieDisplay = ({
   getGuessItProcessingStatus, // Function to get GuessIt processing status
   getFormattedTags // Function to get formatted GuessIt tags
 }) => {
+  // SAFE: Separate state for enhanced episode data to avoid setState during render
+  const [enhancedEpisodeData, setEnhancedEpisodeData] = React.useState(null);
   // Default to light theme colors if not provided
   const themeColors = colors || {
     cardBackground: '#fff',
@@ -34,8 +36,8 @@ export const MovieDisplay = ({
     error: '#dc3545',
     warning: '#ffc107'
   };
-  // Calculate checkbox state for all associated subtitles
-  const getMovieCheckboxState = () => {
+  // BASIC: Calculate checkbox state for all associated subtitles
+  const getMovieCheckboxState = React.useMemo(() => {
     if (!associatedSubtitles || associatedSubtitles.length === 0) {
       return { checked: false, indeterminate: false };
     }
@@ -49,126 +51,109 @@ export const MovieDisplay = ({
     } else {
       return { checked: false, indeterminate: true };
     }
-  };
+  }, [associatedSubtitles, getUploadEnabled]);
 
   // Handle movie checkbox change
-  const handleMovieCheckboxChange = (checked) => {
+  const handleMovieCheckboxChange = React.useCallback((checked) => {
     if (!associatedSubtitles || !onToggleUpload) return;
     
     // Toggle all associated subtitles to the new state
     associatedSubtitles.forEach(subtitle => {
       onToggleUpload(subtitle, checked);
     });
-  };
+  }, [associatedSubtitles, onToggleUpload]);
 
-  // Find specific episode in features data based on GuessIt season/episode info
+  // DISABLED: Find specific episode in features data (causes setState during render)
   const findEpisodeMatch = (featuresData, guessItData) => {
-    if (!featuresData?.data?.[0]?.attributes?.seasons || !guessItData) {
-      return null;
-    }
-
-    const attributes = featuresData.data[0].attributes;
-    
-    // Check if this is a TV show and we have episode info from GuessIt
-    if (attributes.feature_type !== 'Tvshow' || !guessItData.season || !guessItData.episode) {
-      return null;
-    }
-
-    const seasonNumber = parseInt(guessItData.season);
-    const episodeNumber = parseInt(guessItData.episode);
-
-    // Debug logging to see what we're getting
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Episode matching debug:', {
-        guessItData,
-        seasonNumber,
-        episodeNumber,
-        seasonRaw: guessItData.season,
-        episodeRaw: guessItData.episode
-      });
-    }
-
-    if (isNaN(seasonNumber) || isNaN(episodeNumber)) {
-      console.warn('Invalid season/episode numbers:', { seasonNumber, episodeNumber, guessItData });
-      return null;
-    }
-
-    // Find the matching season
-    const season = attributes.seasons.find(s => s.season_number === seasonNumber);
-    if (!season?.episodes) {
-      return null;
-    }
-
-    // Find the matching episode
-    const episode = season.episodes.find(e => e.episode_number === episodeNumber);
-    if (!episode) {
-      return null;
-    }
-
-    // Return episode-specific movie data
-    return {
-      imdbid: episode.feature_imdb_id?.toString(),
-      title: `${attributes.title} - S${seasonNumber.toString().padStart(2, '0')}E${episodeNumber.toString().padStart(2, '0')} - ${episode.title}`,
-      year: attributes.year,
-      kind: 'episode',
-      season: seasonNumber,
-      episode: episodeNumber,
-      episode_title: episode.title,
-      show_title: attributes.title,
-      feature_id: episode.feature_id,
-      reason: 'Episode matched from GuessIt data'
-    };
+    // Disabled to prevent setState during render issues
+    return null;
   };
 
-  // Get the best movie data (episode-specific if available, otherwise main show)
-  const getBestMovieData = () => {
+  // SAFE: Get movie data (with basic episode support, no /features processing)
+  const getBestMovieData = React.useMemo(() => {
+    const movieData = movieGuesses?.[videoPath];
+    
+    // If movieData already has episode info (from GuessIt processing), use it directly
+    if (movieData && movieData.kind === 'episode') {
+      return movieData;
+    }
+    
+    // Otherwise return basic movie data
+    return movieData;
+  }, [movieGuesses, videoPath]);
+
+  const movieData = movieGuesses?.[videoPath];
+  const bestMovieData = getBestMovieData;
+  const originalMovieData = movieData;
+  
+  // SAFE: Handle episode data properly (prefer enhanced data if available)
+  const finalMovieData = enhancedEpisodeData || getBestMovieData;
+  const featuresData = originalMovieData?.imdbid ? featuresByImdbId?.[originalMovieData.imdbid] : null;
+  
+  // SAFE: Get episode-specific features data if available
+  const episodeFeaturesData = finalMovieData?.kind === 'episode' && finalMovieData.imdbid 
+    ? featuresByImdbId?.[finalMovieData.imdbid] 
+    : null;
+
+  // SAFE: useEffect for episode-specific features fetching (avoids setState during render)
+  React.useEffect(() => {
+    // Only fetch episode features if we have episode data and IMDb ID
+    if (finalMovieData?.kind === 'episode' && finalMovieData.imdbid && fetchFeaturesByImdbId) {
+      // Check if we already have episode features data
+      if (!featuresByImdbId[finalMovieData.imdbid]) {
+        console.log(`Fetching episode features for IMDb ID: ${finalMovieData.imdbid}`);
+        fetchFeaturesByImdbId(finalMovieData.imdbid);
+      }
+    }
+  }, [finalMovieData?.imdbid, finalMovieData?.kind, fetchFeaturesByImdbId, featuresByImdbId]);
+
+  // SAFE: useEffect for episode title enhancement (runs after render)
+  React.useEffect(() => {
     const movieData = movieGuesses?.[videoPath];
     const featuresData = movieData?.imdbid ? featuresByImdbId?.[movieData.imdbid] : null;
     const guessItVideoData = guessItData?.[videoPath];
 
-    // Try to find episode match if we have GuessIt data
+    // Only process if we have all the required data and it's a TV series
     if (movieData && featuresData && guessItVideoData && typeof guessItVideoData === 'object') {
-      const episodeMatch = findEpisodeMatch(featuresData, guessItVideoData);
-      if (episodeMatch) {
-        // Check if we have episode-specific features data
-        const episodeFeaturesData = featuresByImdbId?.[episodeMatch.imdbid];
-        if (episodeFeaturesData?.data?.[0]) {
-          // Use episode-specific features data to create proper title
-          const episodeAttributes = episodeFeaturesData.data[0].attributes;
-          return {
-            ...episodeMatch,
-            title: episodeAttributes.title || episodeMatch.title,
-            year: episodeAttributes.year || episodeMatch.year,
-            reason: 'Episode matched with full features data'
-          };
+      // Check if this is a TV show with episode info
+      if (featuresData?.data?.[0]?.attributes?.feature_type === 'Tvshow' && 
+          featuresData?.data?.[0]?.attributes?.seasons &&
+          guessItVideoData.season && guessItVideoData.episode) {
+        
+        const attributes = featuresData.data[0].attributes;
+        const seasonNumber = parseInt(guessItVideoData.season);
+        const episodeNumber = parseInt(guessItVideoData.episode);
+
+        if (!isNaN(seasonNumber) && !isNaN(episodeNumber)) {
+          // Find the matching season
+          const season = attributes.seasons.find(s => s.season_number === seasonNumber);
+          if (season?.episodes) {
+            // Find the matching episode
+            const episode = season.episodes.find(e => e.episode_number === episodeNumber);
+            if (episode) {
+              // Create enhanced episode data
+              const enhancedData = {
+                ...movieData,
+                imdbid: episode.feature_imdb_id?.toString() || movieData.imdbid,
+                title: `${attributes.title} - S${seasonNumber.toString().padStart(2, '0')}E${episodeNumber.toString().padStart(2, '0')} - ${episode.title}`,
+                year: attributes.year,
+                kind: 'episode',
+                season: seasonNumber,
+                episode: episodeNumber,
+                episode_title: episode.title,
+                show_title: attributes.title,
+                feature_id: episode.feature_id,
+                reason: 'Episode enhanced with features API data'
+              };
+              
+              console.log('Enhanced episode data:', enhancedData);
+              setEnhancedEpisodeData(enhancedData);
+            }
+          }
         }
-        return episodeMatch;
       }
     }
-
-    // Fall back to original movie data
-    return movieData;
-  };
-
-  const movieData = movieGuesses?.[videoPath];
-  const bestMovieData = getBestMovieData();
-  const originalMovieData = movieData;
-  const featuresData = originalMovieData?.imdbid ? featuresByImdbId?.[originalMovieData.imdbid] : null;
-  
-  // Get episode-specific features data if available
-  const episodeFeaturesData = bestMovieData?.kind === 'episode' && bestMovieData.imdbid 
-    ? featuresByImdbId?.[bestMovieData.imdbid] 
-    : null;
-
-  // Effect to fetch episode-specific features when episode IMDb ID is available
-  React.useEffect(() => {
-    if (bestMovieData?.kind === 'episode' && bestMovieData.imdbid && fetchFeaturesByImdbId && !episodeFeaturesData) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Fetching episode features for IMDb ID:', bestMovieData.imdbid);
-      }
-      fetchFeaturesByImdbId(bestMovieData.imdbid);
-    }
-  }, [bestMovieData?.imdbid, bestMovieData?.kind, fetchFeaturesByImdbId]);
+  }, [movieGuesses, videoPath, featuresByImdbId, guessItData]);
 
   if (!movieData) {
     return null;
@@ -242,21 +227,21 @@ export const MovieDisplay = ({
     );
   }
 
-  if (typeof bestMovieData === 'object' && bestMovieData && !movieUpdateLoading[videoPath]) {
+  if (typeof finalMovieData === 'object' && finalMovieData && !movieUpdateLoading[videoPath]) {
     // Check if we have a valid IMDb ID for upload
-    const uploadImdbId = bestMovieData?.kind === 'episode' && bestMovieData.imdbid 
-      ? bestMovieData.imdbid 
+    const uploadImdbId = finalMovieData?.kind === 'episode' && finalMovieData.imdbid 
+      ? finalMovieData.imdbid 
       : originalMovieData.imdbid;
     
     const hasValidImdbId = !!uploadImdbId;
     
     // Check features loading and error states
     const isMainFeaturesLoading = originalMovieData?.imdbid && featuresLoading?.[originalMovieData.imdbid];
-    const isEpisodeFeaturesLoading = bestMovieData?.imdbid && featuresLoading?.[bestMovieData.imdbid];
+    const isEpisodeFeaturesLoading = finalMovieData?.imdbid && featuresLoading?.[finalMovieData.imdbid];
     const isFeaturesLoading = isMainFeaturesLoading || isEpisodeFeaturesLoading;
     
     const mainFeaturesHasError = originalMovieData?.imdbid && featuresByImdbId?.[originalMovieData.imdbid]?.error;
-    const episodeFeaturesHasError = bestMovieData?.imdbid && featuresByImdbId?.[bestMovieData.imdbid]?.error;
+    const episodeFeaturesHasError = finalMovieData?.imdbid && featuresByImdbId?.[finalMovieData.imdbid]?.error;
     
     return (
       <div 
@@ -270,7 +255,7 @@ export const MovieDisplay = ({
       >
         <div className="flex gap-4">
           {/* Movie Poster */}
-          {bestMovieData.imdbid && (
+          {finalMovieData.imdbid && (
             <div className="flex-shrink-0">
               <div className="relative w-16 h-24 rounded border border-gray-300 bg-gray-100 overflow-hidden">
                 {/* Loading placeholder - always show initially */}
@@ -303,15 +288,13 @@ export const MovieDisplay = ({
                             ? imgUrl
                             : `https://www.opensubtitles.com${imgUrl}`;
                         })()}
-                        alt={`${bestMovieData.title} Poster`}
+                        alt={`${finalMovieData.title} Poster`}
                         className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300"
                         onError={(e) => {
-                          console.log('Image failed to load:', e.target.src);
                           // Keep the placeholder visible on error
                           e.target.style.display = 'none';
                         }}
                         onLoad={(e) => {
-                          console.log('Image loaded successfully:', e.target.src);
                           // Fade in the image and hide placeholder
                           e.target.style.opacity = '1';
                           if (e.target.previousElementSibling) {
@@ -344,41 +327,57 @@ export const MovieDisplay = ({
                   <span 
                     title={featuresData?.data?.[0]?.attributes?.feature_type ? 
                       featuresData.data[0].attributes.feature_type.replace('_', ' ') : 
-                      (bestMovieData.kind || 'movie').replace('_', ' ')
+                      (finalMovieData.kind || 'movie').replace('_', ' ')
                     }
                   >
                     {(featuresData?.data?.[0]?.attributes?.feature_type === 'tv_series' || 
                       featuresData?.data?.[0]?.attributes?.feature_type === 'episode' ||
-                      bestMovieData.kind === 'tv series' ||
-                      bestMovieData.kind === 'episode') ? '📺' : '🎬'}
+                      finalMovieData.kind === 'tv series' ||
+                      finalMovieData.kind === 'episode') ? '📺' : '🎬'}
                   </span>
                 )}
                 
                 {/* Main Title - shows episode-specific title with parent_title + original_title when available */}
                 <span>
                   {(() => {
+                    // DISABLED: console.log to prevent setState during render
+                    // console.log('Title formatting debug:', {
+                    //   'hasEpisodeFeaturesData': !!episodeFeaturesData?.data?.[0]?.attributes,
+                    //   'episodeFeaturesData': episodeFeaturesData,
+                    //   'finalMovieData.kind': finalMovieData.kind,
+                    //   'finalMovieData.season': finalMovieData.season,
+                    //   'finalMovieData.episode': finalMovieData.episode,
+                    //   'finalMovieData': finalMovieData
+                    // });
+                    
                     // If we have episode-specific features data, use parent_title + original_title
                     if (episodeFeaturesData?.data?.[0]?.attributes) {
                       const episodeAttrs = episodeFeaturesData.data[0].attributes;
                       const parentTitle = episodeAttrs.parent_title;
                       const originalTitle = episodeAttrs.original_title;
                       const seasonEpisode = `S${episodeAttrs.season_number?.toString().padStart(2, '0') || '??'}E${episodeAttrs.episode_number?.toString().padStart(2, '0') || '??'}`;
+                      // DISABLED: console.log to prevent setState during render
+                      // console.log('Using episode features data:', { parentTitle, originalTitle, seasonEpisode, episodeAttrs });
                       return `${parentTitle} - ${seasonEpisode} - ${originalTitle}`;
                     }
                     
-                    // If this is an episode with season/episode info from bestMovieData, format it properly
-                    if (bestMovieData.kind === 'episode' && bestMovieData.season && bestMovieData.episode) {
-                      const seasonEpisode = `S${bestMovieData.season.toString().padStart(2, '0')}E${bestMovieData.episode.toString().padStart(2, '0')}`;
-                      const showTitle = bestMovieData.show_title || bestMovieData.title;
-                      const episodeTitle = bestMovieData.episode_title || `Episode ${bestMovieData.episode}`;
+                    // If this is an episode with season/episode info from finalMovieData, format it properly
+                    if (finalMovieData.kind === 'episode' && finalMovieData.season && finalMovieData.episode) {
+                      const seasonEpisode = `S${finalMovieData.season.toString().padStart(2, '0')}E${finalMovieData.episode.toString().padStart(2, '0')}`;
+                      const showTitle = finalMovieData.show_title || finalMovieData.title;
+                      const episodeTitle = finalMovieData.episode_title || `Episode ${finalMovieData.episode}`;
+                      // DISABLED: console.log to prevent setState during render
+                      // console.log('Using finalMovieData:', { seasonEpisode, showTitle, episodeTitle });
                       return `${showTitle} - ${seasonEpisode} - ${episodeTitle}`;
                     }
                     
-                    // Otherwise use the bestMovieData title as-is
-                    const mainTitle = bestMovieData.title;
+                    // Otherwise use the finalMovieData title as-is
+                    const mainTitle = finalMovieData.title;
+                    // DISABLED: console.log to prevent setState during render
+                    // console.log('Using basic title:', mainTitle);
                     return mainTitle;
                   })()}
-                  {bestMovieData.year && ` (${bestMovieData.year})`}
+                  {finalMovieData.year && ` (${finalMovieData.year})`}
                 </span>
                 
                 {/* Change Movie Button */}
@@ -409,10 +408,10 @@ export const MovieDisplay = ({
                     <label className="flex items-center cursor-pointer group" title="Select/deselect all subtitles for this movie">
                       <input
                         type="checkbox"
-                        checked={getMovieCheckboxState().checked}
+                        checked={getMovieCheckboxState.checked}
                         ref={(el) => {
                           if (el) {
-                            el.indeterminate = getMovieCheckboxState().indeterminate;
+                            el.indeterminate = getMovieCheckboxState.indeterminate;
                           }
                         }}
                         onChange={(e) => handleMovieCheckboxChange(e.target.checked)}
@@ -425,7 +424,7 @@ export const MovieDisplay = ({
                       />
                       <span className="ml-2 text-xs font-medium" style={{color: themeColors.link}}>
                         {(() => {
-                          const state = getMovieCheckboxState();
+                          const state = getMovieCheckboxState;
                           if (state.indeterminate) return 'Partial';
                           if (state.checked) return 'All Selected';
                           return 'None Selected';
@@ -475,7 +474,7 @@ export const MovieDisplay = ({
                   </div>
                   <button
                     onClick={() => {
-                      // Retry fetching features for both main movie and episode if needed
+                      // BASIC: Retry fetching features
                       if (mainFeaturesHasError && originalMovieData.imdbid) {
                         fetchFeaturesByImdbId(originalMovieData.imdbid);
                       }

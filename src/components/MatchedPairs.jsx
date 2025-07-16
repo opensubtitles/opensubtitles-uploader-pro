@@ -306,7 +306,7 @@ export const MatchedPairs = ({
                   isDark={isDark}
                 />
                 
-                {/* Movie Display Component */}
+                {/* Movie Display Component - BASIC version without episode detection */}
                 <MovieDisplay
                   videoPath={pair.video.fullPath}
                   movieGuesses={movieGuesses}

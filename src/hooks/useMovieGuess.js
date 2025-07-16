@@ -51,7 +51,7 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
     featuresLoadingRef.current = featuresLoading;
   }, [featuresLoading]);
 
-  // Fetch features by IMDb ID
+  // BASIC: Fetch features by IMDb ID (without episode detection)
   const fetchFeaturesByImdbId = useCallback(async (imdbId) => {
     if (!imdbId) return;
 
@@ -146,7 +146,7 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
     return `${directory}/${baseName}`;
   }, []);
 
-  // Create episode-specific movie data from GuessIt results for orphaned subtitles
+  // SAFE: Create episode-specific movie data from GuessIt results (with proper async handling)
   const createEpisodeMovieData = useCallback(async (movieGuess, filePath, fileName) => {
     try {
       addDebugInfo(`🔍 Starting GuessIt episode detection for: ${fileName}`);
@@ -158,14 +158,6 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
       addDebugInfo(`📊 GuessIt raw output for ${fileName}:`);
       addDebugInfo(JSON.stringify(guessItData, null, 2));
       
-      // Debug: Show formatted tags like for movies
-      if (guessItData?.formatted_data) {
-        addDebugInfo(`🏷️ GuessIt tags for ${fileName}:`);
-        Object.entries(guessItData.formatted_data).forEach(([key, value]) => {
-          addDebugInfo(`   ${key}: ${value}`);
-        });
-      }
-      
       // Debug: Show episode info specifically
       if (guessItData?.episode_info) {
         addDebugInfo(`📺 Episode info for ${fileName}:`);
@@ -174,12 +166,12 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
         addDebugInfo(`   Episode Title: ${guessItData.episode_info.episode_title || 'not found'}`);
       } else {
         addDebugInfo(`⚠️ No episode_info found in GuessIt data for ${fileName}`);
+        return; // Exit early if no episode info
       }
       
       if (!guessItData?.episode_info?.season || !guessItData?.episode_info?.episode) {
         addDebugInfo(`⚠️ No episode information found in filename: ${fileName}`);
-        addDebugInfo(`   Available data keys: ${Object.keys(guessItData || {}).join(', ')}`);
-        return;
+        return; // Exit early if no episode info
       }
       
       const { season, episode } = guessItData.episode_info;
@@ -188,7 +180,7 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
       
       addDebugInfo(`🔍 Creating episode data: ${seriesTitle} S${season}E${episode} - ${episodeTitle}`);
       
-      // Create episode-specific movie data (similar to how it works for paired files)
+      // Create episode-specific movie data
       const episodeMovieData = {
         ...movieGuess,
         kind: 'episode',
@@ -196,29 +188,29 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
         episode: episode,
         episode_title: episodeTitle,
         title: seriesTitle,
-        show_title: seriesTitle, // Add show_title for consistent access
+        show_title: seriesTitle,
         formatted_title: guessItData.formatted_title || `${seriesTitle} - S${String(season).padStart(2, '0')}E${String(episode).padStart(2, '0')} - ${episodeTitle}`,
-        series_imdb_id: movieGuess.imdbid, // Keep original series IMDB ID
-        // For orphaned subtitles, we create episode-like data but keep series IMDB ID for features
-        // This matches how the system works for movies - GuessIt enhances the display but doesn't change the core identification
+        series_imdb_id: movieGuess.imdbid,
         source: 'xmlrpc-enhanced-with-guessit-episode-data',
-        guessit_data: guessItData, // Store GuessIt data for tags display
+        guessit_data: guessItData,
         guessit_enhanced: true
       };
       
-      // Update the movie guess with episode-specific data
-      setMovieGuesses(prev => ({
-        ...prev,
-        [filePath]: episodeMovieData
-      }));
-      
-      // Also update GuessIt data so tags display correctly
-      if (setGuessItDataForFile) {
-        setGuessItDataForFile(filePath, guessItData);
-        addDebugInfo(`📋 Updated GuessIt data for tags display: ${fileName}`);
-      }
-      
-      addDebugInfo(`✅ Created episode data for ${seriesTitle} S${season}E${episode} - ${episodeTitle}`);
+      // SAFE: Update state asynchronously to avoid setState during render
+      setTimeout(() => {
+        setMovieGuesses(prev => ({
+          ...prev,
+          [filePath]: episodeMovieData
+        }));
+        
+        // Also update GuessIt data so tags display correctly
+        if (setGuessItDataForFile) {
+          setGuessItDataForFile(filePath, guessItData);
+          addDebugInfo(`📋 Updated GuessIt data for tags display: ${fileName}`);
+        }
+        
+        addDebugInfo(`✅ Created episode data for ${seriesTitle} S${season}E${episode} - ${episodeTitle}`);
+      }, 100);
       
     } catch (error) {
       addDebugInfo(`❌ Episode data creation failed: ${error.message}`);
@@ -268,9 +260,10 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
         }
       }));
       
-      // Also fetch features if we have an IMDb ID and it's a TV series (allow multiple calls for episodes)
-      if (existingData.imdbid && (!existingData.kind || existingData.kind === 'tv series' || existingData.kind.toLowerCase().includes('episode'))) {
-        fetchFeaturesByImdbId(existingData.imdbid);
+      // BASIC: Fetch features for reused data (without episode detection)
+      if (existingData.imdbid) {
+        setTimeout(() => fetchFeaturesByImdbId(existingData.imdbid), 0);
+        addDebugInfo(`Basic features fetching enabled for reused data: ${videoFile.name}`);
       }
       return;
     }
@@ -328,19 +321,18 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
       if (finalValidMovieGuess) {
         addDebugInfo(`Movie identified: ${movieGuess.title} (${movieGuess.year}) - ${movieGuess.reason || 'Filename match'}`);
         
-        // Fetch features if we have an IMDb ID
-        // For movies: only fetch once per IMDb ID (already handled by fetchFeaturesByImdbId caching)
-        // For TV series/episodes: allow multiple fetches as episodes might need different season/episode data
+        // SAFE: Fetch features if we have an IMDb ID and start episode detection for TV series
         if (movieGuess.imdbid) {
-          fetchFeaturesByImdbId(movieGuess.imdbid);
+          setTimeout(() => fetchFeaturesByImdbId(movieGuess.imdbid), 0);
+          addDebugInfo(`Features fetching enabled for: ${videoFile.name}`);
           
-          // For TV series, try to enhance with episode-specific data using GuessIt
+          // For TV series, schedule episode detection after a delay
           if (movieGuess.kind === 'tv series') {
             setTimeout(() => {
               createEpisodeMovieData(movieGuess, filePath, videoFile.name).catch(error => {
-                addDebugInfo(`Episode data creation failed for ${videoFile.name}: ${error.message}`);
+                addDebugInfo(`Episode detection failed for ${videoFile.name}: ${error.message}`);
               });
-            }, 1000); // 1 second delay to allow GuessIt processing
+            }, 1500); // Longer delay to ensure initial state is settled
           }
         }
       } else {
