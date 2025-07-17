@@ -785,6 +785,34 @@ function SubtitleUploaderInner() {
       const processedFiles = [];
       
       for (const file of selectedFiles) {
+        // Check if it's a ZIP file and extract contents
+        if (file.name.toLowerCase().endsWith('.zip') || file.type === 'application/zip') {
+          try {
+            addDebugInfo(`📦 Processing ZIP file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            const { ZipProcessingService } = await import('../services/zipProcessing.js');
+            
+            // Validate ZIP file size before processing
+            const sizeValidation = ZipProcessingService.validateZipSize(file);
+            if (!sizeValidation.isValid) {
+              addDebugInfo(`❌ ZIP file size validation failed: ${sizeValidation.error}`);
+              setError(sizeValidation.error);
+              setHasDroppedFiles(false);
+              return;
+            }
+            
+            const extractedFiles = await ZipProcessingService.processZipFile(file);
+            addDebugInfo(`📦 Extracted ${extractedFiles.length} files from ${file.name}`);
+            processedFiles.push(...extractedFiles);
+            continue;
+          } catch (error) {
+            addDebugInfo(`❌ Error processing ZIP file ${file.name}: ${error.message}`);
+            setError(`Error processing ZIP file ${file.name}: ${error.message}`);
+            console.error(`Error processing ZIP file ${file.name}:`, error);
+            setHasDroppedFiles(false);
+            return;
+          }
+        }
+        
         const processedFile = {
           file: file,
           fullPath: file.name,
@@ -809,7 +837,7 @@ function SubtitleUploaderInner() {
         await processFilesInBatches(processedFiles);
       } else {
         addDebugInfo('⚠️ No valid media files found in selection');
-        setError('No valid video or subtitle files found. Please select .mp4, .mkv, .avi, .srt, .vtt, .ass files, etc.');
+        setError('No valid video or subtitle files found. Please select .mp4, .mkv, .avi, .srt, .vtt, .ass files, ZIP archives, etc.');
         setHasDroppedFiles(false);
       }
       

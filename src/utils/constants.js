@@ -1,5 +1,5 @@
 // Application version - updated manually to match package.json
-export const APP_VERSION = '1.0.9';
+export const APP_VERSION = '1.1.0';
 
 // API Configuration - from environment variables
 export const OPENSUBTITLES_COM_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_OPENSUBTITLES_API_KEY || '' : '';

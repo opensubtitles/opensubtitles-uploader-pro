@@ -1,4 +1,5 @@
 import { isMediaFile, isVideoFile, isSubtitleFile } from '../utils/fileUtils.js';
+import { ZipProcessingService } from './zipProcessing.js';
 
 /**
  * File processing service for handling drag and drop files
@@ -41,6 +42,24 @@ export class FileProcessingService {
       const fileType = file.type;
       const fullPath = path + fileName;
       
+      // Check if it's a ZIP file
+      if (ZipProcessingService.isZipFile(file)) {
+        try {
+          // Validate ZIP file size before processing
+          const sizeValidation = ZipProcessingService.validateZipSize(file);
+          if (!sizeValidation.isValid) {
+            console.error(`ZIP file size validation failed: ${sizeValidation.error}`);
+            return;
+          }
+          
+          const extractedFiles = await ZipProcessingService.processZipFile(file);
+          output.push(...extractedFiles);
+        } catch (error) {
+          console.error(`Error processing ZIP file ${fileName}:`, error);
+        }
+        return;
+      }
+      
       const { isVideo, isSubtitle, isMedia, fileKind } = isMediaFile(file);
       
       if (isMedia) {
@@ -70,25 +89,46 @@ export class FileProcessingService {
    */
   static traverseWebkitEntry(entry, path, output) {
     return new Promise((resolve) => {
-      if (entry.isFile && (isVideoFile(entry.name) || isSubtitleFile(entry.name))) {
-        entry.file((file) => {
-          const { isVideo, isSubtitle } = isMediaFile(file);
-          
-          const fileObj = {
-            name: file.name,
-            fullPath: path + file.name,
-            size: file.size,
-            type: file.type,
-            file: file,
-            isVideo: isVideo,
-            isSubtitle: isSubtitle,
-            movieHash: null,
-            detectedLanguage: null,
-            recognized: true
-          };
-          
-          output.push(fileObj);
-          resolve();
+      if (entry.isFile && (isVideoFile(entry.name) || isSubtitleFile(entry.name) || entry.name.toLowerCase().endsWith('.zip'))) {
+        entry.file(async (file) => {
+          try {
+            // Check if it's a ZIP file
+            if (ZipProcessingService.isZipFile(file)) {
+              // Validate ZIP file size before processing
+              const sizeValidation = ZipProcessingService.validateZipSize(file);
+              if (!sizeValidation.isValid) {
+                console.error(`ZIP file size validation failed: ${sizeValidation.error}`);
+                resolve();
+                return;
+              }
+              
+              const extractedFiles = await ZipProcessingService.processZipFile(file);
+              output.push(...extractedFiles);
+              resolve();
+              return;
+            }
+            
+            const { isVideo, isSubtitle } = isMediaFile(file);
+            
+            const fileObj = {
+              name: file.name,
+              fullPath: path + file.name,
+              size: file.size,
+              type: file.type,
+              file: file,
+              isVideo: isVideo,
+              isSubtitle: isSubtitle,
+              movieHash: null,
+              detectedLanguage: null,
+              recognized: true
+            };
+            
+            output.push(fileObj);
+            resolve();
+          } catch (error) {
+            console.error(`Error processing file ${entry.name}:`, error);
+            resolve();
+          }
         }, (error) => {
           console.error(`Error reading file ${entry.name}:`, error);
           resolve();

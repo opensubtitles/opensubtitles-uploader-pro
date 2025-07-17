@@ -57,13 +57,13 @@ export const DropZone = ({
           Drop your media files or folders here
         </h3>
         <p style={{color: themeColors.textSecondary || '#454545'}}>
-          Supports recursive folder scanning for video files ({VIDEO_EXTENSIONS.slice(0, 5).join(', ')}, etc.) 
-          and subtitle files ({SUBTITLE_EXTENSIONS.slice(0, 5).join(', ')}, etc.)
+          Supports recursive folder scanning for video files ({VIDEO_EXTENSIONS.slice(0, 5).join(', ')}, etc.),
+          subtitle files ({SUBTITLE_EXTENSIONS.slice(0, 5).join(', ')}, etc.), and ZIP archives (max 100 MB)
         </p>
         <p className="text-sm font-medium" style={{color: themeColors.link || '#185DA0'}}>
           📁 Drag entire movie folders - automatically finds and pairs video files with subtitles
         </p>
-        <div className="flex justify-center space-x-8 mt-6">
+        <div className="flex justify-center space-x-6 mt-6">
           <div className="text-center">
             <div className="text-2xl mb-1">🎬</div>
             <div className="text-xs" style={{color: themeColors.textMuted || '#808080'}}>Video Files</div>
@@ -76,6 +76,10 @@ export const DropZone = ({
             <div className="text-2xl mb-1">📁</div>
             <div className="text-xs" style={{color: themeColors.textMuted || '#808080'}}>Folders</div>
           </div>
+          <div className="text-center">
+            <div className="text-2xl mb-1">📦</div>
+            <div className="text-xs" style={{color: themeColors.textMuted || '#808080'}}>ZIP Files</div>
+          </div>
         </div>
         
         {/* File Selection Button */}
@@ -84,7 +88,7 @@ export const DropZone = ({
             type="file"
             id="file-input"
             multiple
-            accept={`${VIDEO_EXTENSIONS.join(',')},${SUBTITLE_EXTENSIONS.join(',')}`}
+            accept={`${VIDEO_EXTENSIONS.join(',')},${SUBTITLE_EXTENSIONS.join(',')}, .zip`}
             onChange={onFileSelect}
             style={{ display: 'none' }}
           />
