@@ -189,9 +189,55 @@ export const OrphanedSubtitles = ({
     }
   };
   
-  // Movie search effects disabled - these cause setState during render warnings
-  // The useEffect hooks for debounced search and click outside handling 
-  // are causing setState during render, so they're disabled for now
+  // Debounced movie search - RE-ENABLED
+  React.useEffect(() => {
+    if (!movieSearchQuery.trim()) {
+      setMovieSearchResults([]);
+      return;
+    }
+    const timeoutId = setTimeout(async () => {
+      setMovieSearchLoading(true);
+      try {
+        const query = movieSearchQuery.trim();
+        const imdbId = extractImdbId(query);
+        
+        // If it's an IMDB ID input, search using the IMDB ID directly
+        if (imdbId) {
+          const response = await fetch(`https://www.opensubtitles.org/libs/suggest_imdb.php?m=${imdbId}`);
+          const results = await response.json();
+          setMovieSearchResults(results || []);
+        } else {
+          // Regular movie title search
+          const response = await fetch(`https://www.opensubtitles.org/libs/suggest_movie.php?m=${encodeURIComponent(query)}`);
+          const results = await response.json();
+          setMovieSearchResults(results || []);
+        }
+      } catch (error) {
+        console.error('Movie search error:', error);
+        setMovieSearchResults([]);
+      } finally {
+        setMovieSearchLoading(false);
+      }
+    }, 300); // 300ms debounce
+    return () => clearTimeout(timeoutId);
+  }, [movieSearchQuery]);
+
+  // Click outside to close movie search
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (openMovieSearch && !event.target.closest('[data-movie-search]')) {
+        closeMovieSearch();
+      }
+    };
+
+    if (openMovieSearch) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMovieSearch]);
 
   // Handle local state changes from SubtitleUploadOptions
   const handleLocalStateChange = React.useCallback((subtitlePath, localStates) => {
@@ -345,6 +391,92 @@ export const OrphanedSubtitles = ({
                   orphanedSubtitlesFps={orphanedSubtitlesFps}
                   onOrphanedSubtitlesFpsChange={onOrphanedSubtitlesFpsChange}
                 />
+                
+                {/* Movie Search Interface - Same as MatchedPairs */}
+                {openMovieSearch === subtitle.fullPath && (
+                  <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: themeColors.cardBackground, border: `1px solid ${themeColors.border}` }} data-movie-search>
+                    <div className="text-sm mb-2" style={{ color: themeColors.text }}>
+                      Search by movie title, IMDB ID, or IMDB URL:
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Movie title, IMDB ID (tt0133093), or IMDB URL..."
+                      value={movieSearchQuery}
+                      onChange={(e) => handleMovieSearch(e.target.value)}
+                      className="w-full px-3 py-2 text-sm rounded border focus:outline-none focus:ring-2 transition-colors"
+                      style={{
+                        backgroundColor: themeColors.background,
+                        borderColor: themeColors.border,
+                        color: themeColors.text,
+                        focusRingColor: themeColors.primary
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = themeColors.primary;
+                        e.target.style.boxShadow = `0 0 0 2px ${themeColors.primary}20`;
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = themeColors.border;
+                        e.target.style.boxShadow = 'none';
+                      }}
+                      autoFocus
+                    />
+                    
+                    {movieSearchLoading && (
+                      <div className="mt-2 text-sm flex items-center gap-2" style={{ color: themeColors.textMuted }}>
+                        <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
+                        Searching...
+                      </div>
+                    )}
+                    
+                    {movieSearchResults.length > 0 && (
+                      <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                        {movieSearchResults.map((movie, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleMovieSelect(subtitle.fullPath, movie)}
+                            disabled={movieUpdateLoading[subtitle.fullPath]}
+                            className="w-full text-left p-2 rounded text-sm border transition-colors hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{
+                              backgroundColor: themeColors.background,
+                              borderColor: themeColors.border,
+                              color: themeColors.text
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!movieUpdateLoading[subtitle.fullPath]) {
+                                e.target.style.backgroundColor = isDark ? '#444444' : '#f8f9fa';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor = themeColors.background;
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              {movieUpdateLoading[subtitle.fullPath] ? (
+                                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
+                              ) : (
+                                <span>🎬</span>
+                              )}
+                              <div className="flex-1">
+                                <div className="font-medium">{movie.title}</div>
+                                <div className="text-xs" style={{ color: themeColors.textMuted }}>
+                                  {movie.year && `${movie.year} • `}
+                                  {movie.kind && `${movie.kind} • `}
+                                  IMDb: {movie.imdbid}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {movieSearchQuery && !movieSearchLoading && movieSearchResults.length === 0 && (
+                      <div className="mt-2 text-sm text-center py-4" style={{ color: themeColors.textMuted }}>
+                        No movies found. Try a different search term.
+                      </div>
+                    )}
+                  </div>
+                )}
                 
                 {/* Subtitle Section - reusing same structure as MatchedPairs */}
                 <div className="ml-8 space-y-2">
