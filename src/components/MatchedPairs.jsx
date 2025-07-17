@@ -168,12 +168,12 @@ export const MatchedPairs = ({
         
         // If it's an IMDB ID input, search using the IMDB ID directly
         if (imdbId) {
-          const response = await fetch(`https://www.opensubtitles.org/libs/suggest.php?m=${imdbId}`);
+          const response = await fetch(`https://www.opensubtitles.org/libs/suggest_imdb.php?m=${imdbId}`);
           const results = await response.json();
           setMovieSearchResults(results || []);
         } else {
           // Regular text search
-          const response = await fetch(`https://www.opensubtitles.org/libs/suggest.php?m=${encodeURIComponent(query)}`);
+          const response = await fetch(`https://www.opensubtitles.org/libs/suggest_imdb.php?m=${encodeURIComponent(query)}`);
           const results = await response.json();
           setMovieSearchResults(results || []);
         }
