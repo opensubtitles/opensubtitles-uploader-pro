@@ -7,6 +7,9 @@ export const OPENSUBTITLES_COM_API_KEY = (typeof import.meta !== 'undefined' && 
 // User Agent for all API requests
 export const USER_AGENT = `OpenSubtitles Uploader PRO v${APP_VERSION}`;
 
+// Shared HD Detection Pattern - used by both frontend and backend
+export const HD_DETECTION_REGEX = /\[?720p\]?|\[?1080p\]?|\[?1440p\]?|\[?2160p\]?|\[?4K\]?|\[?8K\]?|\[?HDR\]?|Blu[\s._-]?Ray|BR[\s._-]?Rip|BD[\s._-]?(Rip|5|9)|HD[\s._-]?DVD|WEB[\s._-]?(DL|Rip)|WEB[\s._-]?HD|\[?WEBDL\]?|\[?WEBRip\]?/i;
+
 // Get standard headers for API requests
 export const getApiHeaders = (contentType = 'application/json', additionalHeaders = {}) => {
   return {

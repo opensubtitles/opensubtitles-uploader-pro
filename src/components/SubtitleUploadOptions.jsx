@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getBestMovieDetectionName } from '../utils/fileUtils.js';
+import { HD_DETECTION_REGEX } from '../utils/constants.js';
 
 export const SubtitleUploadOptions = ({
   subtitlePath,
@@ -95,9 +96,8 @@ export const SubtitleUploadOptions = ({
   // Check if string indicates high definition
   const checkHighDefinitionFromString = (str) => {
     if (!str) return false;
-    // Enhanced regex with bracket notation and more patterns
-    const hdRegex = /\[?720p\]?|\[?1080p\]?|\[?1440p\]?|\[?2160p\]?|\[?4K\]?|\[?8K\]?|\[?HDR\]?|Blu[\s._-]?Ray|BR[\s._-]?Rip|BD[\s._-]?(Rip|5|9)|HD[\s._-]?DVD|WEB[\s._-]?(DL|Rip)|WEB[\s._-]?HD|\[?WEBDL\]?|\[?WEBRip\]?/i;
-    return hdRegex.test(str);
+    // Use the shared HD detection pattern from constants
+    return HD_DETECTION_REGEX.test(str);
   };
 
   // Check if string indicates hearing impaired

@@ -1,5 +1,6 @@
 import { XmlRpcService } from './api/xmlrpc.js';
 import { SubtitleHashService } from './subtitleHash.js';
+import { HD_DETECTION_REGEX } from '../utils/constants.js';
 
 /**
  * Service for uploading subtitles to OpenSubtitles
@@ -554,6 +555,23 @@ export class SubtitleUploadService {
       if (subtitleOptions.subauthorcomment) addDebugInfo(`   - subauthorcomment: "${subtitleOptions.subauthorcomment}"`);
       if (subtitleOptions.subtranslator) addDebugInfo(`   - subtranslator: "${subtitleOptions.subtranslator}"`);
       
+      // Auto-detect features from video and subtitle paths
+      const videoFeatures = this.detectFeaturesFromPath(video.fullPath, addDebugInfo);
+      const subtitleFeatures = this.detectFeaturesFromPath(subtitle.fullPath, addDebugInfo);
+      
+      // Combine auto-detected features (video path has higher priority for HD)
+      const autoDetectedFeatures = {
+        hearingimpaired: subtitleFeatures.hearingimpaired === '1' || videoFeatures.hearingimpaired === '1' ? '1' : '0',
+        highdefinition: videoFeatures.highdefinition === '1' || subtitleFeatures.highdefinition === '1' ? '1' : '0',
+        foreignpartsonly: subtitleFeatures.foreignpartsonly === '1' || videoFeatures.foreignpartsonly === '1' ? '1' : '0'
+      };
+      
+      // Use the same simple logic for all features: manual override OR auto-detected OR default
+      // This matches what's working for HI and FP
+      const finalHigdefinition = subtitleOptions.highdefinition || autoDetectedFeatures.highdefinition || '0';
+      const finalHearingimpaired = subtitleOptions.hearingimpaired || autoDetectedFeatures.hearingimpaired || '0';
+      const finalForeignpartsonly = subtitleOptions.foreignpartsonly || autoDetectedFeatures.foreignpartsonly || '0';
+      
       // Prepare baseinfo section
       const baseinfo = {
         idmovieimdb: uploadImdbId,
@@ -561,11 +579,11 @@ export class SubtitleUploadService {
         movieaka: subtitleOptions.movieaka || '', // Movie title in subtitle language
         sublanguageid: languageId,
         subauthorcomment: subtitleOptions.subauthorcomment || '',
-        hearingimpaired: subtitleOptions.hearingimpaired || '0',
-        highdefinition: subtitleOptions.highdefinition || (video.name.toLowerCase().includes('1080p') || video.name.toLowerCase().includes('2160p') ? '1' : '0'),
+        hearingimpaired: finalHearingimpaired,
+        highdefinition: finalHigdefinition,
         automatictranslation: subtitleOptions.automatictranslation || '0',
         subtranslator: subtitleOptions.subtranslator || '',
-        foreignpartsonly: subtitleOptions.foreignpartsonly || '0'
+        foreignpartsonly: finalForeignpartsonly
       };
 
       // Get video metadata for upload parameters
@@ -592,7 +610,6 @@ export class SubtitleUploadService {
       addDebugInfo(`   - Language: ${languageId}`);
       addDebugInfo(`   - Movie hash: ${video.movieHash}`);
       addDebugInfo(`   - IMDb ID: ${uploadImdbId}`);
-      addDebugInfo(`   - HD: ${baseinfo.highdefinition}`);
       addDebugInfo(`   - Content length: ${subtitleInfo.content.length} chars`);
       addDebugInfo(`   - Compressed content length: ${subtitleInfo.contentGzipBase64.length} chars (base64)`);
       
@@ -621,12 +638,21 @@ export class SubtitleUploadService {
         addDebugInfo(`   - DEBUG verification failed: ${debugError.message}`);
       }
       
-      return {
+      // Final debug logging of the complete upload object right before XML-RPC call
+      const uploadObject = {
         baseinfo,
         cd1,
         // Return the exact subcontent data for debugging/download purposes
         subcontent: subtitleInfo.contentGzipBase64
       };
+      
+      addDebugInfo(`🔍 FINAL UPLOAD OBJECT FOR XML-RPC (${subtitle.name}):`);
+      addDebugInfo(`   - Complete upload object: ${JSON.stringify(uploadObject, null, 2)}`);
+      addDebugInfo(`   - uploadObject.baseinfo.highdefinition: "${uploadObject.baseinfo.highdefinition}"`);
+      addDebugInfo(`   - uploadObject.baseinfo.hearingimpaired: "${uploadObject.baseinfo.hearingimpaired}"`);
+      addDebugInfo(`   - uploadObject.baseinfo.foreignpartsonly: "${uploadObject.baseinfo.foreignpartsonly}"`);
+      
+      return uploadObject;
       
     } catch (error) {
       addDebugInfo(`❌ Failed to prepare actual upload data for ${subtitle.name}: ${error.message}`);
@@ -745,6 +771,16 @@ export class SubtitleUploadService {
       if (subtitleOptions.subauthorcomment) addDebugInfo(`   - subauthorcomment: "${subtitleOptions.subauthorcomment}"`);
       if (subtitleOptions.subtranslator) addDebugInfo(`   - subtranslator: "${subtitleOptions.subtranslator}"`);
       
+      // Auto-detect features from subtitle path for orphaned subtitles
+      const autoDetectedFeatures = this.detectFeaturesFromPath(subtitle.fullPath, addDebugInfo);
+      
+      
+      // Prioritize auto-detected '1' values over uploadOptions '0' values
+      // If auto-detected is '1', use it; otherwise use uploadOptions; otherwise default to '0'
+      const finalHigdefinition = autoDetectedFeatures.highdefinition === '1' ? '1' : (subtitleOptions.highdefinition || '0');
+      const finalHearingimpaired = autoDetectedFeatures.hearingimpaired === '1' ? '1' : (subtitleOptions.hearingimpaired || '0');
+      const finalForeignpartsonly = autoDetectedFeatures.foreignpartsonly === '1' ? '1' : (subtitleOptions.foreignpartsonly || '0');
+      
       // Prepare baseinfo section (only include fields we can determine for orphaned subtitles)
       const baseinfo = {
         idmovieimdb: uploadImdbId,
@@ -752,18 +788,14 @@ export class SubtitleUploadService {
         movieaka: subtitleOptions.movieaka || '', // Movie title in subtitle language
         sublanguageid: languageId,
         subauthorcomment: subtitleOptions.subauthorcomment || '',
-        hearingimpaired: subtitleOptions.hearingimpaired || '0',
+        hearingimpaired: finalHearingimpaired || '0',
+        highdefinition: finalHigdefinition || '0',
         automatictranslation: subtitleOptions.automatictranslation || '0',
         subtranslator: subtitleOptions.subtranslator || '',
-        foreignpartsonly: subtitleOptions.foreignpartsonly || '0'
-        // highdefinition omitted - unknown for orphaned subtitles unless specified
+        foreignpartsonly: finalForeignpartsonly || '0'
       };
       
-      
-      // Add highdefinition if specified in upload options
-      if (subtitleOptions.highdefinition) {
-        baseinfo.highdefinition = subtitleOptions.highdefinition;
-      }
+      // DEBUG: Log the final baseinfo values before they're sent to XML-RPC
 
       // Get FPS setting for this subtitle
       const subtitleFps = orphanedSubtitlesFps[subtitle.fullPath];
@@ -787,7 +819,6 @@ export class SubtitleUploadService {
       addDebugInfo(`✅ Prepared actual upload data for orphaned subtitle: ${subtitle.name}`);
       addDebugInfo(`   - Language: ${languageId}`);
       addDebugInfo(`   - IMDb ID: ${uploadImdbId}`);
-      addDebugInfo(`   - HD field omitted (unknown for orphaned subtitle)`);
       addDebugInfo(`   - Content length: ${subtitleInfo.content.length} chars`);
       addDebugInfo(`   - Compressed content length: ${subtitleInfo.contentGzipBase64.length} chars (base64)`);
       addDebugInfo(`   - No movie fields in cd1 (orphaned subtitle)`);
@@ -807,17 +838,149 @@ export class SubtitleUploadService {
         addDebugInfo(`   - DEBUG verification failed: ${debugError.message}`);
       }
       
-      return {
+      // Final debug logging of the complete upload object right before XML-RPC call
+      const uploadObject = {
         baseinfo,
         cd1,
         // Return the exact subcontent data for debugging/download purposes
         subcontent: subtitleInfo.contentGzipBase64
       };
       
+      addDebugInfo(`🔍 FINAL UPLOAD OBJECT FOR XML-RPC (${subtitle.name}):`);
+      addDebugInfo(`   - Complete upload object: ${JSON.stringify(uploadObject, null, 2)}`);
+      addDebugInfo(`   - uploadObject.baseinfo.highdefinition: "${uploadObject.baseinfo.highdefinition}"`);
+      addDebugInfo(`   - uploadObject.baseinfo.hearingimpaired: "${uploadObject.baseinfo.hearingimpaired}"`);
+      addDebugInfo(`   - uploadObject.baseinfo.foreignpartsonly: "${uploadObject.baseinfo.foreignpartsonly}"`);
+      
+      return uploadObject;
+      
     } catch (error) {
       addDebugInfo(`❌ Failed to prepare actual upload data for orphaned subtitle ${subtitle.name}: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Auto-detect features from file path for orphaned subtitles
+   * @param {string} filePath - The file path to analyze
+   * @param {Function} addDebugInfo - Debug callback
+   * @returns {Object} - Object with detected features
+   */
+  static detectFeaturesFromPath(filePath, addDebugInfo) {
+    const features = {
+      hearingimpaired: '0',
+      highdefinition: '0',
+      foreignpartsonly: '0'
+    };
+    
+    if (!filePath) {
+      return features;
+    }
+    
+    // Split path into all components (directory parts + filename)
+    const pathParts = filePath.split('/').filter(part => part.length > 0);
+    
+    // Check each part of the path
+    for (const part of pathParts) {
+      // Check for High Definition indicators
+      if (this.checkHighDefinitionFromString(part)) {
+        features.highdefinition = '1';
+        addDebugInfo(`[AUTODETECT] HD: 1`);
+      }
+      
+      // Check for Foreign Parts indicators
+      if (this.checkForeignPartsFromString(part)) {
+        features.foreignpartsonly = '1';
+      }
+      
+      // Check for Hearing Impaired indicators
+      if (this.checkHearingImpairedFromString(part)) {
+        features.hearingimpaired = '1';
+      }
+    }
+    
+    // Special check for hearing impaired from filename
+    if (pathParts.length > 0) {
+      const filename = pathParts[pathParts.length - 1];
+      if (this.checkHearingImpairedFromFilename(filename)) {
+        features.hearingimpaired = '1';
+      }
+    }
+    
+    return features;
+  }
+  
+  /**
+   * Check if a string indicates High Definition
+   * @param {string} str - String to check
+   * @returns {boolean} - True if indicates HD
+   */
+  static checkHighDefinitionFromString(str) {
+    if (!str) return false;
+    
+    // Use the shared HD detection pattern from constants
+    return HD_DETECTION_REGEX.test(str);
+  }
+  
+  /**
+   * Check if a string indicates Foreign Parts Only
+   * @param {string} str - String to check
+   * @returns {boolean} - True if indicates foreign parts
+   */
+  static checkForeignPartsFromString(str) {
+    if (!str) return false;
+    
+    const lowerStr = str.toLowerCase();
+    const foreignPatterns = [
+      'foreign', 'forced', 'signs', 'signs&songs', 'signs.songs', 'signs_songs'
+    ];
+    
+    return foreignPatterns.some(pattern => lowerStr.includes(pattern));
+  }
+  
+  /**
+   * Check if a string indicates Hearing Impaired
+   * @param {string} str - String to check
+   * @returns {boolean} - True if indicates hearing impaired
+   */
+  static checkHearingImpairedFromString(str) {
+    if (!str) return false;
+    
+    const lowerStr = str.toLowerCase();
+    const hiPatterns = [
+      'hi', 'sdh', 'cc', 'hearing.impaired', 'hearing_impaired', 'hearingimpaired'
+    ];
+    
+    return hiPatterns.some(pattern => lowerStr.includes(pattern));
+  }
+  
+  /**
+   * Check if a filename specifically indicates Hearing Impaired
+   * @param {string} filename - Filename to check
+   * @returns {boolean} - True if indicates hearing impaired
+   */
+  static checkHearingImpairedFromFilename(filename) {
+    if (!filename) return false;
+    
+    const lowerFilename = filename.toLowerCase();
+    
+    // More specific filename patterns for hearing impaired
+    const filenamePatterns = [
+      /\.hi\./i,
+      /\.sdh\./i,
+      /\.cc\./i,
+      /\bhi\b/i,
+      /\bsdh\b/i,
+      /\bcc\b/i,
+      /_hi\./i,
+      /_sdh\./i,
+      /_cc\./i,
+      /[-.]hi[-.]?/i,
+      /[-.]sdh[-.]?/i,
+      /[-.]cc[-.]?/i
+    ];
+    
+    return filenamePatterns.some(pattern => pattern.test(lowerFilename));
   }
 
   /**

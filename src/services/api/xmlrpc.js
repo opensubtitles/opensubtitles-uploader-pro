@@ -618,10 +618,6 @@ export class XmlRpcService {
       // Convert upload data to XML-RPC format
       const xmlRpcBody = this.buildTryUploadXml(token, uploadData);
       
-      console.log('🌐 TryUploadSubtitles: Starting network request...');
-      console.log('🌐 TryUploadSubtitles: URL:', API_ENDPOINTS.OPENSUBTITLES_XMLRPC);
-      console.log('🌐 TryUploadSubtitles: Headers:', getApiHeaders('text/xml'));
-      console.log('🌐 TryUploadSubtitles: Body length:', xmlRpcBody.length, 'chars');
       
       const response = await delayedFetch(API_ENDPOINTS.OPENSUBTITLES_XMLRPC, {
         method: 'POST',
@@ -629,9 +625,6 @@ export class XmlRpcService {
         body: xmlRpcBody,
       });
 
-      console.log('🌐 TryUploadSubtitles: Response received');
-      console.log('🌐 TryUploadSubtitles: Status:', response.status, response.statusText);
-      console.log('🌐 TryUploadSubtitles: Headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorDetails = {
@@ -647,8 +640,6 @@ export class XmlRpcService {
       }
 
       const xmlText = await response.text();
-      console.log('🌐 TryUploadSubtitles: XML response length:', xmlText.length, 'chars');
-      console.log('🌐 TryUploadSubtitles: XML response preview:', xmlText.substring(0, 200) + '...');
       
       const xmlDoc = this.parseXmlRpcResponse(xmlText);
       
@@ -656,7 +647,6 @@ export class XmlRpcService {
       const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
       if (responseStruct) {
         const result = this.extractStructData(responseStruct);
-        console.log('✅ TryUploadSubtitles: Parsed response successfully');
         return result;
       }
       
@@ -767,10 +757,6 @@ export class XmlRpcService {
       // Convert upload data to XML-RPC format
       const xmlRpcBody = this.buildUploadSubtitlesXml(token, uploadData);
       
-      console.log('🌐 UploadSubtitles: Starting network request...');
-      console.log('🌐 UploadSubtitles: URL:', API_ENDPOINTS.OPENSUBTITLES_XMLRPC);
-      console.log('🌐 UploadSubtitles: Headers:', getApiHeaders('text/xml'));
-      console.log('🌐 UploadSubtitles: Body length:', xmlRpcBody.length, 'chars');
       
       const response = await delayedFetch(API_ENDPOINTS.OPENSUBTITLES_XMLRPC, {
         method: 'POST',
@@ -778,9 +764,6 @@ export class XmlRpcService {
         body: xmlRpcBody,
       });
 
-      console.log('🌐 UploadSubtitles: Response received');
-      console.log('🌐 UploadSubtitles: Status:', response.status, response.statusText);
-      console.log('🌐 UploadSubtitles: Headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorDetails = {
@@ -796,8 +779,6 @@ export class XmlRpcService {
       }
 
       const xmlText = await response.text();
-      console.log('🌐 UploadSubtitles: XML response length:', xmlText.length, 'chars');
-      console.log('🌐 UploadSubtitles: XML response preview:', xmlText.substring(0, 200) + '...');
       
       const xmlDoc = this.parseXmlRpcResponse(xmlText);
       
@@ -805,7 +786,6 @@ export class XmlRpcService {
       const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
       if (responseStruct) {
         const result = this.extractStructData(responseStruct);
-        console.log('✅ UploadSubtitles: Parsed response successfully');
         return result;
       }
       
@@ -839,8 +819,6 @@ export class XmlRpcService {
     const baseinfo = uploadData.baseinfo;
     const cd1 = uploadData.cd1;
     
-    // DEBUG: Log baseinfo to verify all fields are being included
-    console.log('🔍 DEBUG XML-RPC UploadSubtitles baseinfo:', JSON.stringify(baseinfo, null, 2));
     
     return `<?xml version="1.0"?>
 <methodCall>
