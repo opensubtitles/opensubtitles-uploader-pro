@@ -13,7 +13,8 @@ export const SubtitleUploadOptions = ({
   compactMode = false,
   isExpanded = false,
   onToggleExpanded = null,
-  showExpandedInline = false // New prop to show expanded content inline
+  showExpandedInline = false, // New prop to show expanded content inline
+  hashCheckResults // Add hashCheckResults prop
 }) => {
   const [internalIsExpanded, setInternalIsExpanded] = useState(false);
   
@@ -37,6 +38,7 @@ export const SubtitleUploadOptions = ({
   const [localReleaseNameValue, setLocalReleaseNameValue] = useState('');
   const [localCommentValue, setLocalCommentValue] = useState('');
   const [localTranslatorValue, setLocalTranslatorValue] = useState('');
+  const [localMovieAkaValue, setLocalMovieAkaValue] = useState('');
   
   // Refs to track if we've already processed auto-detection for this file
   const processedForeignPartsRef = useRef(false);
@@ -158,6 +160,9 @@ export const SubtitleUploadOptions = ({
     if (uploadOptions?.subtranslator !== localTranslatorValue) {
       setLocalTranslatorValue(uploadOptions?.subtranslator || '');
     }
+    if (uploadOptions?.movieaka !== localMovieAkaValue) {
+      setLocalMovieAkaValue(uploadOptions?.movieaka || '');
+    }
     
     // Update checkboxes
     if (uploadOptions?.hearingimpaired === '1' && localHearingImpairedValue !== '1') {
@@ -176,7 +181,7 @@ export const SubtitleUploadOptions = ({
       setLocalAutoTranslationValue('1');
       setHasSetAutoTranslation(true);
     }
-  }, [uploadOptions?.moviereleasename, uploadOptions?.subauthorcomment, uploadOptions?.subtranslator, uploadOptions?.hearingimpaired, uploadOptions?.highdefinition, uploadOptions?.foreignpartsonly, uploadOptions?.automatictranslation]);
+  }, [uploadOptions?.moviereleasename, uploadOptions?.subauthorcomment, uploadOptions?.subtranslator, uploadOptions?.movieaka, uploadOptions?.hearingimpaired, uploadOptions?.highdefinition, uploadOptions?.foreignpartsonly, uploadOptions?.automatictranslation]);
 
   // Comprehensive upload options initialization - detects new features from file paths
   useEffect(() => {
@@ -341,6 +346,8 @@ export const SubtitleUploadOptions = ({
       setLocalCommentValue(value);
     } else if (field === 'subtranslator') {
       setLocalTranslatorValue(value);
+    } else if (field === 'movieaka') {
+      setLocalMovieAkaValue(value);
     }
     
     // If user manually changes release name, mark it as manually set to prevent auto-detection
@@ -367,7 +374,7 @@ export const SubtitleUploadOptions = ({
     if (field === 'automatictranslation' && value !== uploadOptions.automatictranslation) {
       setHasSetAutoTranslation(true);
     }
-  }, [uploadOptions, subtitlePath, localReleaseNameValue, localCommentValue, localTranslatorValue]);
+  }, [uploadOptions, subtitlePath, localReleaseNameValue, localCommentValue, localTranslatorValue, localMovieAkaValue]);
 
   const currentOptions = uploadOptions || {};
 
@@ -466,6 +473,26 @@ export const SubtitleUploadOptions = ({
         />
       </div>
 
+      {/* Movie AKA (Movie Title in Subtitle Language) */}
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-1 text-xs min-w-[80px]">
+          <span title="Movie title in subtitle language">🎬</span>
+          <span style={{ color: colors.textSecondary }}>Movie AKA</span>
+        </div>
+        <input
+          type="text"
+          value={localMovieAkaValue || currentOptions.movieaka || ''}
+          onChange={(e) => handleFieldChange('movieaka', e.target.value)}
+          placeholder="Movie title in subtitle language (e.g., Le Film, Der Film)"
+          className="flex-1 px-2 py-1 text-xs rounded border"
+          style={{
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border,
+            color: colors.text
+          }}
+        />
+      </div>
+
       {/* Checkboxes Row 1 */}
       <div className="grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
         <label className="flex items-center gap-1 cursor-pointer">
@@ -539,6 +566,7 @@ export const SubtitleUploadOptions = ({
     currentOptions.subauthorcomment,
     currentOptions.moviereleasename,
     currentOptions.subtranslator,
+    currentOptions.movieaka,
     currentOptions.hearingimpaired,
     currentOptions.highdefinition,
     currentOptions.automatictranslation,

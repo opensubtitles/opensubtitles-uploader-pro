@@ -83,7 +83,6 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
         [imdbId]: features
       }));
       
-      addDebugInfo(`Features fetched for IMDb ID: ${imdbId}`);
       return features;
     } catch (error) {
       addDebugInfo(`Features fetch failed for IMDb ID ${imdbId}: ${error.message}`);
@@ -271,7 +270,6 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
     processingFiles.current.add(filePath);
     
     try {
-      addDebugInfo(`Starting movie guess for: ${videoFile.name}`);
       
       setMovieGuesses(prev => ({
         ...prev,
@@ -319,12 +317,11 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
       }));
 
       if (finalValidMovieGuess) {
-        addDebugInfo(`Movie identified: ${movieGuess.title} (${movieGuess.year}) - ${movieGuess.reason || 'Filename match'}`);
+        addDebugInfo(`🎬 ${movieGuess.title} (${movieGuess.year})`);
         
         // SAFE: Fetch features if we have an IMDb ID and start episode detection for TV series
         if (movieGuess.imdbid) {
           setTimeout(() => fetchFeaturesByImdbId(movieGuess.imdbid), 0);
-          addDebugInfo(`Features fetching enabled for: ${videoFile.name}`);
           
           // For TV series, schedule episode detection after a delay
           if (movieGuess.kind === 'tv series') {
@@ -396,7 +393,6 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
     processingFiles.current.add(filePath + '_processing');
     
     try {
-      addDebugInfo(`Processing orphaned subtitle: ${subtitleFile.name}`);
       
       // Get the best name for movie detection (use parent directory for generic names)
       const detectionName = getBestMovieDetectionName(subtitleFile);
@@ -422,7 +418,7 @@ export const useMovieGuess = (addDebugInfo, setGuessItDataForFile) => {
         });
       }, 100);
       
-      addDebugInfo(`Initiated movie guess for subtitle: ${subtitleFile.name} (using: ${detectionName})`);
+      addDebugInfo(`🎬 ${subtitleFile.name}${detectionName !== originalName ? ` -> ${detectionName}` : ''}`);
       
     } catch (error) {
       addDebugInfo(`Error initiating movie processing for subtitle ${subtitleFile.name}: ${error.message}`);

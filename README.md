@@ -13,15 +13,28 @@ A professional React-based subtitle uploader application that integrates with bo
 
 ## Features
 
-- 🎬 **Drag & Drop Interface** - Drop video and subtitle files directly
-- 🔍 **Automatic File Pairing** - Smart matching of video and subtitle files
-- 🌍 **Language Detection** - Automatic subtitle language identification
-- 🎯 **Movie Recognition** - Intelligent movie/episode detection and metadata
-- 📤 **Subtitle Upload** - Direct upload to OpenSubtitles.org
-- 🎨 **Modern UI** - Clean, responsive interface with dark/light themes
-- ⚡ **Performance Optimized** - Caching, retry logic, and smart processing
-- 📺 **TV Show Support** - Special handling for TV episodes with proper metadata
+### Core Functionality
+- 🎬 **Drag & Drop Interface** - Drop video and subtitle files directly into the browser
+- 🔍 **Automatic File Pairing** - Smart matching of video and subtitle files based on filename similarity
+- 🌍 **Language Detection** - Automatic subtitle language identification using OpenSubtitles API
+- 🎯 **Movie Recognition** - Intelligent movie/episode detection with IMDb integration
+- 📤 **Subtitle Upload** - Direct upload to OpenSubtitles.org with comprehensive validation
+
+### Advanced Features
+- 📹 **Video Metadata Extraction** - Automatic detection of video properties (resolution, codec, bitrate, duration)
+- 🎭 **Episode Detection** - Smart TV show episode identification with season/episode numbering
+- 🔗 **Movie Hash Calculation** - Generates OpenSubtitles-compatible movie hashes for precise matching
+- 🏷️ **Automatic Tagging** - Detects HD quality, hearing impaired, foreign parts, and auto-translation from filenames
+- 📊 **Subtitle Statistics** - Shows existing subtitle counts and language availability per movie/episode
+- 🖼️ **Movie Posters** - Automatically fetches and displays movie/episode posters
+
+### User Experience
+- 🎨 **Modern UI** - Clean, responsive interface with automatic dark/light theme detection
+- ⚡ **Performance Optimized** - Intelligent caching, retry logic, and parallel processing
+- 🔧 **Smart Configuration** - Automatic upload options detection with manual override capabilities
+- 📋 **Batch Processing** - Handle multiple video/subtitle pairs simultaneously
 - 🛡️ **Ad Blocker Detection** - Automatic detection and guidance for ad blocker compatibility
+- 🎯 **Upload Validation** - Comprehensive pre-upload checks to ensure successful submissions
 
 ## Quick Start
 
@@ -85,11 +98,24 @@ The app supports multiple authentication methods:
 
 ### Basic Upload Process
 
-1. **Drop Files** - Drag video and subtitle files into the interface
-2. **Auto-Pairing** - The app automatically pairs videos with subtitles
-3. **Review Metadata** - Check detected languages and movie information
-4. **Select Subtitles** - Choose which subtitles to upload
-5. **Upload** - Click the upload button to submit to OpenSubtitles.org
+1. **Drop Files** - Drag video and subtitle files (or entire directories) into the interface
+2. **Automatic Processing** - The app automatically:
+   - Pairs videos with subtitles based on filename similarity
+   - Extracts video metadata (resolution, codec, duration, bitrate)
+   - Calculates movie hashes for precise matching
+   - Detects subtitle languages using AI
+   - Identifies movies/episodes with IMDb integration
+   - Fetches existing subtitle statistics and movie posters
+3. **Smart Configuration** - Upload options are automatically detected:
+   - HD quality from video resolution and filename
+   - Hearing impaired from subtitle filename patterns
+   - Foreign parts from filename indicators
+   - Auto-translation from subtitle content analysis
+4. **Review & Customize** - Check detected information and adjust as needed:
+   - Verify movie/episode matches
+   - Modify upload options (HD, HI, foreign parts, etc.)
+   - Edit release names, comments, and translator credits
+5. **Upload** - Select desired subtitles and upload to OpenSubtitles.org with full validation
 
 ### Supported Formats
 
@@ -156,9 +182,11 @@ src/
 
 - **React 18** with hooks-based architecture
 - **Vite** for development and build tooling
-- **Tailwind CSS** for styling
-- **OpenSubtitles API** for subtitle operations
-- **Local Storage** for caching
+- **Tailwind CSS** for styling with automatic theme detection
+- **OpenSubtitles APIs** for subtitle operations and metadata
+- **FFmpeg.js** for video metadata extraction
+- **GuessIt API** for intelligent file analysis
+- **Local Storage** for intelligent caching and performance optimization
 
 ## API Integration
 
@@ -175,13 +203,32 @@ The app integrates with two OpenSubtitles API systems:
 
 **Modern REST API** (`api.opensubtitles.com/api/v1`):
 - `GET /utilities/fasttext/language/supported` - Get supported detection languages
-- `POST /utilities/fasttext/language/detect/file` - Automatic language detection
-- `GET /features` - Movie/episode subtitle statistics and metadata
-- `POST /utilities/guessit` - Advanced file metadata extraction
+- `POST /utilities/fasttext/language/detect/file` - AI-powered subtitle language detection
+- `GET /features` - Movie/episode subtitle statistics and availability data
+- `POST /utilities/guessit` - Advanced file metadata extraction and analysis
+
+### Video Processing
+
+**FFmpeg Integration**:
+- Video metadata extraction (codec, resolution, bitrate, duration)
+- Frame rate and aspect ratio detection
+- Audio track information
+- Container format analysis
+
+**File Analysis**:
+- Intelligent filename parsing for episode detection
+- Quality indicators (HD, 4K, BluRay, WEB-DL)
+- Release group and encoder identification
+- Multi-language subtitle detection
 
 ### Caching Strategy
 
-All API responses cached for 72 hours (language data, movie metadata, detection results, features)
+Intelligent caching system with 72-hour retention for optimal performance:
+- Language detection results and supported languages
+- Movie/episode metadata and poster URLs
+- GuessIt analysis results and file patterns
+- Video metadata and processing results
+- Features data and subtitle statistics
 
 ## Security
 

@@ -13,6 +13,8 @@ This is a React-based subtitle uploader application that integrates with the Ope
 - `npm run preview` - Preview production build locally
 - `npm run update-version` - **IMPORTANT**: Update version references across codebase (run after changing version in package.json)
 
+**IMPORTANT**: Never automatically run the development server (`npm run dev`). Always ask the user to restart the server if needed. The server should only be started by the user, not by Claude.
+
 ## Version Management
 
 **CRITICAL**: When updating the version in `package.json`, you MUST run `npm run update-version` to sync version references across the codebase.
@@ -538,3 +540,72 @@ The warning consistently occurs when:
 4. React detects the violation and throws the warning
 
 The issue is specifically tied to the upload process and subtitle database checking, not general rendering.
+
+## CheckSubHash Duplicate Detection Feature (2025-07-17)
+
+**✅ IMPLEMENTED**: CheckSubHash duplicate detection functionality has been successfully implemented for matched pairs.
+
+### Current Status
+
+**✅ Working for Matched Pairs**:
+- Detects duplicate subtitles in the OpenSubtitles database using file hash
+- Shows encouraging message: "💡 Duplicate found, but still good to upload for additional metadata."
+- Provides direct link to existing subtitle on OpenSubtitles.org
+- Appears as a clean, separate line below Upload Options
+- Does not interfere with main UI design
+
+**❌ Not Working for Orphaned Subtitles**:
+- CheckSubHash results are `undefined` for orphaned subtitles
+- Feature disabled until CheckSubHash service processes orphaned files
+- Orphaned subtitles can still be uploaded normally
+
+### Technical Implementation
+
+**Location**: 
+- `src/components/MatchedPairs.jsx` (lines 778-840) - Working implementation
+- `src/components/OrphanedSubtitles.jsx` (lines 555-560) - Disabled/placeholder
+
+**Data Structure Expected**:
+```javascript
+hashCheckResults[subtitlePath] = {
+  subtitleUrl: "https://www.opensubtitles.org/search/idsubtitlefile-1961760233",
+  subtitleId: 1961760233,
+  exists: true,
+  status: "exists"
+}
+```
+
+**Design Approach**:
+- Completely separate from main UI components
+- Added as standalone line in parent components (not in SubtitleUploadOptions)
+- Uses same logic for both MatchedPairs and OrphanedSubtitles
+- No duplicate code - identical implementation in both components
+
+### User Experience
+
+**Message**: "💡 Duplicate found, but still good to upload for additional metadata."
+**Link**: "View existing subtitle" - links directly to the existing subtitle page
+**Positioning**: Appears below Upload Options as a subtle, encouraging note
+**Styling**: Simple text with underlined link, no background or border
+
+### Integration Points
+
+**Props Required**:
+- `hashCheckResults` - Object containing CheckSubHash results keyed by file path
+- Results must be processed into consistent object structure
+- Both MatchedPairs and OrphanedSubtitles receive this prop from SubtitleUploader
+
+**Files Modified**:
+- `src/components/MatchedPairs.jsx` - Added CheckSubHash note implementation
+- `src/components/OrphanedSubtitles.jsx` - Added CheckSubHash note (disabled)
+- `src/components/SubtitleUploadOptions.jsx` - Removed CheckSubHash logic (moved to parents)
+
+### Future Enhancement for Orphaned Subtitles
+
+To enable CheckSubHash for orphaned subtitles:
+1. Configure CheckSubHash service to process orphaned subtitle files
+2. Ensure results are stored with correct file path keys
+3. Create same object structure as matched pairs
+4. Remove the `return null;` placeholder in OrphanedSubtitles.jsx
+
+The implementation is already in place and will work automatically once CheckSubHash service provides data for orphaned subtitles.

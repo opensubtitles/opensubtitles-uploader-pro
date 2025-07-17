@@ -35,14 +35,10 @@ export const useLanguageDetection = (addDebugInfo, updateFile) => {
     processingFiles.current.add(filePath);
     
     try {
-      addDebugInfo(`Starting language detection for: ${subtitleFile.name}`);
-      
       // Set detecting status
       updateFile(subtitleFile.fullPath, { detectedLanguage: 'detecting' });
       
       const detectedLanguage = await OpenSubtitlesApiService.detectLanguageWithRetry(subtitleFile, addDebugInfo);
-      
-      addDebugInfo(`🔍 Language detection result for ${subtitleFile.name}: ${detectedLanguage ? 'SUCCESS' : 'FAILED'}`);
       
       // Check if detected as text file (not a subtitle)
       if (detectedLanguage && 
@@ -60,7 +56,7 @@ export const useLanguageDetection = (addDebugInfo, updateFile) => {
       });
       
       if (detectedLanguage) {
-        addDebugInfo(`Language detected for ${subtitleFile.name}: ${detectedLanguage.language_name} (${(detectedLanguage.confidence * 100).toFixed(1)}%)`);
+        addDebugInfo(`🔍 ${subtitleFile.name}: ${detectedLanguage.language_name} (${(detectedLanguage.confidence * 100).toFixed(1)}%)`);
       } else {
         addDebugInfo(`No language detected for ${subtitleFile.name}`);
       }

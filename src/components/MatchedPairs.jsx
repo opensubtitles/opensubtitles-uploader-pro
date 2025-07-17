@@ -622,6 +622,7 @@ export const MatchedPairs = ({
                                 compactMode={true}
                                 isExpanded={uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false}
                                 onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
+                                hashCheckResults={hashCheckResults}
                               />
                             </div>
 
@@ -770,8 +771,65 @@ export const MatchedPairs = ({
                             subtitleFile={subtitle}
                             pairedVideoFile={pair.video}
                             onLocalStateChange={handleLocalStateChange}
+                            hashCheckResults={hashCheckResults}
                           />
                         )}
+
+                        {/* CheckSubHash note - Completely separate line */}
+                        {(() => {
+                          const hashResult = hashCheckResults?.[subtitle.fullPath];
+                          const shouldShow = hashResult && (
+                            hashResult.exists === true ||
+                            hashResult.found === true ||
+                            hashResult.status === 'exists' ||
+                            (hashResult.data && hashResult.data.length > 0) ||
+                            hashResult === 'exists'
+                          );
+                          
+                          if (shouldShow) {
+                            // Debug: Log the hash result to see available data
+                            console.log('CheckSubHash result for', subtitle.fullPath, ':', hashResult);
+                            
+                            // Extract subtitle URL from CheckSubHash result
+                            let subtitleUrl = null;
+                            
+                            if (hashResult.subtitleUrl) {
+                              subtitleUrl = hashResult.subtitleUrl;
+                            } else if (hashResult.url) {
+                              subtitleUrl = hashResult.url;
+                            } else if (hashResult.link) {
+                              subtitleUrl = hashResult.link;
+                            } else if (hashResult.subtitleId) {
+                              subtitleUrl = `https://www.opensubtitles.org/search/idsubtitlefile-${hashResult.subtitleId}`;
+                            }
+                            
+                            return (
+                              <div className="mt-2 text-xs" style={{ color: themeColors.textMuted }}>
+                                💡 Duplicate found, but still good to upload for additional metadata.{' '}
+                                {subtitleUrl ? (
+                                  <a
+                                    href={subtitleUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline"
+                                    style={{ color: themeColors.link }}
+                                    onMouseEnter={(e) => {
+                                      e.target.style.color = themeColors.linkHover;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.target.style.color = themeColors.link;
+                                    }}
+                                  >
+                                    View existing subtitle
+                                  </a>
+                                ) : (
+                                  <span style={{ color: themeColors.textMuted }}>(No direct link available)</span>
+                                )}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         {/* Upload result status */}
                         {uploadResults[subtitle.fullPath] && (
@@ -928,42 +986,7 @@ export const MatchedPairs = ({
                           </div>
                         )}
 
-                        {/* Disabled state message */}
-                        {false && (
-                          <div className="text-xs ml-20">
-                            {(() => {
-                              // Check if this subtitle was auto-unselected due to CheckSubHash results
-                              const hashResult = hashCheckResults?.[subtitle.fullPath];
-                              if (hashResult && hashResult.status === 'exists' && hashResult.subtitleUrl) {
-                                return (
-                                  <div className="flex items-center gap-2">
-                                    <span className="italic" style={{color: themeColors.textMuted}}>
-                                      Auto-unselected: Already uploaded
-                                    </span>
-                                    <a 
-                                      href={hashResult.subtitleUrl} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-xs underline font-medium"
-                                      style={{
-                                        color: isDark ? '#22c55e' : (themeColors.success || '#9EC068')
-                                      }}
-                                      onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
-                                    >
-                                      View Existing Subtitles
-                                    </a>
-                                  </div>
-                                );
-                              } else {
-                                return (
-                                  <div className="italic" style={{color: themeColors.textMuted}}>
-                                    This subtitle will not be uploaded
-                                  </div>
-                                );
-                              }
-                            })()}
-                          </div>
-                        )}
+
                       </div>
                     </div>
                   ))}

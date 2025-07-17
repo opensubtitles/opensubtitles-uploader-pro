@@ -21,6 +21,7 @@ import { SubtitlePreview } from "./SubtitlePreview.jsx";
 import { UploadButton } from "./UploadButton.jsx";
 import { ApiHealthCheck } from "./ApiHealthCheck.jsx";
 import { ConfigOverlay } from "./ConfigOverlay.jsx";
+import { HelpOverlay } from "./HelpOverlay.jsx";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext.jsx";
 import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
@@ -41,13 +42,24 @@ function SubtitleUploaderInner() {
   const [uploadResults, setUploadResults] = useState({}); // New state for upload results
   const [subcontentData, setSubcontentData] = useState({}); // New state for subcontent data
   const [uploadOptions, setUploadOptions] = useState({}); // New state for upload options (release name, comments, etc.)
-  const [uploadProgress, setUploadProgress] = useState({ isUploading: false, processed: 0, total: 0 }); // Upload progress tracking
+  const [uploadProgress, setUploadProgress] = useState({ 
+    isUploading: false,
+    isComplete: false,
+    processed: 0, 
+    total: 0,
+    successful: 0,
+    alreadyExists: 0,
+    failed: 0,
+    currentSubtitle: '',
+    results: []
+  }); // Enhanced upload progress tracking
   
   // Config state
   const [config, setConfig] = useState({
     uploadOptionsExpanded: false // Default to collapsed (current behavior)
   });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Load config from localStorage on mount
   useEffect(() => {
@@ -93,6 +105,16 @@ function SubtitleUploaderInner() {
   const handleConfigClose = useCallback(() => {
     setIsConfigOpen(false);
   }, []);
+
+  // Help handlers
+  const handleHelpToggle = useCallback(() => {
+    setIsHelpOpen(prev => !prev);
+  }, []);
+  
+  const handleHelpClose = useCallback(() => {
+    setIsHelpOpen(false);
+  }, []);
+
   
   // Mock debug functions to prevent errors (commented out)
   // const debugMode = false;
@@ -276,7 +298,6 @@ function SubtitleUploaderInner() {
       ...prev,
       [subtitlePath]: options
     }));
-    addDebugInfo(`Upload options updated for: ${subtitlePath}`);
   }, [addDebugInfo]);
 
   // Get upload status for subtitle (default to true)
@@ -288,12 +309,18 @@ function SubtitleUploaderInner() {
   const handleUpload = useCallback(async (validationResult) => {
     addDebugInfo(`🚀 Starting upload of ${validationResult.readySubtitlesCount} subtitles`);
     
-    // Set initial upload progress - defer to avoid setState during render
+    // Set initial upload progress state
     setTimeout(() => {
       setUploadProgress({ 
-        isUploading: true, 
+        isUploading: true,
+        isComplete: false,
         processed: 0, 
-        total: validationResult.readySubtitlesCount 
+        total: validationResult.readySubtitlesCount,
+        successful: 0,
+        alreadyExists: 0,
+        failed: 0,
+        currentSubtitle: '',
+        results: []
       });
     }, 0);
     
@@ -307,11 +334,22 @@ function SubtitleUploaderInner() {
         guessItData,
         getSubtitleLanguage,
         getUploadEnabled,
+        uploadOptions,
         combinedLanguages,
         addDebugInfo,
-        onProgress: (processed, total) => {
+        onProgress: (processed, total, details = {}) => {
           setTimeout(() => {
-            setUploadProgress({ isUploading: true, processed, total });
+            setUploadProgress(prev => ({ 
+              ...prev,
+              isUploading: true, 
+              processed, 
+              total,
+              currentSubtitle: details.currentSubtitle || prev.currentSubtitle,
+              successful: details.successful !== undefined ? details.successful : prev.successful,
+              alreadyExists: details.alreadyExists !== undefined ? details.alreadyExists : prev.alreadyExists,
+              failed: details.failed !== undefined ? details.failed : prev.failed,
+              results: details.results || prev.results
+            }));
           }, 0);
         },
         getVideoMetadata
@@ -402,9 +440,15 @@ function SubtitleUploaderInner() {
       addDebugInfo(`💥 Upload process failed: ${error.message}`);
       console.error('Upload error:', error);
     } finally {
-      // Reset upload progress - defer to avoid setState during render
+      // Mark upload as complete
       setTimeout(() => {
-        setUploadProgress({ isUploading: false, processed: 0, total: 0 });
+        setUploadProgress(prev => ({ 
+          ...prev,
+          isUploading: false,
+          isComplete: true,
+          // Ensure processed equals total for completion detection
+          processed: prev.total || prev.processed
+        }));
       }, 0);
     }
   }, [addDebugInfo, pairedFiles, orphanedSubtitles, movieGuesses, featuresByImdbId, guessItData, getSubtitleLanguage, getUploadEnabled, combinedLanguages]);
@@ -466,7 +510,6 @@ function SubtitleUploaderInner() {
       // Now handle the new files
       await handleDrop(event);
       
-      addDebugInfo('🎯 Fresh file processing initiated');
       
     } catch (err) {
       setError(err.message);
@@ -487,8 +530,7 @@ function SubtitleUploaderInner() {
     const videoFiles = files.filter(file => file.isVideo && !file.shouldRemove);
     const subtitleFiles = files.filter(file => file.isSubtitle && !file.shouldRemove);
 
-    addDebugInfo(`📁 Processing batch: ${videoFiles.length} videos, ${subtitleFiles.length} subtitles`);
-    addDebugInfo(`🔍 Processed files tracking has ${processedFiles.current.size} entries`);
+    addDebugInfo(`📁 ${videoFiles.length} videos, ${subtitleFiles.length} subtitles`);
     
     // Log all file paths for debugging
     if (videoFiles.length > 0) {
@@ -1044,6 +1086,33 @@ function SubtitleUploaderInner() {
                   <span>⚙️</span>
                   <span>Config</span>
                 </button>
+
+                {/* Help Button */}
+                <button
+                  onClick={handleHelpToggle}
+                  className="flex items-center gap-2 px-3 py-1 rounded-lg transition-all text-xs"
+                  style={{
+                    backgroundColor: isDark ? colors.background : colors.cardBackground,
+                    color: colors.textSecondary,
+                    border: `1px solid ${colors.border}`
+                  }}
+                  {...createHoverHandlers(colors, 
+                    {
+                      backgroundColor: isDark ? colors.background : colors.cardBackground,
+                      color: colors.textSecondary,
+                      borderColor: colors.border
+                    },
+                    {
+                      backgroundColor: colors.background,
+                      color: colors.link,
+                      borderColor: colors.link
+                    }
+                  )}
+                  title="Help & Features"
+                >
+                  <span>❓</span>
+                  <span>Help</span>
+                </button>
                 
                 {/* Theme Toggle */}
                 <button
@@ -1211,6 +1280,7 @@ function SubtitleUploaderInner() {
             uploadResults={uploadResults}
             uploadOptions={uploadOptions}
             onUpdateUploadOptions={handleUploadOptionsUpdate}
+            hashCheckResults={hashCheckResults}
             config={config}
             colors={colors}
             isDark={isDark}
@@ -1231,6 +1301,7 @@ function SubtitleUploaderInner() {
 
         {/* Upload Button - Only show for logged in users */}
         {hasUploadableContent && isLoggedIn() && (
+          <div data-upload-results>
           <UploadButton
             pairedFiles={pairedFiles}
             orphanedSubtitles={orphanedSubtitles}
@@ -1241,9 +1312,14 @@ function SubtitleUploaderInner() {
             getUploadEnabled={getUploadEnabled}
             onUpload={handleUpload}
             uploadProgress={uploadProgress}
+            hashCheckResults={hashCheckResults}
+            hashCheckLoading={hashCheckLoading}
+            hashCheckProcessed={hashCheckProcessed}
+            getHashCheckSummary={getHashCheckSummary}
             colors={colors}
             isDark={isDark}
           />
+          </div>
         )}
 
         {/* Login Required Message for Anonymous Users */}
@@ -1334,6 +1410,15 @@ function SubtitleUploaderInner() {
           colors={colors}
           isDark={isDark}
         />
+
+        {/* Help Overlay */}
+        <HelpOverlay
+          isOpen={isHelpOpen}
+          onClose={handleHelpClose}
+          colors={colors}
+          isDark={isDark}
+        />
+
 
         {/* Debug Panel */}
         <Suspense fallback={<div className="mt-6 p-4 rounded-lg text-center" style={{backgroundColor: colors.cardBackground, color: colors.textSecondary}}>Loading debug panel...</div>}>

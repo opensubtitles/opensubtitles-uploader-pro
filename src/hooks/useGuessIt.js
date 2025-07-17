@@ -23,7 +23,7 @@ export const useGuessIt = (addDebugInfo) => {
         [filePath]: movieData.guessit
       }));
       
-      addDebugInfo(`GuessIt metadata extracted for ${filename}: ${movieData.guessit.title || 'Unknown'}`);
+      addDebugInfo(`🔧 ${filename}: ${movieData.guessit.title || 'Unknown'}`);
       return true;
     }
     return false;

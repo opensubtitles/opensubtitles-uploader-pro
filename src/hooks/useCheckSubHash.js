@@ -43,8 +43,6 @@ export const useCheckSubHash = (addDebugInfo) => {
       // Calculate MD5 hashes for all subtitle files
       for (const file of subtitleFiles) {
         try {
-          addDebugInfo && addDebugInfo(`📝 [CheckSubHash] Calculating hash for: ${file.name}`);
-          
           const hashResult = await SubtitleHashService.readAndHashSubtitleFile(file.file || file);
           const hash = hashResult.hash;
           
@@ -57,8 +55,6 @@ export const useCheckSubHash = (addDebugInfo) => {
           
           hashesToCheck.push(hash);
           fileHashMap[hash] = file.fullPath;
-          
-          addDebugInfo && addDebugInfo(`📝 [CheckSubHash] ${file.name}`);
         } catch (error) {
           addDebugInfo && addDebugInfo(`❌ [CheckSubHash] Failed to calculate hash for ${file.name}: ${error.message}`);
           results[file.fullPath] = {
@@ -72,12 +68,10 @@ export const useCheckSubHash = (addDebugInfo) => {
 
       // Check hashes with OpenSubtitles API if we have any
       if (hashesToCheck.length > 0) {
-        addDebugInfo && addDebugInfo(`📝 [CheckSubHash] Checking ${hashesToCheck.length} hashes with OpenSubtitles database...`);
+        addDebugInfo && addDebugInfo(`📝 [CheckSubHash] Checking ${hashesToCheck.length} hashes...`);
         
         try {
           const response = await XmlRpcService.checkSubHash(hashesToCheck);
-          
-          addDebugInfo && addDebugInfo(`📝 [CheckSubHash] API Response received`);
           
           // Process the response
           if (response && response.status === '200 OK' && response.data) {
@@ -95,8 +89,9 @@ export const useCheckSubHash = (addDebugInfo) => {
                 results[filePath].subtitleUrl = subtitleUrl;
                 results[filePath].apiResponse = hashResult;
                 
-                const statusText = exists ? `uploaded (ID: ${subtitleId})` : 'not uploaded yet';
-                addDebugInfo && addDebugInfo(`📝 [CheckSubHash] ${results[filePath].filename} - ${hash} - ${statusText}`);
+                if (exists) {
+                  addDebugInfo && addDebugInfo(`📝 [CheckSubHash] ${results[filePath].filename} - exists (ID: ${subtitleId})`);
+                }
               }
             }
           } else {

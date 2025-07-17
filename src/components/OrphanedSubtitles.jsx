@@ -28,6 +28,7 @@ export const OrphanedSubtitles = ({
   getFormattedTags,
   fetchFeaturesByImdbId,
   uploadResults,
+  hashCheckResults,
   uploadOptions,
   onUpdateUploadOptions,
   config,
@@ -407,6 +408,7 @@ export const OrphanedSubtitles = ({
                               compactMode={true}
                               isExpanded={uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false}
                               onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
+                              hashCheckResults={hashCheckResults}
                             />
                           </div>
 
@@ -545,8 +547,64 @@ export const OrphanedSubtitles = ({
                           isDark={isDark}
                           subtitleFile={subtitle}
                           onLocalStateChange={handleLocalStateChange}
+                          hashCheckResults={hashCheckResults}
                         />
                       )}
+
+                      {/* CheckSubHash note - Completely separate line */}
+                      {(() => {
+                        const hashResult = hashCheckResults?.[subtitle.fullPath];
+                        
+                        const shouldShow = hashResult && (
+                          hashResult.exists === true ||
+                          hashResult.found === true ||
+                          hashResult.status === 'exists' ||
+                          (hashResult.data && hashResult.data.length > 0) ||
+                          hashResult === 'exists'
+                        );
+                        
+                        if (shouldShow) {
+                          
+                          // Extract subtitle URL from CheckSubHash result
+                          let subtitleUrl = null;
+                          
+                          if (hashResult.subtitleUrl) {
+                            subtitleUrl = hashResult.subtitleUrl;
+                          } else if (hashResult.url) {
+                            subtitleUrl = hashResult.url;
+                          } else if (hashResult.link) {
+                            subtitleUrl = hashResult.link;
+                          } else if (hashResult.subtitleId) {
+                            subtitleUrl = `https://www.opensubtitles.org/search/idsubtitlefile-${hashResult.subtitleId}`;
+                          }
+                          
+                          return (
+                            <div className="mt-2 text-xs" style={{ color: themeColors.textMuted }}>
+                              💡 Duplicate found, but still good to upload for additional metadata.{' '}
+                              {subtitleUrl ? (
+                                <a
+                                  href={subtitleUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline"
+                                  style={{ color: themeColors.link }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.color = themeColors.linkHover;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.color = themeColors.link;
+                                  }}
+                                >
+                                  View existing subtitle
+                                </a>
+                              ) : (
+                                <span style={{ color: themeColors.textMuted }}>(No direct link available)</span>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
 
                       {/* Upload result status */}
                       {uploadResults[subtitle.fullPath] && (

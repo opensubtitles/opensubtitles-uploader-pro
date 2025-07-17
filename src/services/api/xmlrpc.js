@@ -757,6 +757,9 @@ export class XmlRpcService {
     const baseinfo = uploadData.baseinfo;
     const cd1 = uploadData.cd1;
     
+    // DEBUG: Log baseinfo to verify all fields are being included
+    console.log('🔍 DEBUG XML-RPC UploadSubtitles baseinfo:', JSON.stringify(baseinfo, null, 2));
+    
     return `<?xml version="1.0"?>
 <methodCall>
   <methodName>UploadSubtitles</methodName>

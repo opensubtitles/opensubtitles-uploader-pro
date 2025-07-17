@@ -276,40 +276,13 @@ export const SubtitleFile = ({
             </div>
           )}
 
+
           {/* Disabled state message */}
           {!uploadEnabled && !uploadResults?.[subtitle.fullPath] && (
             <div className="text-xs mt-2">
-              {(() => {
-                // Check if this subtitle was auto-unselected due to CheckSubHash results
-                const hashResult = hashCheckResults?.[subtitle.fullPath];
-                if (hashResult && hashResult.status === 'exists' && hashResult.subtitleUrl) {
-                  return (
-                    <div className="flex items-center gap-2">
-                      <span className="italic" style={{color: colors?.textMuted || '#808080'}}>
-                        Auto-unselected: Already uploaded
-                      </span>
-                      <a 
-                        href={hashResult.subtitleUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs underline font-medium"
-                        style={{
-                          color: isDark ? '#22c55e' : (colors?.success || '#9EC068')
-                        }}
-                        onClick={(e) => e.stopPropagation()} // Prevent toggle when clicking link
-                      >
-                        View Existing Subtitles
-                      </a>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="italic" style={{color: colors?.textMuted || '#808080'}}>
-                      This subtitle will not be uploaded
-                    </div>
-                  );
-                }
-              })()}
+              <div className="italic" style={{color: colors?.textMuted || '#808080'}}>
+                This subtitle will not be uploaded
+              </div>
             </div>
           )}
         </div>
