@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CacheService } from '../services/cache.js';
+import { SessionManager } from '../services/sessionManager.js';
 
 export const DebugPanel = ({ 
   debugMode, 
@@ -18,17 +19,19 @@ export const DebugPanel = ({
   isDark
 }) => {
   const [cacheInfo, setCacheInfo] = useState(null);
+  const [sessionInfo, setSessionInfo] = useState(null);
 
-  // Update cache info when debug panel opens or cache is cleared
+  // Update cache info and session info when debug panel opens or cache is cleared
   useEffect(() => {
-    const updateCacheInfo = () => {
+    const updateInfo = () => {
       setCacheInfo(CacheService.getCacheSize());
+      setSessionInfo(SessionManager.getSessionInfo());
     };
     
-    updateCacheInfo();
+    updateInfo();
     
-    // Update cache info every 5 seconds when debug panel is open
-    const interval = setInterval(updateCacheInfo, 5000);
+    // Update info every 5 seconds when debug panel is open
+    const interval = setInterval(updateInfo, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -250,42 +253,68 @@ export const DebugPanel = ({
           </div>
         )}
         
-        {/* Cache Info and Clear Cache Button */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="text-sm" style={{ color: themeColors.textSecondary }}>
-            {cacheInfo && (
-              <span>
-                📦 Cache: <span style={{ color: themeColors.link, fontWeight: 'bold' }}>
-                  {cacheInfo.formattedSize}
+        {/* Cache Info and Session Info */}
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="text-sm" style={{ color: themeColors.textSecondary }}>
+              {cacheInfo && (
+                <span>
+                  📦 Cache: <span style={{ color: themeColors.link, fontWeight: 'bold' }}>
+                    {cacheInfo.formattedSize}
+                  </span>
+                  {cacheInfo.itemCount > 0 && (
+                    <span style={{ color: themeColors.textMuted }}>
+                      {' '}({cacheInfo.itemCount} items)
+                    </span>
+                  )}
                 </span>
-                {cacheInfo.itemCount > 0 && (
+              )}
+            </div>
+            <button
+              onClick={() => {
+                clearAllCache();
+                // Update cache info immediately after clearing
+                setTimeout(() => setCacheInfo(CacheService.getCacheSize()), 100);
+              }}
+              className="text-white px-4 py-2 rounded-lg transition-colors text-sm"
+              style={{
+                backgroundColor: themeColors.link
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.backgroundColor = themeColors.linkHover;
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.backgroundColor = themeColors.link;
+              }}
+              title="Delete all stored language and XML-RPC cache"
+            >
+              🗑️ Clear All Cache
+            </button>
+          </div>
+          
+          {/* Session Info */}
+          <div className="text-sm" style={{ color: themeColors.textSecondary }}>
+            {sessionInfo && (
+              <span>
+                🔐 Session: <span style={{ 
+                  color: sessionInfo.isValid ? themeColors.success : themeColors.textMuted, 
+                  fontWeight: 'bold' 
+                }}>
+                  {sessionInfo.isValid ? 'Active' : 'None'}
+                </span>
+                {sessionInfo.isValid && sessionInfo.sessionId && (
                   <span style={{ color: themeColors.textMuted }}>
-                    {' '}({cacheInfo.itemCount} items)
+                    {' '}({sessionInfo.sessionId})
+                  </span>
+                )}
+                {sessionInfo.isValid && sessionInfo.expiryTime && (
+                  <span style={{ color: themeColors.textMuted }}>
+                    {' '}expires {sessionInfo.expiryTime}
                   </span>
                 )}
               </span>
             )}
           </div>
-          <button
-            onClick={() => {
-              clearAllCache();
-              // Update cache info immediately after clearing
-              setTimeout(() => setCacheInfo(CacheService.getCacheSize()), 100);
-            }}
-            className="text-white px-4 py-2 rounded-lg transition-colors text-sm"
-            style={{
-              backgroundColor: themeColors.link
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = themeColors.linkHover;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = themeColors.link;
-            }}
-            title="Delete all stored language and XML-RPC cache"
-          >
-            🗑️ Clear All Cache
-          </button>
         </div>
       </div>
     </details>

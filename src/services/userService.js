@@ -1,4 +1,5 @@
 import { XmlRpcService } from './api/xmlrpc.js';
+import { SessionManager } from './sessionManager.js';
 
 /**
  * User session service for OpenSubtitles authentication
@@ -6,18 +7,16 @@ import { XmlRpcService } from './api/xmlrpc.js';
 export class UserService {
   
   /**
-   * Get session ID from URL parameter, cookie, or empty fallback
-   * Uses the same priority logic as XML-RPC service
+   * Get session ID from stored session, cookie, or empty fallback
+   * Uses secure session storage instead of URL parameter
    * @returns {string} - Session ID or empty string
    */
   static getSessionId() {
-    // First priority: Check for 'sid' parameter in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const sidParam = urlParams.get('sid');
-    
-    if (sidParam) {
-      console.log(`UserService: Using sid parameter: ${sidParam}`);
-      return sidParam;
+    // First priority: Check for stored session ID (from URL capture)
+    const storedSessionId = SessionManager.getStoredSessionId();
+    if (storedSessionId) {
+      console.log(`UserService: Using stored session ID: ${storedSessionId.substring(0, 8)}...`);
+      return storedSessionId;
     }
     
     // Second priority: Get PHPSESSID cookie value

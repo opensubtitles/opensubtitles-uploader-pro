@@ -26,6 +26,7 @@ import ProgressOverlay from "./ProgressOverlay.jsx";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext.jsx";
 import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
+import { SessionManager } from "../services/sessionManager.js";
 import TestModePanel from "./TestModePanel.jsx";
 
 // Lazy load the DebugPanel component
@@ -84,8 +85,12 @@ function SubtitleUploaderInner() {
   
   
 
-  // Load config from localStorage on mount
+  // Initialize session security and load config from localStorage on mount
   useEffect(() => {
+    // First, handle session ID security
+    SessionManager.initializeSession();
+    
+    // Then load config
     try {
       const savedConfig = localStorage.getItem('opensubtitles-uploader-config');
       if (savedConfig) {

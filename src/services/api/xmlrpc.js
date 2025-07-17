@@ -2,22 +2,21 @@ import { API_ENDPOINTS, CACHE_KEYS, DEFAULT_SETTINGS, getApiHeaders } from '../.
 import { CacheService } from '../cache.js';
 import { retryAsync } from '../../utils/retryUtils.js';
 import { delayedFetch } from '../../utils/networkUtils.js';
+import { SessionManager } from '../sessionManager.js';
 
 /**
  * OpenSubtitles XML-RPC API service
  */
 export class XmlRpcService {
   /**
-   * Get authentication token from URL sid parameter, PHPSESSID cookie, or empty fallback
+   * Get authentication token from stored session, PHPSESSID cookie, or empty fallback
    */
   static getAuthToken() {
-    // First priority: Check for 'sid' parameter in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const sidParam = urlParams.get('sid');
-    
-    if (sidParam) {
-      console.log(`XML-RPC: Using sid parameter token: ${sidParam}`);
-      return sidParam;
+    // First priority: Check for stored session ID (from URL capture)
+    const storedSessionId = SessionManager.getStoredSessionId();
+    if (storedSessionId) {
+      console.log(`XML-RPC: Using stored session ID: ${storedSessionId.substring(0, 8)}...`);
+      return storedSessionId;
     }
     
     // Second priority: Get PHPSESSID cookie value
