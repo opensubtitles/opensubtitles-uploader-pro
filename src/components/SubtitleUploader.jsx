@@ -78,7 +78,8 @@ function SubtitleUploaderInner() {
   // Config state
   const [config, setConfig] = useState({
     uploadOptionsExpanded: false, // Default to collapsed (current behavior)
-    globalComment: '' // Global comment for all subtitles
+    globalComment: '', // Global comment for all subtitles
+    defaultLanguage: '' // Default language for all subtitles (empty = auto-detect)
   });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -120,17 +121,7 @@ function SubtitleUploaderInner() {
     toggleDebugMode 
   } = useDebugMode();
 
-  // Config handlers (moved after debug mode hook)
-  const handleConfigChange = useCallback((newConfig) => {
-    const oldConfig = config;
-    setConfig(newConfig);
-    addDebugInfo(`Config updated: ${JSON.stringify(newConfig)}`);
-    
-    // Apply global comment to all existing subtitles if it changed
-    if (oldConfig.globalComment !== newConfig.globalComment) {
-      applyGlobalCommentToAllSubtitles(newConfig.globalComment);
-    }
-  }, [addDebugInfo, config]);
+
 
   const handleConfigToggle = useCallback(() => {
     setIsConfigOpen(prev => !prev);
@@ -360,23 +351,6 @@ function SubtitleUploaderInner() {
     return orphaned;
   })();
 
-  // Handle subtitle upload toggle
-  const handleSubtitleUploadToggle = useCallback((subtitlePath, enabled) => {
-    setUploadStates(prev => ({
-      ...prev,
-      [subtitlePath]: enabled
-    }));
-    addDebugInfo(`Upload ${enabled ? 'enabled' : 'disabled'} for: ${subtitlePath}`);
-  }, [addDebugInfo]);
-
-  // Handle upload options update
-  const handleUploadOptionsUpdate = useCallback((subtitlePath, options) => {
-    setUploadOptions(prev => ({
-      ...prev,
-      [subtitlePath]: options
-    }));
-  }, [addDebugInfo]);
-
   // Apply global comment to all subtitles
   const applyGlobalCommentToAllSubtitles = useCallback((globalComment) => {
     const allSubtitlePaths = [];
@@ -412,6 +386,86 @@ function SubtitleUploaderInner() {
     }
   }, [pairedFiles, orphanedSubtitles, addDebugInfo]);
 
+  // Apply default language to all subtitles
+  const applyDefaultLanguageToAllSubtitles = useCallback((defaultLanguage) => {
+    const allSubtitlePaths = [];
+    
+    // Collect all subtitle paths from paired files
+    pairedFiles.forEach(pair => {
+      if (pair.subtitles && pair.subtitles.length > 0) {
+        pair.subtitles.forEach(subtitle => {
+          allSubtitlePaths.push(subtitle.fullPath);
+        });
+      }
+    });
+    
+    // Add orphaned subtitles
+    orphanedSubtitles.forEach(subtitle => {
+      allSubtitlePaths.push(subtitle.fullPath);
+    });
+    
+    // Update file data for all subtitles
+    if (allSubtitlePaths.length > 0) {
+      if (defaultLanguage) {
+        const defaultLangInfo = combinedLanguages[defaultLanguage];
+        if (defaultLangInfo) {
+          allSubtitlePaths.forEach(path => {
+            updateFile(path, {
+              detectedLanguage: {
+                language_code: defaultLanguage,
+                confidence: 1.0,
+                all_languages: [{
+                  language_code: defaultLanguage,
+                  confidence: 1.0
+                }],
+                source: 'config-default'
+              }
+            });
+          });
+          addDebugInfo(`Applied default language ${defaultLanguage} to ${allSubtitlePaths.length} existing subtitles`);
+        } else {
+          addDebugInfo(`❌ Default language ${defaultLanguage} not found in language data`);
+        }
+      } else {
+        // Clear default language - would need to re-run detection
+        addDebugInfo(`Default language cleared - existing subtitles will keep their current language`);
+      }
+    }
+  }, [pairedFiles, orphanedSubtitles, addDebugInfo, combinedLanguages, updateFile]);
+
+  // Config handlers (moved after all required variables are defined)
+  const handleConfigChange = useCallback((newConfig) => {
+    const oldConfig = config;
+    setConfig(newConfig);
+    addDebugInfo(`Config updated: ${JSON.stringify(newConfig)}`);
+    
+    // Apply global comment to all existing subtitles if it changed
+    if (oldConfig.globalComment !== newConfig.globalComment) {
+      applyGlobalCommentToAllSubtitles(newConfig.globalComment);
+    }
+    
+    // Apply default language to all existing subtitles if it changed
+    if (oldConfig.defaultLanguage !== newConfig.defaultLanguage) {
+      applyDefaultLanguageToAllSubtitles(newConfig.defaultLanguage);
+    }
+  }, [addDebugInfo, config, applyGlobalCommentToAllSubtitles, applyDefaultLanguageToAllSubtitles]);
+
+  // Handle subtitle upload toggle
+  const handleSubtitleUploadToggle = useCallback((subtitlePath, enabled) => {
+    setUploadStates(prev => ({
+      ...prev,
+      [subtitlePath]: enabled
+    }));
+    addDebugInfo(`Upload ${enabled ? 'enabled' : 'disabled'} for: ${subtitlePath}`);
+  }, [addDebugInfo]);
+
+  // Handle upload options update
+  const handleUploadOptionsUpdate = useCallback((subtitlePath, options) => {
+    setUploadOptions(prev => ({
+      ...prev,
+      [subtitlePath]: options
+    }));
+  }, [addDebugInfo]);
 
   // Get upload status for subtitle (default to true)
   const getUploadEnabled = useCallback((subtitlePath) => {
@@ -830,47 +884,118 @@ function SubtitleUploaderInner() {
       setTimeout(() => {
         const currentStatus = getLanguageProcessingStatus(subtitleFile.fullPath);
         if (!currentStatus.isProcessing) {
-          processLanguageDetection(subtitleFile).then(() => {
-            // Check if file should be removed (detected as non-subtitle)
-            const updatedFile = files.find(f => f.fullPath === subtitleFile.fullPath);
-            if (updatedFile?.shouldRemove) {
-              setFiles(prevFiles => 
-                prevFiles.filter(file => file.fullPath !== subtitleFile.fullPath)
-              );
-              addDebugInfo(`Removed ${subtitleFile.name} - not a subtitle file`);
+          // Check if default language is set in config
+          if (config.defaultLanguage) {
+            addDebugInfo(`🔧 Using default language ${config.defaultLanguage} for ${subtitleFile.name} - skipping detection`);
+            
+            // Set the default language directly
+            const defaultLangInfo = combinedLanguages[config.defaultLanguage];
+            if (defaultLangInfo) {
+              updateFile(subtitleFile.fullPath, {
+                detectedLanguage: {
+                  language_code: config.defaultLanguage,
+                  confidence: 1.0,
+                  all_languages: [{
+                    language_code: config.defaultLanguage,
+                    confidence: 1.0
+                  }],
+                  source: 'config-default'
+                }
+              });
               
-              // Update progress with skipped file
-              updateProgress(prev => ({
-                subtitleProcessing: prev.subtitleProcessing + 1,
-                languageDetection: prev.languageDetection + 1,
-                processedFiles: prev.processedFiles + 1,
-                skipped: prev.skipped + 1
-              }));
-            } else {
               // Update progress for successful processing
               updateProgress(prev => {
-                addDebugInfo(`📊 Subtitle progress: ${prev.subtitleProcessing + 1}/${prev.subtitleProcessingTotal}`);
+                addDebugInfo(`📊 Subtitle progress: ${prev.subtitleProcessing + 1}/${prev.subtitleProcessingTotal} (default language)`);
                 return {
                   subtitleProcessing: prev.subtitleProcessing + 1,
                   languageDetection: prev.languageDetection + 1,
                   processedFiles: prev.processedFiles + 1
                 };
               });
+            } else {
+              addDebugInfo(`❌ Default language ${config.defaultLanguage} not found in language data`);
+              // Fall back to normal detection
+              processLanguageDetection(subtitleFile).then(() => {
+                // Same logic as below...
+                const updatedFile = files.find(f => f.fullPath === subtitleFile.fullPath);
+                if (updatedFile?.shouldRemove) {
+                  setFiles(prevFiles => 
+                    prevFiles.filter(file => file.fullPath !== subtitleFile.fullPath)
+                  );
+                  addDebugInfo(`Removed ${subtitleFile.name} - not a subtitle file`);
+                  
+                  updateProgress(prev => ({
+                    subtitleProcessing: prev.subtitleProcessing + 1,
+                    languageDetection: prev.languageDetection + 1,
+                    processedFiles: prev.processedFiles + 1,
+                    skipped: prev.skipped + 1
+                  }));
+                } else {
+                  updateProgress(prev => {
+                    addDebugInfo(`📊 Subtitle progress: ${prev.subtitleProcessing + 1}/${prev.subtitleProcessingTotal}`);
+                    return {
+                      subtitleProcessing: prev.subtitleProcessing + 1,
+                      languageDetection: prev.languageDetection + 1,
+                      processedFiles: prev.processedFiles + 1
+                    };
+                  });
+                }
+              }).catch(error => {
+                addDebugInfo(`Language detection failed: ${error.message}`);
+                processedFilesSet.current.delete(fileId);
+                
+                updateProgress(prev => ({
+                  subtitleProcessing: prev.subtitleProcessing + 1,
+                  languageDetection: prev.languageDetection + 1,
+                  processedFiles: prev.processedFiles + 1,
+                  errors: prev.errors + 1
+                }));
+              });
             }
-            
-            // Note: Already marked as processed when processing started
-          }).catch(error => {
-            addDebugInfo(`Language detection failed: ${error.message}`);
-            processedFilesSet.current.delete(fileId);
-            
-            // Update progress with error
-            updateProgress(prev => ({
-              subtitleProcessing: prev.subtitleProcessing + 1,
-              languageDetection: prev.languageDetection + 1,
-              processedFiles: prev.processedFiles + 1,
-              errors: prev.errors + 1
-            }));
-          });
+          } else {
+            // Use normal language detection
+            processLanguageDetection(subtitleFile).then(() => {
+              // Check if file should be removed (detected as non-subtitle)
+              const updatedFile = files.find(f => f.fullPath === subtitleFile.fullPath);
+              if (updatedFile?.shouldRemove) {
+                setFiles(prevFiles => 
+                  prevFiles.filter(file => file.fullPath !== subtitleFile.fullPath)
+                );
+                addDebugInfo(`Removed ${subtitleFile.name} - not a subtitle file`);
+                
+                // Update progress with skipped file
+                updateProgress(prev => ({
+                  subtitleProcessing: prev.subtitleProcessing + 1,
+                  languageDetection: prev.languageDetection + 1,
+                  processedFiles: prev.processedFiles + 1,
+                  skipped: prev.skipped + 1
+                }));
+              } else {
+                // Update progress for successful processing
+                updateProgress(prev => {
+                  addDebugInfo(`📊 Subtitle progress: ${prev.subtitleProcessing + 1}/${prev.subtitleProcessingTotal}`);
+                  return {
+                    subtitleProcessing: prev.subtitleProcessing + 1,
+                    languageDetection: prev.languageDetection + 1,
+                    processedFiles: prev.processedFiles + 1
+                  };
+                });
+              }
+              
+              // Note: Already marked as processed when processing started
+            }).catch(error => {
+              addDebugInfo(`Language detection failed: ${error.message}`);
+              processedFilesSet.current.delete(fileId);
+              
+              // Update progress with error
+              updateProgress(prev => ({
+                subtitleProcessing: prev.subtitleProcessing + 1,
+                languageDetection: prev.languageDetection + 1,
+                processedFiles: prev.processedFiles + 1,
+                errors: prev.errors + 1
+              }));
+            });
+          }
         }
       }, delay);
     });
@@ -958,7 +1083,7 @@ function SubtitleUploaderInner() {
       addDebugInfo(`📝 Found ${orphanedSubtitles.length} orphaned subtitles - starting movie identification`);
     }
 
-  }, [files.length, stateResetKey, initializeProgress, updateProgress, processingProgress.isProcessing]);
+  }, [files.length, stateResetKey, initializeProgress, updateProgress, processingProgress.isProcessing, config.defaultLanguage, combinedLanguages]);
 
 
 
@@ -1657,6 +1782,7 @@ function SubtitleUploaderInner() {
           onConfigChange={handleConfigChange}
           colors={colors}
           isDark={isDark}
+          combinedLanguages={combinedLanguages}
         />
 
         {/* Help Overlay */}

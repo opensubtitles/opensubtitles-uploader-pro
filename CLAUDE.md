@@ -15,6 +15,8 @@ This is a React-based subtitle uploader application that integrates with the Ope
 
 **IMPORTANT**: Never automatically run the development server (`npm run dev`). Always ask the user to restart the server if needed. The server should only be started by the user, not by Claude.
 
+**CRITICAL**: Never automatically create git commits. Only create commits when explicitly asked by the user. All changes should be made and tested first, then wait for user instruction before committing.
+
 ## Version Management
 
 **CRITICAL**: When updating the version in `package.json`, you MUST run `npm run update-version` to sync version references across the codebase.
@@ -609,3 +611,82 @@ To enable CheckSubHash for orphaned subtitles:
 4. Remove the `return null;` placeholder in OrphanedSubtitles.jsx
 
 The implementation is already in place and will work automatically once CheckSubHash service provides data for orphaned subtitles.
+
+## Upload Logging and NetworkError Debugging (2025-07-17)
+
+**✅ IMPLEMENTED**: Comprehensive upload logging has been added to debug NetworkError issues during subtitle uploads.
+
+### Problem Description
+
+Users occasionally encounter "NetworkError when attempting to fetch resource" during uploads, but the uploads often succeed despite this error. This creates confusion and makes it difficult to diagnose whether the issue is a real failure or a network timing problem.
+
+### Solution Implemented
+
+**Enhanced Network Request Logging**:
+- Added detailed logging to XML-RPC service for both `TryUploadSubtitles` and `UploadSubtitles` methods
+- Logs complete request/response cycle including headers, body sizes, and timing
+- Enhanced error detection specifically for NetworkError/fetch failures
+- Improved user messages distinguishing network vs API errors
+
+**Files Modified**:
+- `src/services/api/xmlrpc.js` - Added comprehensive network request logging
+- `src/services/subtitleUploadService.js` - Enhanced error handling and user messages
+- `src/utils/networkUtils.js` - Better error reporting in delayedFetch utility
+
+### Console Logging Output
+
+When uploads are processed, the console now shows detailed logs:
+
+```
+🌐 TryUploadSubtitles: Starting network request...
+🌐 TryUploadSubtitles: URL: https://api.opensubtitles.org/xml-rpc
+🌐 TryUploadSubtitles: Headers: {...}
+🌐 TryUploadSubtitles: Body length: 2847 chars
+🌐 TryUploadSubtitles: Response received
+🌐 TryUploadSubtitles: Status: 200 OK
+🌐 TryUploadSubtitles: Headers: {...}
+🌐 TryUploadSubtitles: XML response length: 156 chars
+✅ TryUploadSubtitles: Parsed response successfully
+```
+
+**For Network Errors**:
+```
+❌ TryUploadSubtitles: Request failed with error: TypeError: Failed to fetch
+❌ TryUploadSubtitles: This appears to be a network connectivity issue
+❌ TryUploadSubtitles: Error details: { name: 'TypeError', message: 'Failed to fetch', stack: '...' }
+```
+
+### NetworkError Detection
+
+The system now specifically detects NetworkError conditions:
+- **Detection**: Identifies `TypeError` with 'fetch' message indicating network issues
+- **User Messages**: Shows "NetworkError: ... (Upload may have succeeded despite this error)"
+- **Debug Context**: Provides helpful hints about likely causes (DNS, timeouts, connection issues)
+- **Success Indication**: Notes that uploads may have succeeded despite the error
+
+### Benefits
+
+This comprehensive logging helps identify:
+- **Network Timeouts**: When requests time out but uploads succeed
+- **DNS Issues**: When domain resolution fails
+- **Connection Problems**: When network connection is unstable
+- **API Response Issues**: When API returns unexpected responses
+- **Request/Response Cycle**: Full visibility into upload process
+
+### User Experience Improvements
+
+- **Better Error Messages**: Distinguishes between network connectivity issues and actual API failures
+- **Success Possibility**: Warns users that uploads may have succeeded despite NetworkError
+- **Detailed Debug Info**: Provides context for troubleshooting in debug panel
+- **Error Type Tracking**: Categorizes errors for better analysis
+
+### Usage for Debugging
+
+When encountering "NetworkError when attempting to fetch resource":
+1. Open browser dev tools console
+2. Look for 🌐 network request logs
+3. Check if request reached the server (status logged)
+4. Verify if response was received (XML response length logged)
+5. Look for specific error patterns in the logs
+
+This implementation provides complete visibility into the upload process, making it much easier to diagnose whether NetworkError represents a real failure or just a network timing issue where the upload actually succeeded.
