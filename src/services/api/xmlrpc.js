@@ -618,28 +618,64 @@ export class XmlRpcService {
       // Convert upload data to XML-RPC format
       const xmlRpcBody = this.buildTryUploadXml(token, uploadData);
       
+      console.log('🌐 TryUploadSubtitles: Starting network request...');
+      console.log('🌐 TryUploadSubtitles: URL:', API_ENDPOINTS.OPENSUBTITLES_XMLRPC);
+      console.log('🌐 TryUploadSubtitles: Headers:', getApiHeaders('text/xml'));
+      console.log('🌐 TryUploadSubtitles: Body length:', xmlRpcBody.length, 'chars');
+      
       const response = await delayedFetch(API_ENDPOINTS.OPENSUBTITLES_XMLRPC, {
         method: 'POST',
         headers: getApiHeaders('text/xml'),
         body: xmlRpcBody,
       });
 
+      console.log('🌐 TryUploadSubtitles: Response received');
+      console.log('🌐 TryUploadSubtitles: Status:', response.status, response.statusText);
+      console.log('🌐 TryUploadSubtitles: Headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`XML-RPC TryUploadSubtitles failed: ${response.status} ${response.statusText}`);
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          url: response.url,
+          type: response.type,
+          redirected: response.redirected
+        };
+        console.error('❌ TryUploadSubtitles: HTTP error response:', errorDetails);
+        throw new Error(`XML-RPC TryUploadSubtitles failed: ${response.status} ${response.statusText} (${response.url})`);
       }
 
       const xmlText = await response.text();
+      console.log('🌐 TryUploadSubtitles: XML response length:', xmlText.length, 'chars');
+      console.log('🌐 TryUploadSubtitles: XML response preview:', xmlText.substring(0, 200) + '...');
+      
       const xmlDoc = this.parseXmlRpcResponse(xmlText);
       
       // Parse response
       const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
       if (responseStruct) {
-        return this.extractStructData(responseStruct);
+        const result = this.extractStructData(responseStruct);
+        console.log('✅ TryUploadSubtitles: Parsed response successfully');
+        return result;
       }
       
+      console.error('❌ TryUploadSubtitles: Invalid response structure');
+      console.error('❌ TryUploadSubtitles: Full XML response:', xmlText);
       throw new Error('Invalid TryUploadSubtitles response structure');
     } catch (error) {
-      console.error('TryUploadSubtitles failed:', error);
+      console.error('❌ TryUploadSubtitles: Request failed with error:', error);
+      
+      // Enhanced error details for NetworkError
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('❌ TryUploadSubtitles: This appears to be a network connectivity issue');
+        console.error('❌ TryUploadSubtitles: Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      
       throw error;
     }
   }
@@ -716,28 +752,64 @@ export class XmlRpcService {
       // Convert upload data to XML-RPC format
       const xmlRpcBody = this.buildUploadSubtitlesXml(token, uploadData);
       
+      console.log('🌐 UploadSubtitles: Starting network request...');
+      console.log('🌐 UploadSubtitles: URL:', API_ENDPOINTS.OPENSUBTITLES_XMLRPC);
+      console.log('🌐 UploadSubtitles: Headers:', getApiHeaders('text/xml'));
+      console.log('🌐 UploadSubtitles: Body length:', xmlRpcBody.length, 'chars');
+      
       const response = await delayedFetch(API_ENDPOINTS.OPENSUBTITLES_XMLRPC, {
         method: 'POST',
         headers: getApiHeaders('text/xml'),
         body: xmlRpcBody,
       });
 
+      console.log('🌐 UploadSubtitles: Response received');
+      console.log('🌐 UploadSubtitles: Status:', response.status, response.statusText);
+      console.log('🌐 UploadSubtitles: Headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`XML-RPC UploadSubtitles failed: ${response.status} ${response.statusText}`);
+        const errorDetails = {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          url: response.url,
+          type: response.type,
+          redirected: response.redirected
+        };
+        console.error('❌ UploadSubtitles: HTTP error response:', errorDetails);
+        throw new Error(`XML-RPC UploadSubtitles failed: ${response.status} ${response.statusText} (${response.url})`);
       }
 
       const xmlText = await response.text();
+      console.log('🌐 UploadSubtitles: XML response length:', xmlText.length, 'chars');
+      console.log('🌐 UploadSubtitles: XML response preview:', xmlText.substring(0, 200) + '...');
+      
       const xmlDoc = this.parseXmlRpcResponse(xmlText);
       
       // Parse response
       const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
       if (responseStruct) {
-        return this.extractStructData(responseStruct);
+        const result = this.extractStructData(responseStruct);
+        console.log('✅ UploadSubtitles: Parsed response successfully');
+        return result;
       }
       
+      console.error('❌ UploadSubtitles: Invalid response structure');
+      console.error('❌ UploadSubtitles: Full XML response:', xmlText);
       throw new Error('Invalid UploadSubtitles response structure');
     } catch (error) {
-      console.error('UploadSubtitles failed:', error);
+      console.error('❌ UploadSubtitles: Request failed with error:', error);
+      
+      // Enhanced error details for NetworkError
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('❌ UploadSubtitles: This appears to be a network connectivity issue');
+        console.error('❌ UploadSubtitles: Error details:', {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      
       throw error;
     }
   }

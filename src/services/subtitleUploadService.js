@@ -193,12 +193,22 @@ export class SubtitleUploadService {
           });
           
         } catch (error) {
-          addDebugInfo(`❌ Upload failed for ${video.name}: ${error.message}`);
+          // Enhanced error logging for NetworkError
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            addDebugInfo(`❌ NetworkError during upload for ${video.name}: ${error.message}`);
+            addDebugInfo(`❌ This is likely a network connectivity issue, not an API error`);
+            addDebugInfo(`❌ The upload may have actually succeeded - check the results`);
+          } else {
+            addDebugInfo(`❌ Upload failed for ${video.name}: ${error.message}`);
+          }
+          
           results.errors.push({
             video: video.name,
             subtitles: subtitles.length,
             error: error.message,
-            stack: error.stack
+            stack: error.stack,
+            errorType: error.name,
+            isNetworkError: error.name === 'TypeError' && error.message.includes('fetch')
           });
           
           // Update progress for each failed subtitle in this video
@@ -210,8 +220,12 @@ export class SubtitleUploadService {
             results.detailedResults.push({
               filename: subtitle.name,
               status: 'failed',
-              message: `Upload failed: ${error.message}`,
-              url: null
+              message: error.name === 'TypeError' && error.message.includes('fetch') 
+                ? `NetworkError: ${error.message} (Upload may have succeeded despite this error)`
+                : `Upload failed: ${error.message}`,
+              url: null,
+              errorType: error.name,
+              isNetworkError: error.name === 'TypeError' && error.message.includes('fetch')
             });
             
             // Update progress with detailed information
@@ -346,12 +360,22 @@ export class SubtitleUploadService {
           }
           
         } catch (error) {
-          addDebugInfo(`❌ Upload failed for orphaned subtitle ${subtitle.name}: ${error.message}`);
+          // Enhanced error logging for NetworkError
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            addDebugInfo(`❌ NetworkError during upload for orphaned subtitle ${subtitle.name}: ${error.message}`);
+            addDebugInfo(`❌ This is likely a network connectivity issue, not an API error`);
+            addDebugInfo(`❌ The upload may have actually succeeded - check the results`);
+          } else {
+            addDebugInfo(`❌ Upload failed for orphaned subtitle ${subtitle.name}: ${error.message}`);
+          }
+          
           results.errors.push({
             video: `Orphaned: ${subtitle.name}`,
             subtitles: 1,
             error: error.message,
-            stack: error.stack
+            stack: error.stack,
+            errorType: error.name,
+            isNetworkError: error.name === 'TypeError' && error.message.includes('fetch')
           });
           
           results.processedSubtitles++;
@@ -361,8 +385,12 @@ export class SubtitleUploadService {
           results.detailedResults.push({
             filename: subtitle.name,
             status: 'failed',
-            message: `Upload failed: ${error.message}`,
-            url: null
+            message: error.name === 'TypeError' && error.message.includes('fetch') 
+              ? `NetworkError: ${error.message} (Upload may have succeeded despite this error)`
+              : `Upload failed: ${error.message}`,
+            url: null,
+            errorType: error.name,
+            isNetworkError: error.name === 'TypeError' && error.message.includes('fetch')
           });
           
           // Update progress with detailed information

@@ -46,7 +46,33 @@ export const delayedFetch = async (url, options = {}, delay = DEFAULT_SETTINGS.N
     addDebugInfo(`Making network request to: ${url}`);
   }
   
-  return fetch(url, options);
+  try {
+    const response = await fetch(url, options);
+    
+    if (addDebugInfo) {
+      addDebugInfo(`Network request completed: ${response.status} ${response.statusText}`);
+    }
+    
+    return response;
+  } catch (error) {
+    if (addDebugInfo) {
+      addDebugInfo(`❌ Network request failed: ${error.name} - ${error.message}`);
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        addDebugInfo(`❌ This is likely a network connectivity issue (DNS, connection timeout, etc.)`);
+      }
+    }
+    
+    // Log network error details to console for debugging
+    console.error('🌐 Network Request Failed:', {
+      url,
+      error: error.name,
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    throw error;
+  }
 };
 
 /**
