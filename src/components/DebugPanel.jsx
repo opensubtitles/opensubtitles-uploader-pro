@@ -307,11 +307,6 @@ export const DebugPanel = ({
                     {' '}({sessionInfo.sessionId})
                   </span>
                 )}
-                {sessionInfo.isValid && sessionInfo.expiryTime && (
-                  <span style={{ color: themeColors.textMuted }}>
-                    {' '}expires {sessionInfo.expiryTime}
-                  </span>
-                )}
               </span>
             )}
           </div>

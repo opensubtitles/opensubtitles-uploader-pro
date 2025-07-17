@@ -4,7 +4,6 @@
  */
 
 const SESSION_STORAGE_KEY = 'opensubtitles_session_id';
-const SESSION_EXPIRY_KEY = 'opensubtitles_session_expiry';
 
 export class SessionManager {
   /**
@@ -36,17 +35,13 @@ export class SessionManager {
   }
   
   /**
-   * Store session ID in localStorage with expiry
+   * Store session ID in localStorage permanently
    * @param {string} sessionId - The session ID to store
    */
   static storeSessionId(sessionId) {
     try {
-      // Store session ID
+      // Store session ID permanently
       localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
-      
-      // Set expiry time (24 hours from now)
-      const expiryTime = Date.now() + (24 * 60 * 60 * 1000);
-      localStorage.setItem(SESSION_EXPIRY_KEY, expiryTime.toString());
       
       console.log('SessionManager: Session ID stored securely');
     } catch (error) {
@@ -55,26 +50,13 @@ export class SessionManager {
   }
   
   /**
-   * Retrieve stored session ID if valid
-   * @returns {string|null} - The session ID or null if not available/expired
+   * Retrieve stored session ID
+   * @returns {string|null} - The session ID or null if not available
    */
   static getStoredSessionId() {
     try {
       const sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
-      const expiryTime = localStorage.getItem(SESSION_EXPIRY_KEY);
-      
-      if (!sessionId || !expiryTime) {
-        return null;
-      }
-      
-      // Check if session has expired
-      if (Date.now() > parseInt(expiryTime)) {
-        console.log('SessionManager: Stored session ID has expired');
-        this.clearStoredSession();
-        return null;
-      }
-      
-      return sessionId;
+      return sessionId || null;
     } catch (error) {
       console.error('SessionManager: Failed to retrieve session ID:', error);
       return null;
@@ -87,7 +69,6 @@ export class SessionManager {
   static clearStoredSession() {
     try {
       localStorage.removeItem(SESSION_STORAGE_KEY);
-      localStorage.removeItem(SESSION_EXPIRY_KEY);
       console.log('SessionManager: Stored session cleared');
     } catch (error) {
       console.error('SessionManager: Failed to clear session:', error);
@@ -95,7 +76,7 @@ export class SessionManager {
   }
   
   /**
-   * Check if session is valid and not expired
+   * Check if session is valid
    * @returns {boolean} - True if session is valid
    */
   static isSessionValid() {
@@ -109,14 +90,11 @@ export class SessionManager {
    */
   static getSessionInfo() {
     const sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
-    const expiryTime = localStorage.getItem(SESSION_EXPIRY_KEY);
     
     return {
       hasSessionId: !!sessionId,
       sessionId: sessionId ? `${sessionId.substring(0, 8)}...` : null, // Truncated for security
-      expiryTime: expiryTime ? new Date(parseInt(expiryTime)).toLocaleString() : null,
-      isValid: this.isSessionValid(),
-      timeUntilExpiry: expiryTime ? Math.max(0, parseInt(expiryTime) - Date.now()) : 0
+      isValid: this.isSessionValid()
     };
   }
 }
