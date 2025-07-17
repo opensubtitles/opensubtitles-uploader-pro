@@ -130,95 +130,6 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          {/* Default Expanded State */}
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="block text-sm font-medium" style={{ color: colors.text }}>
-                Default Expanded State
-              </label>
-              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
-                Set whether upload options are expanded by default
-              </p>
-            </div>
-            <div className="ml-4">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localConfig.uploadOptionsExpanded}
-                  onChange={(e) => handleChange('uploadOptionsExpanded', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div 
-                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
-                  style={{
-                    backgroundColor: localConfig.uploadOptionsExpanded ? colors.success : colors.border,
-                  }}
-                />
-              </label>
-            </div>
-          </div>
-          
-          {/* Minimal separator line */}
-          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
-          
-          {/* Global Comment Setting */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium" style={{ color: colors.text }}>
-              Global Comment
-            </label>
-            <p className="text-xs" style={{ color: colors.textSecondary }}>
-              This comment will be applied to all subtitles (current and future)
-            </p>
-            <textarea
-              value={localConfig.globalComment || ''}
-              onChange={(e) => handleChange('globalComment', e.target.value)}
-              placeholder="Enter a comment that will be applied to all subtitles..."
-              className="w-full px-3 py-2 text-sm rounded-lg border resize-none transition-colors focus:outline-none focus:ring-2"
-              style={{
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.text,
-                focusRingColor: colors.primary,
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = colors.primary;
-                e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = colors.border;
-                e.target.style.boxShadow = 'none';
-              }}
-              rows="3"
-              maxLength={500}
-            />
-            <div className="flex justify-between items-center">
-              <span className="text-xs" style={{ color: colors.textSecondary }}>
-                {localConfig.globalComment?.length || 0}/500 characters
-              </span>
-              {localConfig.globalComment && (
-                <button
-                  onClick={() => handleChange('globalComment', '')}
-                  className="text-xs px-2 py-1 rounded transition-colors"
-                  style={{
-                    color: colors.error,
-                    backgroundColor: colors.error + '10',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = colors.error + '20';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = colors.error + '10';
-                  }}
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-          
-          {/* Minimal separator line */}
-          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
-          
           {/* Default Language Setting */}
           <div className="space-y-2">
             <label className="block text-sm font-medium" style={{ color: colors.text }}>
@@ -324,6 +235,147 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
                 <span>Language detection will be skipped for all subtitles</span>
               </div>
             )}
+          </div>
+          
+          {/* Minimal separator line */}
+          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+          
+          {/* Default FPS Setting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" style={{ color: colors.text }}>
+              Default FPS (Orphaned Subtitles)
+            </label>
+            <p className="text-xs" style={{ color: colors.textSecondary }}>
+              Pre-select FPS for all orphaned subtitles (subtitles without video files)
+            </p>
+            <select
+              value={localConfig.defaultFps || ''}
+              onChange={(e) => handleChange('defaultFps', e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                color: colors.text,
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = colors.link;
+                e.target.style.boxShadow = `0 0 0 2px ${colors.link}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = colors.border;
+                e.target.style.boxShadow = 'none';
+              }}
+            >
+              <option value="">Select FPS</option>
+              <option value="23.976">23.976 FPS - NTSC Film</option>
+              <option value="24">24 FPS - Cinema</option>
+              <option value="25">25 FPS - PAL</option>
+              <option value="29.97">29.97 FPS - NTSC</option>
+              <option value="30">30 FPS - True NTSC</option>
+              <option value="47.952">47.952 FPS - Double NTSC</option>
+              <option value="48">48 FPS - HFR</option>
+              <option value="50">50 FPS - PAL HFR</option>
+              <option value="59.94">59.94 FPS - NTSC HFR</option>
+              <option value="60">60 FPS - True HFR</option>
+              <option value="100">100 FPS - Double PAL</option>
+              <option value="119.88">119.88 FPS - Double NTSC</option>
+              <option value="120">120 FPS - UHFR</option>
+            </select>
+            {localConfig.defaultFps && (
+              <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
+                <span>✓</span>
+                <span>All orphaned subtitles will be pre-selected with {localConfig.defaultFps} FPS</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Minimal separator line */}
+          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+          
+          {/* Default Expanded State */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-medium" style={{ color: colors.text }}>
+                Default Expanded State
+              </label>
+              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
+                Set whether upload options are expanded by default
+              </p>
+            </div>
+            <div className="ml-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localConfig.uploadOptionsExpanded}
+                  onChange={(e) => handleChange('uploadOptionsExpanded', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div 
+                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+                  style={{
+                    backgroundColor: localConfig.uploadOptionsExpanded ? colors.success : colors.border,
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+          
+          {/* Minimal separator line */}
+          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+          
+          {/* Global Comment Setting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" style={{ color: colors.text }}>
+              Global Comment
+            </label>
+            <p className="text-xs" style={{ color: colors.textSecondary }}>
+              This comment will be applied to all subtitles (current and future)
+            </p>
+            <textarea
+              value={localConfig.globalComment || ''}
+              onChange={(e) => handleChange('globalComment', e.target.value)}
+              placeholder="Enter a comment that will be applied to all subtitles..."
+              className="w-full px-3 py-2 text-sm rounded-lg border resize-none transition-colors focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                color: colors.text,
+                focusRingColor: colors.primary,
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = colors.primary;
+                e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = colors.border;
+                e.target.style.boxShadow = 'none';
+              }}
+              rows="3"
+              maxLength={500}
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-xs" style={{ color: colors.textSecondary }}>
+                {localConfig.globalComment?.length || 0}/500 characters
+              </span>
+              {localConfig.globalComment && (
+                <button
+                  onClick={() => handleChange('globalComment', '')}
+                  className="text-xs px-2 py-1 rounded transition-colors"
+                  style={{
+                    color: colors.error,
+                    backgroundColor: colors.error + '10',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = colors.error + '20';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = colors.error + '10';
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

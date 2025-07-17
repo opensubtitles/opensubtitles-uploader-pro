@@ -730,6 +730,21 @@ export class XmlRpcService {
                   <name>idmovieimdb</name>
                   <value><string>${subtitle.idmovieimdb}</string></value>
                 </member>` : ''}
+                ${subtitle.movietimems ? `
+                <member>
+                  <name>movietimems</name>
+                  <value><string>${subtitle.movietimems}</string></value>
+                </member>` : ''}
+                ${subtitle.moviefps ? `
+                <member>
+                  <name>moviefps</name>
+                  <value><string>${subtitle.moviefps}</string></value>
+                </member>` : ''}
+                ${subtitle.movieframes ? `
+                <member>
+                  <name>movieframes</name>
+                  <value><string>${subtitle.movieframes}</string></value>
+                </member>` : ''}
               </struct>
             </value>
           </member>

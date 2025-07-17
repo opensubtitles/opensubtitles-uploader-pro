@@ -32,7 +32,8 @@ export class SubtitleUploadService {
     combinedLanguages,
     addDebugInfo,
     onProgress,
-    getVideoMetadata // Add video metadata getter
+    getVideoMetadata, // Add video metadata getter
+    orphanedSubtitlesFps = {} // Add FPS settings for orphaned subtitles
   }) {
     const results = {
       success: [],
@@ -263,7 +264,8 @@ export class SubtitleUploadService {
             getSubtitleLanguage,
             uploadOptions,
             combinedLanguages,
-            addDebugInfo
+            addDebugInfo,
+            orphanedSubtitlesFps
           });
 
           const tryUploadResponse = await XmlRpcService.tryUploadSubtitles(uploadData);
@@ -287,7 +289,8 @@ export class SubtitleUploadService {
               getSubtitleLanguage,
               uploadOptions,
               combinedLanguages,
-              addDebugInfo
+              addDebugInfo,
+              orphanedSubtitlesFps
             });
             
             actualUploadResponse = await XmlRpcService.uploadSubtitles(actualUploadData);
@@ -457,18 +460,33 @@ export class SubtitleUploadService {
         throw new Error(`Movie hash not available for video: ${video.name}`);
       }
 
+      // Get video metadata for upload parameters
+      const videoMetadata = getVideoMetadata ? getVideoMetadata(video.fullPath) : null;
+      
       const subtitleEntry = {
         subhash: subtitleInfo.hash,           // MD5 hash of subtitle file content
         subfilename: subtitle.name,
         moviehash: video.movieHash,           // Movie hash from video file
         moviebytesize: video.size.toString(),
         moviefilename: video.name,
-        idmovieimdb: uploadImdbId
+        idmovieimdb: uploadImdbId,
+        
+        // Add video metadata parameters for TryUploadSubtitles
+        ...(videoMetadata && {
+          movietimems: videoMetadata.movietimems?.toString(),
+          moviefps: videoMetadata.moviefps?.toString(),
+          movieframes: videoMetadata.movieframes?.toString()
+        })
       };
       
       addDebugInfo(`✅ Prepared subtitle data for: ${subtitle.name}`);
       addDebugInfo(`   - Movie hash: ${video.movieHash}`);
       addDebugInfo(`   - IMDb ID: ${uploadImdbId}`);
+      if (videoMetadata) {
+        addDebugInfo(`   - Video metadata: FPS=${videoMetadata.moviefps}, Duration=${videoMetadata.movietimems}ms, Frames=${videoMetadata.movieframes}`);
+      } else {
+        addDebugInfo(`   - Video metadata: Not available`);
+      }
       
       return {
         subtitles: [subtitleEntry] // Always single subtitle in cd1
@@ -629,7 +647,8 @@ export class SubtitleUploadService {
     getSubtitleLanguage,
     uploadOptions,
     combinedLanguages,
-    addDebugInfo
+    addDebugInfo,
+    orphanedSubtitlesFps = {}
   }) {
     // Get the best movie data (episode-specific if available)
     const bestMovieData = this.getBestMovieData(subtitle.fullPath, movieData, featuresByImdbId, guessItData);
@@ -650,6 +669,17 @@ export class SubtitleUploadService {
         // For orphaned subtitles, we don't include movie fields or idmovieimdb in TryUploadSubtitles
         // moviehash, moviebytesize, moviefilename, and idmovieimdb are not sent
       };
+      
+      // Get FPS setting for this subtitle
+      const subtitleFps = orphanedSubtitlesFps[subtitle.fullPath];
+      
+      // Add FPS if specified (only if not empty)
+      if (subtitleFps && subtitleFps !== '') {
+        subtitleEntry.moviefps = subtitleFps;
+        addDebugInfo(`   - FPS: ${subtitleFps}`);
+      } else {
+        addDebugInfo(`   - FPS: Not specified`);
+      }
       
       addDebugInfo(`✅ Prepared orphaned subtitle data for: ${subtitle.name}`);
       addDebugInfo(`   - No movie fields included (orphaned subtitle for TryUploadSubtitles)`);
@@ -678,7 +708,8 @@ export class SubtitleUploadService {
     getSubtitleLanguage,
     uploadOptions,
     combinedLanguages,
-    addDebugInfo
+    addDebugInfo,
+    orphanedSubtitlesFps = {}
   }) {
     // Get the best movie data (episode-specific if available)
     const bestMovieData = this.getBestMovieData(subtitle.fullPath, movieData, featuresByImdbId, guessItData);
@@ -728,11 +759,15 @@ export class SubtitleUploadService {
         // highdefinition omitted - unknown for orphaned subtitles unless specified
       };
       
+      
       // Add highdefinition if specified in upload options
       if (subtitleOptions.highdefinition) {
         baseinfo.highdefinition = subtitleOptions.highdefinition;
       }
 
+      // Get FPS setting for this subtitle
+      const subtitleFps = orphanedSubtitlesFps[subtitle.fullPath];
+      
       // Prepare cd1 section (no movie file data for orphaned subtitles)
       const cd1 = {
         subhash: subtitleInfo.hash, // Use same hash as TryUploadSubtitles (MD5 of original content)
@@ -740,6 +775,14 @@ export class SubtitleUploadService {
         subcontent: subtitleInfo.contentGzipBase64
         // No movie data included for orphaned subtitles (moviehash, moviebytesize, moviefilename)
       };
+      
+      // Add FPS if specified (only if not empty)
+      if (subtitleFps && subtitleFps !== '') {
+        cd1.moviefps = subtitleFps;
+        addDebugInfo(`   - FPS: ${subtitleFps}`);
+      } else {
+        addDebugInfo(`   - FPS: Not specified`);
+      }
       
       addDebugInfo(`✅ Prepared actual upload data for orphaned subtitle: ${subtitle.name}`);
       addDebugInfo(`   - Language: ${languageId}`);

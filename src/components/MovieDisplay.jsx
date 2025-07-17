@@ -18,10 +18,32 @@ export const MovieDisplay = ({
   isDark, // Dark mode flag
   hideSelectAllCheckbox = false, // Hide the "All Selected" checkbox
   getGuessItProcessingStatus, // Function to get GuessIt processing status
-  getFormattedTags // Function to get formatted GuessIt tags
+  getFormattedTags, // Function to get formatted GuessIt tags
+  isOrphanedSubtitle = false, // Flag to show if this is for orphaned subtitle
+  orphanedSubtitlesFps = {}, // FPS settings for orphaned subtitles
+  onOrphanedSubtitlesFpsChange // Function to handle FPS changes
 }) => {
   // SAFE: Separate state for enhanced episode data to avoid setState during render
   const [enhancedEpisodeData, setEnhancedEpisodeData] = React.useState(null);
+  
+  // FPS options for orphaned subtitles
+  const fpsOptions = [
+    { value: '', label: 'Select FPS' },
+    { value: '23.976', label: '23.976 FPS - NTSC Film' },
+    { value: '24', label: '24 FPS - Cinema' },
+    { value: '25', label: '25 FPS - PAL' },
+    { value: '29.97', label: '29.97 FPS - NTSC' },
+    { value: '30', label: '30 FPS - True NTSC' },
+    { value: '47.952', label: '47.952 FPS - Double NTSC' },
+    { value: '48', label: '48 FPS - HFR' },
+    { value: '50', label: '50 FPS - PAL HFR' },
+    { value: '59.94', label: '59.94 FPS - NTSC HFR' },
+    { value: '60', label: '60 FPS - True HFR' },
+    { value: '100', label: '100 FPS - Double PAL' },
+    { value: '119.88', label: '119.88 FPS - Double NTSC' },
+    { value: '120', label: '120 FPS - UHFR' }
+  ];
+
   // Default to light theme colors if not provided
   const themeColors = colors || {
     cardBackground: '#fff',
@@ -590,40 +612,98 @@ export const MovieDisplay = ({
                         {originalMovieData.imdbid}
                       </a>
                     </div>
+                    
+                    {/* FPS Dropdown for orphaned subtitles */}
+                    {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
+                      <div className="mt-2">
+                        <select
+                          value={orphanedSubtitlesFps[videoPath] || ''}
+                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
+                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
+                          style={{
+                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                            color: themeColors.text,
+                            border: `1px solid ${themeColors.border}`
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        >
+                          {fpsOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </>
                 ) : (
                   /* Main content IMDb - Primary for upload */
-                  <div>
-                    <span className="font-semibold" style={{color: '#28a745'}}>🎯 Upload IMDb:</span>{" "}
-                    <a 
-                      href={`https://www.imdb.com/title/tt${originalMovieData.imdbid}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-mono font-bold"
-                      style={{color: themeColors.success}}
-                      onMouseEnter={(e) => e.target.style.color = themeColors.success}
-                      onMouseLeave={(e) => e.target.style.color = themeColors.success}
-                    >
-                      {originalMovieData.imdbid}
-                    </a>
-                    <span className="text-xs ml-2" style={{color: '#28a745'}}>
-                      ({(() => {
-                        const featureType = featuresData?.data?.[0]?.attributes?.feature_type;
-                        if (featureType) {
-                          // Convert feature_type to display format
-                          switch (featureType.toLowerCase()) {
-                            case 'movie': return 'Movie';
-                            case 'tvshow':
-                            case 'tv_series': return 'TV Series';
-                            case 'episode': return 'Episode';
-                            default: return featureType.replace('_', ' ');
+                  <>
+                    <div>
+                      <span className="font-semibold" style={{color: '#28a745'}}>🎯 Upload IMDb:</span>{" "}
+                      <a 
+                        href={`https://www.imdb.com/title/tt${originalMovieData.imdbid}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-mono font-bold"
+                        style={{color: themeColors.success}}
+                        onMouseEnter={(e) => e.target.style.color = themeColors.success}
+                        onMouseLeave={(e) => e.target.style.color = themeColors.success}
+                      >
+                        {originalMovieData.imdbid}
+                      </a>
+                      <span className="text-xs ml-2" style={{color: '#28a745'}}>
+                        ({(() => {
+                          const featureType = featuresData?.data?.[0]?.attributes?.feature_type;
+                          if (featureType) {
+                            // Convert feature_type to display format
+                            switch (featureType.toLowerCase()) {
+                              case 'movie': return 'Movie';
+                              case 'tvshow':
+                              case 'tv_series': return 'TV Series';
+                              case 'episode': return 'Episode';
+                              default: return featureType.replace('_', ' ');
+                            }
                           }
-                        }
-                        // Fallback to bestMovieData kind
-                        return bestMovieData.kind === 'tv series' ? 'TV Series' : 'Movie';
-                      })()})
-                    </span>
-                  </div>
+                          // Fallback to bestMovieData kind
+                          return bestMovieData.kind === 'tv series' ? 'TV Series' : 'Movie';
+                        })()})
+                      </span>
+                    </div>
+                    
+                    {/* FPS Dropdown for orphaned subtitles */}
+                    {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
+                      <div className="mt-2">
+                        <select
+                          value={orphanedSubtitlesFps[videoPath] || ''}
+                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
+                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
+                          style={{
+                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                            color: themeColors.text,
+                            border: `1px solid ${themeColors.border}`
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        >
+                          {fpsOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             ) : (
@@ -683,26 +763,84 @@ export const MovieDisplay = ({
                         {originalMovieData.imdbid}
                       </a>
                     </div>
+                    
+                    {/* FPS Dropdown for orphaned subtitles */}
+                    {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
+                      <div className="mt-2">
+                        <select
+                          value={orphanedSubtitlesFps[videoPath] || ''}
+                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
+                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
+                          style={{
+                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                            color: themeColors.text,
+                            border: `1px solid ${themeColors.border}`
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        >
+                          {fpsOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </>
                 ) : (
                   /* Main content IMDb - Primary for upload (fallback) */
-                  <div>
-                    <span className="font-semibold" style={{color: '#28a745'}}>🎯 Upload IMDb:</span>{" "}
-                    <a 
-                      href={`https://www.imdb.com/title/tt${originalMovieData.imdbid}/`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline font-mono font-bold"
-                      style={{color: themeColors.success}}
-                      onMouseEnter={(e) => e.target.style.color = themeColors.success}
-                      onMouseLeave={(e) => e.target.style.color = themeColors.success}
-                    >
-                      {originalMovieData.imdbid}
-                    </a>
-                    <span className="text-xs ml-2" style={{color: '#28a745'}}>
-                      ({bestMovieData.kind === 'tv series' ? 'TV Series' : 'Movie'})
-                    </span>
-                  </div>
+                  <>
+                    <div>
+                      <span className="font-semibold" style={{color: '#28a745'}}>🎯 Upload IMDb:</span>{" "}
+                      <a 
+                        href={`https://www.imdb.com/title/tt${originalMovieData.imdbid}/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-mono font-bold"
+                        style={{color: themeColors.success}}
+                        onMouseEnter={(e) => e.target.style.color = themeColors.success}
+                        onMouseLeave={(e) => e.target.style.color = themeColors.success}
+                      >
+                        {originalMovieData.imdbid}
+                      </a>
+                      <span className="text-xs ml-2" style={{color: '#28a745'}}>
+                        ({bestMovieData.kind === 'tv series' ? 'TV Series' : 'Movie'})
+                      </span>
+                    </div>
+                    
+                    {/* FPS Dropdown for orphaned subtitles */}
+                    {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
+                      <div className="mt-2">
+                        <select
+                          value={orphanedSubtitlesFps[videoPath] || ''}
+                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
+                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
+                          style={{
+                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                            color: themeColors.text,
+                            border: `1px solid ${themeColors.border}`
+                          }}
+                          onFocus={(e) => {
+                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+                          }}
+                          onBlur={(e) => {
+                            e.target.style.boxShadow = 'none';
+                          }}
+                        >
+                          {fpsOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

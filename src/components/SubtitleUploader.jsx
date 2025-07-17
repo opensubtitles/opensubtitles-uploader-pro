@@ -44,6 +44,7 @@ function SubtitleUploaderInner() {
   const [uploadResults, setUploadResults] = useState({}); // New state for upload results
   const [subcontentData, setSubcontentData] = useState({}); // New state for subcontent data
   const [uploadOptions, setUploadOptions] = useState({}); // New state for upload options (release name, comments, etc.)
+  const [orphanedSubtitlesFps, setOrphanedSubtitlesFps] = useState({}); // New state for orphaned subtitles FPS
   const [uploadProgress, setUploadProgress] = useState({ 
     isUploading: false,
     isComplete: false,
@@ -79,7 +80,8 @@ function SubtitleUploaderInner() {
   const [config, setConfig] = useState({
     uploadOptionsExpanded: false, // Default to collapsed (current behavior)
     globalComment: '', // Global comment for all subtitles
-    defaultLanguage: '' // Default language for all subtitles (empty = auto-detect)
+    defaultLanguage: '', // Default language for all subtitles (empty = auto-detect)
+    defaultFps: '' // Default FPS for orphaned subtitles (empty = no default)
   });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -433,6 +435,54 @@ function SubtitleUploaderInner() {
     }
   }, [pairedFiles, orphanedSubtitles, addDebugInfo, combinedLanguages, updateFile]);
 
+  // Apply default FPS to orphaned subtitles only
+  const applyDefaultFpsToOrphanedSubtitles = useCallback((defaultFps) => {
+    const orphanedSubtitlePaths = [];
+    
+    // Collect only orphaned subtitle paths
+    orphanedSubtitles.forEach(subtitle => {
+      orphanedSubtitlePaths.push(subtitle.fullPath);
+    });
+    
+    // Update FPS for orphaned subtitles
+    if (orphanedSubtitlePaths.length > 0) {
+      setOrphanedSubtitlesFps(prev => {
+        const newFps = { ...prev };
+        orphanedSubtitlePaths.forEach(path => {
+          newFps[path] = defaultFps;
+        });
+        return newFps;
+      });
+      
+      if (defaultFps) {
+        addDebugInfo(`Applied default FPS ${defaultFps} to ${orphanedSubtitlePaths.length} orphaned subtitles`);
+      } else {
+        addDebugInfo(`Cleared default FPS for ${orphanedSubtitlePaths.length} orphaned subtitles`);
+      }
+    }
+  }, [orphanedSubtitles, addDebugInfo]);
+
+  // Apply default FPS to new orphaned subtitles when they are detected
+  useEffect(() => {
+    if (config.defaultFps && orphanedSubtitles.length > 0) {
+      const newSubtitles = orphanedSubtitles.filter(subtitle => 
+        !orphanedSubtitlesFps.hasOwnProperty(subtitle.fullPath)
+      );
+      
+      if (newSubtitles.length > 0) {
+        setOrphanedSubtitlesFps(prev => {
+          const newFps = { ...prev };
+          newSubtitles.forEach(subtitle => {
+            newFps[subtitle.fullPath] = config.defaultFps;
+          });
+          return newFps;
+        });
+        
+        addDebugInfo(`Applied default FPS ${config.defaultFps} to ${newSubtitles.length} new orphaned subtitles`);
+      }
+    }
+  }, [orphanedSubtitles, config.defaultFps, orphanedSubtitlesFps, addDebugInfo]);
+
   // Config handlers (moved after all required variables are defined)
   const handleConfigChange = useCallback((newConfig) => {
     const oldConfig = config;
@@ -448,7 +498,12 @@ function SubtitleUploaderInner() {
     if (oldConfig.defaultLanguage !== newConfig.defaultLanguage) {
       applyDefaultLanguageToAllSubtitles(newConfig.defaultLanguage);
     }
-  }, [addDebugInfo, config, applyGlobalCommentToAllSubtitles, applyDefaultLanguageToAllSubtitles]);
+    
+    // Apply default FPS to all existing orphaned subtitles if it changed
+    if (oldConfig.defaultFps !== newConfig.defaultFps) {
+      applyDefaultFpsToOrphanedSubtitles(newConfig.defaultFps);
+    }
+  }, [addDebugInfo, config, applyGlobalCommentToAllSubtitles, applyDefaultLanguageToAllSubtitles, applyDefaultFpsToOrphanedSubtitles]);
 
   // Handle subtitle upload toggle
   const handleSubtitleUploadToggle = useCallback((subtitlePath, enabled) => {
@@ -466,6 +521,14 @@ function SubtitleUploaderInner() {
       [subtitlePath]: options
     }));
   }, [addDebugInfo]);
+
+  // Handle orphaned subtitles FPS change
+  const handleOrphanedSubtitlesFpsChange = useCallback((subtitlePath, fps) => {
+    setOrphanedSubtitlesFps(prev => ({
+      ...prev,
+      [subtitlePath]: fps
+    }));
+  }, []);
 
   // Get upload status for subtitle (default to true)
   const getUploadEnabled = useCallback((subtitlePath) => {
@@ -504,6 +567,7 @@ function SubtitleUploaderInner() {
         uploadOptions,
         combinedLanguages,
         addDebugInfo,
+        orphanedSubtitlesFps,
         onProgress: (processed, total, details = {}) => {
           setTimeout(() => {
             setUploadProgress(prev => ({ 
@@ -1657,6 +1721,8 @@ function SubtitleUploaderInner() {
             config={config}
             colors={colors}
             isDark={isDark}
+            orphanedSubtitlesFps={orphanedSubtitlesFps}
+            onOrphanedSubtitlesFpsChange={handleOrphanedSubtitlesFpsChange}
           />
         )}
 

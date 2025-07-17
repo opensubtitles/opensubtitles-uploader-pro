@@ -33,7 +33,9 @@ export const OrphanedSubtitles = ({
   onUpdateUploadOptions,
   config,
   colors,
-  isDark
+  isDark,
+  orphanedSubtitlesFps,
+  onOrphanedSubtitlesFpsChange
 }) => {
   // Default to light theme colors if not provided
   const themeColors = colors || {
@@ -49,6 +51,24 @@ export const OrphanedSubtitles = ({
     error: '#dc3545',
     warning: '#ffc107'
   };
+
+  // FPS options for orphaned subtitles
+  const fpsOptions = [
+    { value: '', label: 'Auto-detect FPS' },
+    { value: '23.976', label: '23.976 fps - NTSC Film Transfer Rate' },
+    { value: '24', label: '24 fps - Cinema Standard' },
+    { value: '25', label: '25 fps - PAL Television Standard' },
+    { value: '29.97', label: '29.97 fps - NTSC Television Standard' },
+    { value: '30', label: '30 fps - True NTSC Rate' },
+    { value: '47.952', label: '47.952 fps - Double NTSC Film Rate' },
+    { value: '48', label: '48 fps - High Frame Rate (HFR)' },
+    { value: '50', label: '50 fps - PAL High Frame Rate' },
+    { value: '59.94', label: '59.94 fps - NTSC High Frame Rate' },
+    { value: '60', label: '60 fps - True High Frame Rate' },
+    { value: '100', label: '100 fps - Double PAL High Frame Rate' },
+    { value: '119.88', label: '119.88 fps - Double NTSC High Frame Rate' },
+    { value: '120', label: '120 fps - Ultra High Frame Rate (UHFR)' }
+  ];
 
   if (!orphanedSubtitles || orphanedSubtitles.length === 0) {
     return null;
@@ -321,6 +341,9 @@ export const OrphanedSubtitles = ({
                   colors={themeColors}
                   isDark={isDark}
                   hideSelectAllCheckbox={true}
+                  isOrphanedSubtitle={true}
+                  orphanedSubtitlesFps={orphanedSubtitlesFps}
+                  onOrphanedSubtitlesFpsChange={onOrphanedSubtitlesFpsChange}
                 />
                 
                 {/* Subtitle Section - reusing same structure as MatchedPairs */}
@@ -500,6 +523,7 @@ export const OrphanedSubtitles = ({
                               </div>
                             )}
                           </div>
+
 
                           {/* File Info */}
                           <div className={`flex items-center gap-2 text-sm transition-colors`}
