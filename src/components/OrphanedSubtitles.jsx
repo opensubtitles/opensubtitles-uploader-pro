@@ -3,6 +3,7 @@ import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
 import { SubtitleUploadOptions, SubtitleUploadOptionsPanel } from './SubtitleUploadOptions.jsx';
+import { useMovieSearch } from '../hooks/useMovieSearch.js';
 
 export const OrphanedSubtitles = ({
   orphanedSubtitles,
@@ -119,7 +120,7 @@ export const OrphanedSubtitles = ({
     setMovieSearchResults([]);
   };
 
-  // Handle opening movie search
+  // Handle opening movie search - SAME AS MATCHED PAIRS
   const handleOpenMovieSearch = React.useCallback((subtitlePath) => {
     setOpenMovieSearch(openMovieSearch === subtitlePath ? null : subtitlePath);
   }, [openMovieSearch]);
@@ -162,30 +163,35 @@ export const OrphanedSubtitles = ({
     return extractImdbId(input) !== null;
   };
 
-  // Handle movie selection from search results
-  const handleMovieSelect = async (subtitle, movieResult) => {
+  // Handle movie selection from search results - SAME AS MATCHED PAIRS
+  const handleMovieSelect = async (subtitlePath, movie) => {
+    // Close search interface
+    closeMovieSearch();
+
+    // Set loading state
+    setMovieUpdateLoading(prev => ({ ...prev, [subtitlePath]: true }));
+
     try {
-      setMovieUpdateLoading(prev => ({ ...prev, [subtitle.fullPath]: true }));
-      
-      // Transform the movie data to expected format
+      // Create new movie guess object - SAME MAPPING AS MATCHED PAIRS
       const newMovieGuess = {
-        imdbid: movieResult.id,
-        title: movieResult.name,
-        year: movieResult.year,
-        kind: movieResult.kind,
+        imdbid: movie.id,
+        title: movie.name,
+        year: movie.year,
+        kind: movie.kind,
         reason: 'User selected'
       };
-      
-      // Call the onMovieChange callback with the transformed movie data
+
+      // Call the parent component's movie change handler
       if (onMovieChange) {
-        await onMovieChange(subtitle.fullPath, newMovieGuess);
+        await onMovieChange(subtitlePath, newMovieGuess);
       }
-      
-      closeMovieSearch();
+
+      console.log('Movie updated successfully:', newMovieGuess);
     } catch (error) {
       console.error('Error updating movie:', error);
     } finally {
-      setMovieUpdateLoading(prev => ({ ...prev, [subtitle.fullPath]: false }));
+      // Clear loading state
+      setMovieUpdateLoading(prev => ({ ...prev, [subtitlePath]: false }));
     }
   };
   
