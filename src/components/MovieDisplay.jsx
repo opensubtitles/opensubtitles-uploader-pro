@@ -153,7 +153,6 @@ export const MovieDisplay = ({
                 reason: 'Episode enhanced with features API data'
               };
               
-              console.log('Enhanced episode data:', enhancedData);
               setEnhancedEpisodeData(enhancedData);
             }
           }

@@ -14,7 +14,8 @@ export const SubtitleUploadOptions = ({
   isExpanded = false,
   onToggleExpanded = null,
   showExpandedInline = false, // New prop to show expanded content inline
-  hashCheckResults // Add hashCheckResults prop
+  hashCheckResults, // Add hashCheckResults prop
+  config = {} // Add config prop
 }) => {
   const [internalIsExpanded, setInternalIsExpanded] = useState(false);
   
@@ -407,28 +408,43 @@ export const SubtitleUploadOptions = ({
           <span title="Comment from subtitle author">💬</span>
           <span style={{ color: colors.textSecondary }}>Comment</span>
         </div>
-        <textarea
-          value={localCommentValue || currentOptions.subauthorcomment || ''}
-          onChange={(e) => {
-            handleFieldChange('subauthorcomment', e.target.value);
-          }}
-          placeholder="Comment from subtitle author (can be multiple lines)"
-          rows={2}
-          className="flex-1 px-2 py-1 text-xs rounded border resize-none"
-          style={{
-            backgroundColor: colors.cardBackground,
-            borderColor: colors.border,
-            color: colors.text,
-            minHeight: '2.5rem',
-            maxHeight: '8rem',
-            overflow: 'hidden'
-          }}
-          onInput={(e) => {
-            // Auto-resize textarea based on content
-            e.target.style.height = 'auto';
-            e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
-          }}
-        />
+        <div className="flex-1 relative">
+          <textarea
+            value={localCommentValue || currentOptions.subauthorcomment || ''}
+            onChange={(e) => {
+              handleFieldChange('subauthorcomment', e.target.value);
+            }}
+            placeholder="Comment from subtitle author (can be multiple lines)"
+            rows={2}
+            className="w-full px-2 py-1 text-xs rounded border resize-none"
+            style={{
+              backgroundColor: colors.cardBackground,
+              borderColor: colors.border,
+              color: colors.text,
+              minHeight: '2.5rem',
+              maxHeight: '8rem',
+              overflow: 'hidden'
+            }}
+            onInput={(e) => {
+              // Auto-resize textarea based on content
+              e.target.style.height = 'auto';
+              e.target.style.height = Math.min(e.target.scrollHeight, 128) + 'px';
+            }}
+          />
+          {config.globalComment && currentOptions.subauthorcomment === config.globalComment && (
+            <div 
+              className="absolute top-0 right-0 -mt-1 -mr-1 px-1 py-0.5 text-xs rounded-full text-white flex items-center gap-1"
+              style={{
+                backgroundColor: colors.info || colors.primary,
+                fontSize: '10px'
+              }}
+              title="Global comment applied from config"
+            >
+              <span>🌐</span>
+              <span>Global</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Release Name */}

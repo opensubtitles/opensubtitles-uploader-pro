@@ -294,7 +294,6 @@ export class XmlRpcService {
                   // Debug: Log all available members
                   const allMembers = Array.from(filenameStruct.querySelectorAll('member'));
                   const memberNames = allMembers.map(m => m.querySelector('name')?.textContent).filter(Boolean);
-                  console.log(`[XML-RPC DEBUG] Available members for ${filename}:`, memberNames);
                   const bestGuessMember = Array.from(filenameStruct.querySelectorAll('member')).find(member => 
                     member.querySelector('name')?.textContent === 'BestGuess'
                   );
@@ -322,13 +321,10 @@ export class XmlRpcService {
                     const guessItStruct = guessItMember.querySelector('value struct');
                     if (guessItStruct) {
                       const guessItData = this.extractStructData(guessItStruct);
-                      console.log(`[XML-RPC DEBUG] Found GuessIt data for ${filename}:`, guessItData);
                       movieData.guessit = guessItData;
                     } else {
-                      console.log(`[XML-RPC DEBUG] GuessIt member found but no struct for ${filename}`);
                     }
                   } else {
-                    console.log(`[XML-RPC DEBUG] No GuessIt member found for ${filename}`);
                   }
                 }
               }

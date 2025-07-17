@@ -78,7 +78,7 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
               </h3>
             </div>
             
-            <div className="pl-7 space-y-3">
+            <div className="pl-7 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <label className="block text-sm font-medium" style={{ color: colors.text }}>
@@ -105,14 +105,64 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
                   </label>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Future sections can be added here */}
-          <div className="border-t pt-4" style={{ borderTopColor: colors.border }}>
-            <div className="flex items-center gap-2 text-sm" style={{ color: colors.textSecondary }}>
-              <span>🔮</span>
-              <span>More configuration options coming soon...</span>
+              
+              {/* Minimal separator line */}
+              <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+              
+              {/* Global Comment Setting */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium" style={{ color: colors.text }}>
+                  Global Comment
+                </label>
+                <p className="text-xs" style={{ color: colors.textSecondary }}>
+                  This comment will be applied to all subtitles (current and future)
+                </p>
+                <textarea
+                  value={localConfig.globalComment || ''}
+                  onChange={(e) => handleChange('globalComment', e.target.value)}
+                  placeholder="Enter a comment that will be applied to all subtitles..."
+                  className="w-full px-3 py-2 text-sm rounded-lg border resize-none transition-colors focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.text,
+                    focusRingColor: colors.primary,
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = colors.primary;
+                    e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = colors.border;
+                    e.target.style.boxShadow = 'none';
+                  }}
+                  rows="3"
+                  maxLength={500}
+                />
+                <div className="flex justify-between items-center">
+                  <span className="text-xs" style={{ color: colors.textSecondary }}>
+                    {localConfig.globalComment?.length || 0}/500 characters
+                  </span>
+                  {localConfig.globalComment && (
+                    <button
+                      onClick={() => handleChange('globalComment', '')}
+                      className="text-xs px-2 py-1 rounded transition-colors"
+                      style={{
+                        color: colors.error,
+                        backgroundColor: colors.error + '10',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.backgroundColor = colors.error + '20';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.backgroundColor = colors.error + '10';
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -622,6 +622,7 @@ export const MatchedPairs = ({
                                 compactMode={true}
                                 isExpanded={uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false}
                                 onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
+                                config={config}
                                 hashCheckResults={hashCheckResults}
                               />
                             </div>
@@ -772,6 +773,7 @@ export const MatchedPairs = ({
                             pairedVideoFile={pair.video}
                             onLocalStateChange={handleLocalStateChange}
                             hashCheckResults={hashCheckResults}
+                            config={config}
                           />
                         )}
 
@@ -787,9 +789,6 @@ export const MatchedPairs = ({
                           );
                           
                           if (shouldShow) {
-                            // Debug: Log the hash result to see available data
-                            console.log('CheckSubHash result for', subtitle.fullPath, ':', hashResult);
-                            
                             // Extract subtitle URL from CheckSubHash result
                             let subtitleUrl = null;
                             

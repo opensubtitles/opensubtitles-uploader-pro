@@ -409,6 +409,7 @@ export const OrphanedSubtitles = ({
                               isExpanded={uploadOptionsExpanded[subtitle.fullPath] ?? config?.uploadOptionsExpanded ?? false}
                               onToggleExpanded={() => handleUploadOptionsToggle(subtitle.fullPath)}
                               hashCheckResults={hashCheckResults}
+                              config={config}
                             />
                           </div>
 
@@ -548,6 +549,7 @@ export const OrphanedSubtitles = ({
                           subtitleFile={subtitle}
                           onLocalStateChange={handleLocalStateChange}
                           hashCheckResults={hashCheckResults}
+                          config={config}
                         />
                       )}
 
