@@ -85,6 +85,7 @@ function SubtitleUploaderInner() {
   });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [hasDroppedFiles, setHasDroppedFiles] = useState(false); // Track if files have been dropped
   
   
 
@@ -199,12 +200,31 @@ function SubtitleUploaderInner() {
     isDragOver,
     browserCapabilities,
     handleDrop,
-    handleDragOver,
-    handleDragLeave,
+    handleDragOver: originalHandleDragOver,
+    handleDragLeave: originalHandleDragLeave,
     clearFiles,
     updateFile,
     setFiles
   } = useFileHandling(addDebugInfo);
+
+  // Override drag handlers to prevent default behavior when files already dropped
+  const handleDragOver = useCallback((e) => {
+    if (hasDroppedFiles) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    originalHandleDragOver(e);
+  }, [hasDroppedFiles, originalHandleDragOver]);
+
+  const handleDragLeave = useCallback((e) => {
+    if (hasDroppedFiles) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    originalHandleDragLeave(e);
+  }, [hasDroppedFiles, originalHandleDragLeave]);
 
   const {
     combinedLanguages,
@@ -705,10 +725,120 @@ function SubtitleUploaderInner() {
     }
   };
 
+  // Handle file selection from button
+  const handleFileSelect = async (event) => {
+    try {
+      // If files have already been selected, prevent and refresh page
+      if (hasDroppedFiles) {
+        event.preventDefault();
+        window.location.reload();
+        return;
+      }
+      
+      setError(null);
+      
+      // Mark that files have been selected
+      setHasDroppedFiles(true);
+      
+      const selectedFiles = Array.from(event.target.files);
+      
+      if (selectedFiles.length === 0) {
+        setHasDroppedFiles(false);
+        return;
+      }
+      
+      addDebugInfo(`🔄 ${selectedFiles.length} files selected via file input - clearing ALL previous state...`);
+      
+      // Clear all hook state completely (this will reset everything)
+      clearAllState(); // Movie guesses, features, processing state
+      clearAllGuessItState(); // GuessIt data and processing state
+      clearAllLanguageState(); // Language detection processing state
+      clearSubtitleLanguages(); // Subtitle language selections
+      clearHashCheckResults(); // Clear CheckSubHash results
+      clearAllVideoMetadata(); // Clear video metadata
+      
+      // Reset all UI state when new files are selected
+      setUploadStates({}); // Clear upload enable/disable states
+      setUploadOptions({}); // Clear upload options (release name, comments, etc.)
+      setUploadResults({}); // Clear upload results
+      setSubcontentData({}); // Clear subcontent data
+      setOrphanedSubtitlesFps({}); // Clear orphaned subtitles FPS
+      setOpenDropdowns({}); // Clear dropdown states
+      setDropdownSearch({}); // Clear search states
+      setPreviewSubtitle(null); // Clear preview
+      setSubtitleContent(''); // Clear subtitle content
+      
+      // Reset upload progress
+      setUploadProgress({ 
+        isUploading: false,
+        isComplete: false,
+        processed: 0, 
+        total: 0,
+        successful: 0,
+        alreadyExists: 0,
+        failed: 0,
+        currentSubtitle: '',
+        results: []
+      });
+      
+      // Process selected files similar to FileProcessingService
+      const processedFiles = [];
+      
+      for (const file of selectedFiles) {
+        const processedFile = {
+          file: file,
+          fullPath: file.name,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified,
+          isVideo: file.name.match(/\.(mp4|mkv|avi|mov|webm|flv|wmv|mpeg|mpg|ts|m2ts|mts|f4v|ogv|ogg|amv|nsv|yuv|nut|nuv|wtv|tivo|ty)$/i),
+          isSubtitle: file.name.match(/\.(srt|vtt|ass|ssa|sub|txt|smi|mpl|tmp)$/i)
+        };
+        
+        // Only add valid media files
+        if (processedFile.isVideo || processedFile.isSubtitle) {
+          processedFiles.push(processedFile);
+        }
+      }
+      
+      addDebugInfo(`📁 Processed ${processedFiles.length} valid media files from file selection`);
+      
+      if (processedFiles.length > 0) {
+        // Use the same processing as drag and drop
+        await processFilesInBatches(processedFiles);
+      } else {
+        addDebugInfo('⚠️ No valid media files found in selection');
+        setError('No valid video or subtitle files found. Please select .mp4, .mkv, .avi, .srt, .vtt, .ass files, etc.');
+        setHasDroppedFiles(false);
+      }
+      
+      // Reset file input
+      event.target.value = '';
+      
+    } catch (error) {
+      addDebugInfo(`❌ Error processing selected files: ${error.message}`);
+      setError(`Error processing files: ${error.message}`);
+      setHasDroppedFiles(false);
+      throw error;
+    }
+  };
+
   // Handle file drop with processing
   const handleFileDropComplete = async (event) => {
     try {
+      // If files have already been dropped, prevent default behavior and refresh page immediately
+      if (hasDroppedFiles) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.location.reload();
+        return;
+      }
+      
       setError(null);
+      
+      // Mark that files have been dropped
+      setHasDroppedFiles(true);
       
       addDebugInfo('🔄 New files dropped - clearing ALL previous state...');
       
@@ -1306,6 +1436,7 @@ function SubtitleUploaderInner() {
     setUploadStates({}); // Clear upload states
     setUploadOptions({}); // Clear upload options
     setUploadResults({}); // Clear upload results
+    setHasDroppedFiles(false); // Reset drop state to allow files to be dropped again
     setSubcontentData({}); // Clear subcontent data
     
     // Clear processing state
@@ -1593,6 +1724,7 @@ function SubtitleUploaderInner() {
           onClearFiles={handleClearFiles}
           colors={colors}
           isDark={isDark}
+          onFileSelect={handleFileSelect}
         />
 
         {/* Error Display */}

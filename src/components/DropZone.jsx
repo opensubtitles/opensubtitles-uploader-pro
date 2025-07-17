@@ -10,7 +10,8 @@ export const DropZone = ({
   hasFiles,
   onClearFiles,
   colors,
-  isDark
+  isDark,
+  onFileSelect
 }) => {
 
   // Default to light theme colors if not provided
@@ -75,6 +76,35 @@ export const DropZone = ({
             <div className="text-2xl mb-1">📁</div>
             <div className="text-xs" style={{color: themeColors.textMuted || '#808080'}}>Folders</div>
           </div>
+        </div>
+        
+        {/* File Selection Button */}
+        <div className="mt-8 flex justify-center">
+          <input
+            type="file"
+            id="file-input"
+            multiple
+            accept={`${VIDEO_EXTENSIONS.join(',')},${SUBTITLE_EXTENSIONS.join(',')}`}
+            onChange={onFileSelect}
+            style={{ display: 'none' }}
+          />
+          <label
+            htmlFor="file-input"
+            className="px-6 py-3 rounded-lg text-white font-semibold cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg"
+            style={{
+              backgroundColor: themeColors.link || '#2878C0'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = themeColors.linkHover || '#185DA0';
+              e.target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = themeColors.link || '#2878C0';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            📁 Select Files
+          </label>
         </div>
       </div>
       
