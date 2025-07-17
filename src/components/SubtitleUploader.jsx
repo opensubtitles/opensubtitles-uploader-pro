@@ -22,6 +22,7 @@ import { UploadButton } from "./UploadButton.jsx";
 import { ApiHealthCheck } from "./ApiHealthCheck.jsx";
 import { ConfigOverlay } from "./ConfigOverlay.jsx";
 import { HelpOverlay } from "./HelpOverlay.jsx";
+import ProgressOverlay from "./ProgressOverlay.jsx";
 import { ThemeProvider, useTheme } from "../contexts/ThemeContext.jsx";
 import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
@@ -54,12 +55,34 @@ function SubtitleUploaderInner() {
     results: []
   }); // Enhanced upload progress tracking
   
+  // File processing progress state
+  const [processingProgress, setProcessingProgress] = useState({
+    isProcessing: false,
+    startTime: null,
+    totalFiles: 0,
+    processedFiles: 0,
+    fileDiscovery: 0,
+    fileDiscoveryTotal: 0,
+    directoriesProcessed: 0,
+    videoProcessing: 0,
+    videoProcessingTotal: 0,
+    subtitleProcessing: 0,
+    subtitleProcessingTotal: 0,
+    languageDetection: 0,
+    languageDetectionTotal: 0,
+    errors: 0,
+    skipped: 0
+  });
+  
   // Config state
   const [config, setConfig] = useState({
-    uploadOptionsExpanded: false // Default to collapsed (current behavior)
+    uploadOptionsExpanded: false, // Default to collapsed (current behavior)
+    globalComment: '' // Global comment for all subtitles
   });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  
+  
 
   // Load config from localStorage on mount
   useEffect(() => {
@@ -94,9 +117,15 @@ function SubtitleUploaderInner() {
 
   // Config handlers (moved after debug mode hook)
   const handleConfigChange = useCallback((newConfig) => {
+    const oldConfig = config;
     setConfig(newConfig);
     addDebugInfo(`Config updated: ${JSON.stringify(newConfig)}`);
-  }, [addDebugInfo]);
+    
+    // Apply global comment to all existing subtitles if it changed
+    if (oldConfig.globalComment !== newConfig.globalComment) {
+      applyGlobalCommentToAllSubtitles(newConfig.globalComment);
+    }
+  }, [addDebugInfo, config]);
 
   const handleConfigToggle = useCallback(() => {
     setIsConfigOpen(prev => !prev);
@@ -113,6 +142,49 @@ function SubtitleUploaderInner() {
   
   const handleHelpClose = useCallback(() => {
     setIsHelpOpen(false);
+  }, []);
+
+  // Progress management functions
+  const initializeProgress = useCallback((totalFiles, directoriesProcessed = 1) => {
+    setProcessingProgress({
+      isProcessing: true,
+      startTime: Date.now(),
+      totalFiles,
+      processedFiles: 0,
+      fileDiscovery: 1, // Completed after file discovery
+      fileDiscoveryTotal: 1, // Always 1 for directory discovery
+      directoriesProcessed,
+      videoProcessing: 0,
+      videoProcessingTotal: 0,
+      subtitleProcessing: 0,
+      subtitleProcessingTotal: 0,
+      languageDetection: 0,
+      languageDetectionTotal: 0,
+      errors: 0,
+      skipped: 0
+    });
+  }, []);
+
+  const updateProgress = useCallback((updates) => {
+    setProcessingProgress(prev => ({
+      ...prev,
+      ...(typeof updates === 'function' ? updates(prev) : updates)
+    }));
+  }, []);
+
+  const finalizeProgress = useCallback(() => {
+    setProcessingProgress(prev => ({
+      ...prev,
+      isProcessing: false,
+      processedFiles: prev.totalFiles
+    }));
+  }, []);
+
+  const cancelProgress = useCallback(() => {
+    setProcessingProgress(prev => ({
+      ...prev,
+      isProcessing: false
+    }));
   }, []);
 
   
@@ -255,7 +327,7 @@ function SubtitleUploaderInner() {
   // const metadataProcessedCount = 0;
 
   // Track processed files to prevent reprocessing
-  const processedFiles = useRef(new Set());
+  const processedFilesSet = useRef(new Set());
   
   // Track when state is reset to force useEffect re-execution
   const [stateResetKey, setStateResetKey] = useState(0);
@@ -299,6 +371,42 @@ function SubtitleUploaderInner() {
       [subtitlePath]: options
     }));
   }, [addDebugInfo]);
+
+  // Apply global comment to all subtitles
+  const applyGlobalCommentToAllSubtitles = useCallback((globalComment) => {
+    const allSubtitlePaths = [];
+    
+    // Collect all subtitle paths from paired files
+    pairedFiles.forEach(pair => {
+      if (pair.subtitles && pair.subtitles.length > 0) {
+        pair.subtitles.forEach(subtitle => {
+          allSubtitlePaths.push(subtitle.fullPath);
+        });
+      }
+    });
+    
+    // Add orphaned subtitles
+    orphanedSubtitles.forEach(subtitle => {
+      allSubtitlePaths.push(subtitle.fullPath);
+    });
+    
+    // Update upload options for all subtitles
+    if (allSubtitlePaths.length > 0) {
+      setUploadOptions(prev => {
+        const newOptions = { ...prev };
+        allSubtitlePaths.forEach(path => {
+          newOptions[path] = {
+            ...newOptions[path],
+            subauthorcomment: globalComment
+          };
+        });
+        return newOptions;
+      });
+      
+      addDebugInfo(`Applied global comment to ${allSubtitlePaths.length} subtitles: "${globalComment}"`);
+    }
+  }, [pairedFiles, orphanedSubtitles, addDebugInfo]);
+
 
   // Get upload status for subtitle (default to true)
   const getUploadEnabled = useCallback((subtitlePath) => {
@@ -500,12 +608,16 @@ function SubtitleUploaderInner() {
       setSubtitleContent('');
       
       // Clear processing state tracking
-      processedFiles.current.clear();
+      processedFilesSet.current.clear();
       
       // Force useEffect to re-run by changing the reset key
       setStateResetKey(prev => prev + 1);
       
       addDebugInfo('✅ ALL previous state cleared completely, processing new files...');
+      
+      // Initialize progress tracking for file discovery
+      initializeProgress(0); // Will be updated when files are counted
+      updateProgress({ fileDiscovery: 1, fileDiscoveryTotal: 1 });
       
       // Now handle the new files
       await handleDrop(event);
@@ -514,6 +626,8 @@ function SubtitleUploaderInner() {
     } catch (err) {
       setError(err.message);
       addDebugInfo(`Drop error: ${err.message}`);
+      // Reset progress on error
+      cancelProgress();
     }
   };
 
@@ -521,15 +635,37 @@ function SubtitleUploaderInner() {
   useEffect(() => {
     if (files.length === 0) {
       // Clear processed files tracking when no files
-      processedFiles.current.clear();
+      processedFilesSet.current.clear();
       return;
     }
-
-    addDebugInfo(`🔄 Processing: ${files.length} files (reset: ${stateResetKey})`);
 
     const videoFiles = files.filter(file => file.isVideo && !file.shouldRemove);
     const subtitleFiles = files.filter(file => file.isSubtitle && !file.shouldRemove);
 
+    // Initialize progress tracking with correct totals
+    if (files.length > 0 && processingProgress.isProcessing && processingProgress.totalFiles === 0) {
+      // Count unique directories from file paths
+      const directorySet = new Set();
+      files.forEach(file => {
+        const directory = file.fullPath.includes('/') ? 
+          file.fullPath.substring(0, file.fullPath.lastIndexOf('/')) : 'Root';
+        directorySet.add(directory);
+      });
+      const directoriesCount = directorySet.size;
+      
+      addDebugInfo(`📊 Initializing progress: ${files.length} files (${videoFiles.length} videos, ${subtitleFiles.length} subtitles) from ${directoriesCount} directories`);
+      updateProgress({
+        totalFiles: files.length,
+        fileDiscovery: 1,
+        fileDiscoveryTotal: 1,
+        directoriesProcessed: directoriesCount,
+        videoProcessingTotal: videoFiles.length,
+        subtitleProcessingTotal: subtitleFiles.length,
+        languageDetectionTotal: subtitleFiles.length
+      });
+    }
+
+    addDebugInfo(`🔄 Processing: ${files.length} files (reset: ${stateResetKey})`);
     addDebugInfo(`📁 ${videoFiles.length} videos, ${subtitleFiles.length} subtitles`);
     
     // Log all file paths for debugging
@@ -548,14 +684,15 @@ function SubtitleUploaderInner() {
       const fileId = `${videoFile.fullPath}_${videoFile.size}`;
       
       // Skip if already processed
-      if (processedFiles.current.has(fileId)) {
+      if (processedFilesSet.current.has(fileId)) {
         addDebugInfo(`⏭️ Skipping already processed video: ${videoFile.name}`);
         return;
       }
       
       // Mark as processing immediately
-      processedFiles.current.add(fileId);
+      processedFilesSet.current.add(fileId);
       addDebugInfo(`🎬 Starting processing video file: ${videoFile.name}`);
+      
       
       try {
         addDebugInfo(`Processing video ${index + 1}/${videoFiles.length}: ${videoFile.name}`);
@@ -576,10 +713,34 @@ function SubtitleUploaderInner() {
           addDebugInfo(`Hash calculated: ${hash}`);
           updateFile(videoFile.fullPath, { movieHash: hash });
           
+          // Update video processing progress
+          updateProgress(prev => {
+            const newVideoProgress = prev.videoProcessing + 1;
+            const newProcessedFiles = prev.processedFiles + 1;
+            addDebugInfo(`📊 Video progress: ${newVideoProgress}/${prev.videoProcessingTotal}`);
+            return {
+              videoProcessing: newVideoProgress,
+              processedFiles: newProcessedFiles
+            };
+          });
+          
         } catch (hashError) {
           console.error(`Hash calculation error for ${videoFile.name}:`, hashError);
           updateFile(videoFile.fullPath, { movieHash: 'error' });
           addDebugInfo(`Hash calculation failed: ${hashError.message}`);
+          
+          // Update progress with error
+          updateProgress(prev => {
+            const newVideoProgress = prev.videoProcessing + 1;
+            const newProcessedFiles = prev.processedFiles + 1;
+            const newErrors = prev.errors + 1;
+            addDebugInfo(`📊 Video progress (error): ${newVideoProgress}/${prev.videoProcessingTotal}`);
+            return {
+              videoProcessing: newVideoProgress,
+              processedFiles: newProcessedFiles,
+              errors: newErrors
+            };
+          });
         }
 
         // Extract video metadata (FPS, duration, etc.) for upload parameters
@@ -617,7 +778,8 @@ function SubtitleUploaderInner() {
       } catch (error) {
         addDebugInfo(`Failed to process ${videoFile.name}: ${error.message}`);
         updateFile(videoFile.fullPath, { movieHash: 'error' });
-        processedFiles.current.delete(fileId);
+        processedFilesSet.current.delete(fileId);
+        
       }
     });
 
@@ -626,7 +788,7 @@ function SubtitleUploaderInner() {
       const fileId = `${subtitleFile.fullPath}_${subtitleFile.size}_lang`;
       
       // Skip if already processed
-      if (processedFiles.current.has(fileId)) {
+      if (processedFilesSet.current.has(fileId)) {
         addDebugInfo(`⏭️ Skipping already processed subtitle: ${subtitleFile.name}`);
         return;
       }
@@ -655,7 +817,8 @@ function SubtitleUploaderInner() {
         return;
       }
       
-      processedFiles.current.add(fileId);
+      processedFilesSet.current.add(fileId);
+      
       
       const delay = 2000 + index * 500;
       
@@ -670,10 +833,38 @@ function SubtitleUploaderInner() {
                 prevFiles.filter(file => file.fullPath !== subtitleFile.fullPath)
               );
               addDebugInfo(`Removed ${subtitleFile.name} - not a subtitle file`);
+              
+              // Update progress with skipped file
+              updateProgress(prev => ({
+                subtitleProcessing: prev.subtitleProcessing + 1,
+                languageDetection: prev.languageDetection + 1,
+                processedFiles: prev.processedFiles + 1,
+                skipped: prev.skipped + 1
+              }));
+            } else {
+              // Update progress for successful processing
+              updateProgress(prev => {
+                addDebugInfo(`📊 Subtitle progress: ${prev.subtitleProcessing + 1}/${prev.subtitleProcessingTotal}`);
+                return {
+                  subtitleProcessing: prev.subtitleProcessing + 1,
+                  languageDetection: prev.languageDetection + 1,
+                  processedFiles: prev.processedFiles + 1
+                };
+              });
             }
+            
+            // Note: Already marked as processed when processing started
           }).catch(error => {
             addDebugInfo(`Language detection failed: ${error.message}`);
-            processedFiles.current.delete(fileId);
+            processedFilesSet.current.delete(fileId);
+            
+            // Update progress with error
+            updateProgress(prev => ({
+              subtitleProcessing: prev.subtitleProcessing + 1,
+              languageDetection: prev.languageDetection + 1,
+              processedFiles: prev.processedFiles + 1,
+              errors: prev.errors + 1
+            }));
           });
         }
       }, delay);
@@ -706,7 +897,7 @@ function SubtitleUploaderInner() {
       const fileId = `${subtitleFile.fullPath}_${subtitleFile.size}_movie`;
       
       // Skip if already processed
-      if (processedFiles.current.has(fileId)) {
+      if (processedFilesSet.current.has(fileId)) {
         return;
       }
       
@@ -735,14 +926,14 @@ function SubtitleUploaderInner() {
           reason: `Reused from video: ${videoFileName}`
         });
         
-        processedFiles.current.add(fileId);
+        processedFilesSet.current.add(fileId);
         return;
       }
       
       // Check if movie guess is needed
       const status = getProcessingStatus(subtitleFile.fullPath);
       if (!status.isProcessing && !status.isComplete && !status.hasFailed) {
-        processedFiles.current.add(fileId);
+        processedFilesSet.current.add(fileId);
         
         const delay = 3000 + index * 500; // Start after language detection
         
@@ -751,7 +942,7 @@ function SubtitleUploaderInner() {
           if (!currentStatus.isProcessing && !currentStatus.isComplete) {
             processSubtitleMovieGuess(subtitleFile).catch(error => {
               addDebugInfo(`Orphaned subtitle movie guess failed: ${error.message}`);
-              processedFiles.current.delete(fileId);
+              processedFilesSet.current.delete(fileId);
             });
           }
         }, delay);
@@ -761,7 +952,10 @@ function SubtitleUploaderInner() {
     if (orphanedSubtitles.length > 0) {
       addDebugInfo(`📝 Found ${orphanedSubtitles.length} orphaned subtitles - starting movie identification`);
     }
-  }, [files.length, stateResetKey]); // Simplified dependencies to prevent infinite loops
+
+  }, [files.length, stateResetKey, initializeProgress, updateProgress, processingProgress.isProcessing]);
+
+
 
   // Extract GuessIt data from movie guesses when they become available
   useEffect(() => {
@@ -921,7 +1115,10 @@ function SubtitleUploaderInner() {
     setSubcontentData({}); // Clear subcontent data
     
     // Clear processing state
-    processedFiles.current.clear();
+    processedFilesSet.current.clear();
+    
+    // Clear progress state
+    cancelProgress();
     
     // Clear CheckSubHash results
     clearHashCheckResults();
@@ -937,16 +1134,62 @@ function SubtitleUploaderInner() {
   // Clean up processed files tracking when files are cleared
   useEffect(() => {
     if (files.length === 0) {
-      processedFiles.current.clear();
+      processedFilesSet.current.clear();
     }
   }, [files.length]);
+
+  // Auto-close progress overlay when processing is complete
+  useEffect(() => {
+    if (processingProgress.isProcessing && 
+        processingProgress.processedFiles >= processingProgress.totalFiles && 
+        processingProgress.totalFiles > 0) {
+      // Check if all stages are complete
+      const allStagesComplete = 
+        processingProgress.fileDiscovery >= processingProgress.fileDiscoveryTotal &&
+        (processingProgress.videoProcessingTotal === 0 || processingProgress.videoProcessing >= processingProgress.videoProcessingTotal) &&
+        (processingProgress.subtitleProcessingTotal === 0 || processingProgress.subtitleProcessing >= processingProgress.subtitleProcessingTotal) &&
+        (processingProgress.languageDetectionTotal === 0 || processingProgress.languageDetection >= processingProgress.languageDetectionTotal);
+      
+      if (allStagesComplete) {
+        // Add a small delay to show completion, then close
+        setTimeout(() => {
+          finalizeProgress();
+        }, 1500);
+      }
+    }
+  }, [
+    processingProgress.processedFiles, 
+    processingProgress.totalFiles, 
+    processingProgress.isProcessing,
+    processingProgress.fileDiscovery,
+    processingProgress.fileDiscoveryTotal,
+    processingProgress.videoProcessing,
+    processingProgress.videoProcessingTotal,
+    processingProgress.subtitleProcessing,
+    processingProgress.subtitleProcessingTotal,
+    processingProgress.languageDetection,
+    processingProgress.languageDetectionTotal,
+    finalizeProgress
+  ]);
+
+  // Apply global comment to new subtitles when files change
+  useEffect(() => {
+    if (config.globalComment && (pairedFiles.length > 0 || orphanedSubtitles.length > 0)) {
+      // Small delay to ensure files are processed first
+      setTimeout(() => {
+        applyGlobalCommentToAllSubtitles(config.globalComment);
+      }, 100);
+    }
+  }, [pairedFiles.length, orphanedSubtitles.length, config.globalComment, applyGlobalCommentToAllSubtitles]);
 
 
   // Filter successful pairs
   const successfulPairs = pairedFiles.filter(pair => pair.video && pair.subtitles.length > 0);
   
   const hasUploadableContent = successfulPairs.length > 0 || orphanedSubtitles.length > 0;
+
   const hasUnpairedFiles = files.length > 0 && successfulPairs.length === 0;
+
 
   return (
     <div className="min-h-screen p-6" style={styles.background}>
@@ -1419,6 +1662,16 @@ function SubtitleUploaderInner() {
           isDark={isDark}
         />
 
+        {/* Progress Overlay */}
+        <ProgressOverlay
+          isVisible={processingProgress.isProcessing}
+          onCancel={cancelProgress}
+          progress={processingProgress}
+          colors={colors}
+          isDark={isDark}
+          startTime={processingProgress.startTime}
+        />
+
 
         {/* Debug Panel */}
         <Suspense fallback={<div className="mt-6 p-4 rounded-lg text-center" style={{backgroundColor: colors.cardBackground, color: colors.textSecondary}}>Loading debug panel...</div>}>
@@ -1478,6 +1731,8 @@ function SubtitleUploaderInner() {
         </div>
       </div>
       
+      
+
       {/* Test Mode Panel - Only shows in development */}
       <TestModePanel 
         files={files} 
