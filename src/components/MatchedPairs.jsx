@@ -3,6 +3,7 @@ import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
 import { SubtitleUploadOptions, SubtitleUploadOptionsPanel } from './SubtitleUploadOptions.jsx';
+import { MovieSearch } from './MovieSearch.jsx';
 import { VideoMetadataDisplay } from './VideoMetadataDisplay.jsx';
 
 // Inline component to avoid setState during render issues

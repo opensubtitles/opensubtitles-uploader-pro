@@ -3,7 +3,7 @@ import { formatFileSize } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 import { MovieDisplay } from './MovieDisplay.jsx';
 import { SubtitleUploadOptions, SubtitleUploadOptionsPanel } from './SubtitleUploadOptions.jsx';
-import { useMovieSearch } from '../hooks/useMovieSearch.js';
+import { MovieSearch } from './MovieSearch.jsx';
 
 export const OrphanedSubtitles = ({
   orphanedSubtitles,
@@ -398,91 +398,16 @@ export const OrphanedSubtitles = ({
                   onOrphanedSubtitlesFpsChange={onOrphanedSubtitlesFpsChange}
                 />
                 
-                {/* Movie Search Interface - Same as MatchedPairs */}
-                {openMovieSearch === subtitle.fullPath && (
-                  <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: themeColors.cardBackground, border: `1px solid ${themeColors.border}` }} data-movie-search>
-                    <div className="text-sm mb-2" style={{ color: themeColors.text }}>
-                      Search by movie title, IMDB ID, or IMDB URL:
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Movie title, IMDB ID (tt0133093), or IMDB URL..."
-                      value={movieSearchQuery}
-                      onChange={(e) => handleMovieSearch(e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded border focus:outline-none focus:ring-2 transition-colors"
-                      style={{
-                        backgroundColor: themeColors.background,
-                        borderColor: themeColors.border,
-                        color: themeColors.text,
-                        focusRingColor: themeColors.primary
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = themeColors.primary;
-                        e.target.style.boxShadow = `0 0 0 2px ${themeColors.primary}20`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = themeColors.border;
-                        e.target.style.boxShadow = 'none';
-                      }}
-                      autoFocus
-                    />
-                    
-                    {movieSearchLoading && (
-                      <div className="mt-2 text-sm flex items-center gap-2" style={{ color: themeColors.textMuted }}>
-                        <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
-                        Searching...
-                      </div>
-                    )}
-                    
-                    {movieSearchResults.length > 0 && (
-                      <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
-                        {movieSearchResults.map((movie, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleMovieSelect(subtitle.fullPath, movie)}
-                            disabled={movieUpdateLoading[subtitle.fullPath]}
-                            className="w-full text-left p-2 rounded text-sm border transition-colors hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{
-                              backgroundColor: themeColors.background,
-                              borderColor: themeColors.border,
-                              color: themeColors.text
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!movieUpdateLoading[subtitle.fullPath]) {
-                                e.target.style.backgroundColor = isDark ? '#444444' : '#f8f9fa';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor = themeColors.background;
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              {movieUpdateLoading[subtitle.fullPath] ? (
-                                <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full"></div>
-                              ) : (
-                                <span>🎬</span>
-                              )}
-                              <div className="flex-1">
-                                <div className="font-medium">{movie.title}</div>
-                                <div className="text-xs" style={{ color: themeColors.textMuted }}>
-                                  {movie.year && `${movie.year} • `}
-                                  {movie.kind && `${movie.kind} • `}
-                                  IMDb: {movie.imdbid}
-                                </div>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    
-                    {movieSearchQuery && !movieSearchLoading && movieSearchResults.length === 0 && (
-                      <div className="mt-2 text-sm text-center py-4" style={{ color: themeColors.textMuted }}>
-                        No movies found. Try a different search term.
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Movie Search Component - Reusable */}
+                <MovieSearch
+                  isOpen={openMovieSearch === subtitle.fullPath}
+                  onMovieChange={onMovieChange}
+                  onClose={closeMovieSearch}
+                  itemPath={subtitle.fullPath}
+                  movieUpdateLoading={movieUpdateLoading}
+                  themeColors={themeColors}
+                  isDark={isDark}
+                />
                 
                 {/* Subtitle Section - reusing same structure as MatchedPairs */}
                 <div className="ml-8 space-y-2">
