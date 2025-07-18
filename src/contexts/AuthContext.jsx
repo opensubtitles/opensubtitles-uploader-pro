@@ -66,6 +66,11 @@ export const AuthProvider = ({ children }) => {
             localStorage.setItem('opensubtitles_user_data', JSON.stringify(userInfo));
             localStorage.setItem('opensubtitles_login_time', Date.now().toString());
             
+            // Remember username for future logins
+            if (userInfo.UserNickName) {
+              localStorage.setItem('opensubtitles_remembered_username', userInfo.UserNickName);
+            }
+            
             // If session came from URL, ensure it's stored by SessionManager
             if (sidFromUrl) {
               SessionManager.storeSessionId(sidFromUrl);
@@ -147,6 +152,12 @@ export const AuthProvider = ({ children }) => {
         setUser(result.userData);
         setToken(result.token);
         console.log('✅ Login successful:', result.userData.UserNickName);
+        
+        // Remember username for future logins
+        if (result.userData.UserNickName) {
+          localStorage.setItem('opensubtitles_remembered_username', result.userData.UserNickName);
+        }
+        
         return result;
       } else {
         setError(result.message || 'Login failed');

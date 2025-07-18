@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useTheme } from '../contexts/ThemeContext.jsx';
 
@@ -16,6 +16,19 @@ const LoginDialog = ({ isOpen, onClose }) => {
     username: '',
     password: ''
   });
+  
+  // Load remembered username when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      const rememberedUsername = localStorage.getItem('opensubtitles_remembered_username');
+      if (rememberedUsername) {
+        setFormData(prev => ({
+          ...prev,
+          username: rememberedUsername
+        }));
+      }
+    }
+  }, [isOpen]);
   
   const [showPassword, setShowPassword] = useState(false);
   const [loginType, setLoginType] = useState('credentials'); // Only credentials now
@@ -41,10 +54,13 @@ const LoginDialog = ({ isOpen, onClose }) => {
     const result = await login(formData.username, formData.password, 'en');
     
     if (result.success) {
+      // Save username for future logins
+      localStorage.setItem('opensubtitles_remembered_username', formData.username);
+      
       onClose();
-      // Reset form
+      // Reset form but keep username for next time
       setFormData({
-        username: '',
+        username: formData.username,
         password: ''
       });
     }
