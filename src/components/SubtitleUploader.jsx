@@ -834,7 +834,7 @@ function SubtitleUploaderInner() {
       
       if (processedFiles.length > 0) {
         // Use the same processing as drag and drop
-        await processFilesInBatches(processedFiles);
+        setFiles(processedFiles);
       } else {
         addDebugInfo('⚠️ No valid media files found in selection');
         setError('No valid video or subtitle files found. Please select .mp4, .mkv, .avi, .srt, .vtt, .ass files, ZIP archives, etc.');
