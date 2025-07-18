@@ -87,7 +87,7 @@ strategy:
 
 - **Windows**: No additional dependencies needed
 - **macOS**: No additional dependencies needed
-- **Linux**: Installs WebKit2GTK and related libraries
+- **Linux**: Installs WebKit2GTK 4.1 and related libraries for Ubuntu 24.04+
 
 ### Build Steps
 

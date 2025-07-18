@@ -132,7 +132,10 @@ The application supports native desktop builds for macOS, Windows, and Linux usi
    
    **Linux**: Install system dependencies:
    ```bash
-   # Ubuntu/Debian
+   # Ubuntu/Debian (24.04+)
+   sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+   
+   # Ubuntu/Debian (20.04/22.04)
    sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
    
    # Fedora
