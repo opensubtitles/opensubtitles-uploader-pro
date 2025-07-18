@@ -951,4 +951,101 @@ export class XmlRpcService {
       .replace(/'/g, '&#39;');
   }
 
+  /**
+   * Generic XML-RPC call function
+   * @param {string} methodName - The XML-RPC method name
+   * @param {Array} params - Array of parameters
+   * @returns {Promise<Object>} - Parsed XML-RPC response
+   */
+  static async xmlrpcCall(methodName, params) {
+    try {
+      console.log(`🌐 ${methodName}: Starting network request...`);
+      console.log(`🌐 ${methodName}: URL: ${API_ENDPOINTS.OPENSUBTITLES_XMLRPC}`);
+      
+      // Build XML-RPC body
+      const paramsXml = params.map(param => {
+        if (typeof param === 'string') {
+          return `<param><value><string>${this.escapeXmlContent(param)}</string></value></param>`;
+        } else if (typeof param === 'number') {
+          return `<param><value><int>${param}</int></value></param>`;
+        } else {
+          return `<param><value><string>${this.escapeXmlContent(String(param))}</string></value></param>`;
+        }
+      }).join('');
+      
+      const xmlRpcBody = `<?xml version="1.0"?>
+<methodCall>
+  <methodName>${methodName}</methodName>
+  <params>
+    ${paramsXml}
+  </params>
+</methodCall>`;
+
+      const headers = getApiHeaders('text/xml');
+      console.log(`🌐 ${methodName}: Headers:`, headers);
+      console.log(`🌐 ${methodName}: Body length: ${xmlRpcBody.length} chars`);
+
+      const response = await delayedFetch(API_ENDPOINTS.OPENSUBTITLES_XMLRPC, {
+        method: 'POST',
+        headers,
+        body: xmlRpcBody,
+      });
+
+      console.log(`🌐 ${methodName}: Response received`);
+      console.log(`🌐 ${methodName}: Status: ${response.status} ${response.statusText}`);
+      console.log(`🌐 ${methodName}: Headers:`, Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        console.error(`❌ ${methodName}: Request failed with status: ${response.status} ${response.statusText}`);
+        throw new Error(`XML-RPC ${methodName} failed: ${response.status} ${response.statusText}`);
+      }
+
+      const xmlText = await response.text();
+      console.log(`🌐 ${methodName}: XML response length: ${xmlText.length} chars`);
+      
+      const xmlDoc = this.parseXmlRpcResponse(xmlText);
+      console.log(`✅ ${methodName}: Parsed response successfully`);
+      
+      // Parse response
+      const responseStruct = xmlDoc.querySelector('methodResponse param value struct');
+      if (responseStruct) {
+        const result = this.extractStructData(responseStruct);
+        return result;
+      }
+      
+      // Handle simple responses (like strings)
+      const simpleValue = xmlDoc.querySelector('methodResponse param value string');
+      if (simpleValue) {
+        return { data: simpleValue.textContent };
+      }
+      
+      console.error(`❌ ${methodName}: Invalid response structure`);
+      throw new Error(`Invalid ${methodName} response structure`);
+    } catch (error) {
+      console.error(`❌ ${methodName}: Request failed with error:`, error);
+      
+      // Enhanced error details for NetworkError
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error(`❌ ${methodName}: This appears to be a network connectivity issue`);
+        console.error(`❌ ${methodName}: Error details:`, {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+      }
+      
+      throw error;
+    }
+  }
+
 }
+
+/**
+ * Export the xmlrpcCall function for compatibility
+ * @param {string} methodName - The XML-RPC method name
+ * @param {Array} params - Array of parameters
+ * @returns {Promise<Object>} - Parsed XML-RPC response
+ */
+export const xmlrpcCall = (methodName, params) => {
+  return XmlRpcService.xmlrpcCall(methodName, params);
+};

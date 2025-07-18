@@ -28,6 +28,8 @@ import { getThemeStyles, createHoverHandlers } from "../utils/themeUtils.js";
 import { APP_VERSION } from "../utils/constants.js";
 import { SessionManager } from "../services/sessionManager.js";
 import TestModePanel from "./TestModePanel.jsx";
+import UserProfile from "./UserProfile.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 // Lazy load the DebugPanel component
 const DebugPanel = lazy(() => import("./DebugPanel.jsx").then(module => ({ default: module.DebugPanel })));
@@ -35,6 +37,7 @@ const DebugPanel = lazy(() => import("./DebugPanel.jsx").then(module => ({ defau
 function SubtitleUploaderInner() {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = getThemeStyles(colors);
+  const { isAuthenticated, user, isAnonymous } = useAuth();
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null); // For temporary info messages
   
@@ -1691,47 +1694,8 @@ function SubtitleUploaderInner() {
             
             {/* User Info and Theme Toggle - Right Side */}
             <div className="flex flex-col items-end gap-1">
-              {/* User Info */}
-              <div className="flex items-center gap-2 text-sm px-3 py-1" 
-                   style={{
-                     color: colors.textSecondary
-                   }}>
-                <span className="text-base">👤</span>
-                {userLoading ? (
-                  <span>Loading user...</span>
-                ) : isLoggedIn() ? (
-                  <span>
-                    Logged as: <strong style={styles.link}>{getUsername()}</strong>
-                  </span>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span>
-                      Logged as: <strong style={styles.link}>Anonymous</strong>
-                    </span>
-                    <a 
-                      href="https://www.opensubtitles.org/login" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="px-3 py-1 rounded-lg transition-all text-xs"
-                      style={{
-                        backgroundColor: colors.warning,
-                        color: 'white',
-                        textDecoration: 'none',
-                        fontWeight: '500',
-                        whiteSpace: 'nowrap'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.backgroundColor = colors.error;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.backgroundColor = colors.warning;
-                      }}
-                    >
-                      🔑 Login Required
-                    </a>
-                  </div>
-                )}
-              </div>
+              {/* User Profile */}
+              <UserProfile />
               
               {/* Action Buttons Row */}
               <div className="flex items-center gap-2">
@@ -1993,7 +1957,7 @@ function SubtitleUploaderInner() {
         )}
 
         {/* Upload Button - Only show for logged in users */}
-        {hasUploadableContent && isLoggedIn() && (
+        {hasUploadableContent && isAuthenticated && (
           <div data-upload-results>
           <UploadButton
             pairedFiles={pairedFiles}
@@ -2016,7 +1980,7 @@ function SubtitleUploaderInner() {
         )}
 
         {/* Login Required Message for Anonymous Users */}
-        {hasUploadableContent && !isLoggedIn() && (
+        {hasUploadableContent && !isAuthenticated && (
           <div 
             className="p-8 rounded-xl text-center mt-6"
             style={{
@@ -2052,10 +2016,11 @@ function SubtitleUploaderInner() {
               }}>
                 Your subtitle files are ready for upload! Please log in to your OpenSubtitles account to continue with the upload process.
               </div>
-              <a 
-                href="https://www.opensubtitles.org/login" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <button
+                onClick={() => {
+                  // This will be handled by the UserProfile component
+                  // User can click on the profile to access login
+                }}
                 className="inline-flex items-center gap-3 px-8 py-4 rounded-xl transition-all transform"
                 style={{
                   backgroundColor: colors.success,
@@ -2078,8 +2043,8 @@ function SubtitleUploaderInner() {
                 }}
               >
                 <span style={{ fontSize: '20px' }}>🚀</span>
-                Login to OpenSubtitles.org
-              </a>
+                Login to Upload
+              </button>
           </div>
         )}
 
