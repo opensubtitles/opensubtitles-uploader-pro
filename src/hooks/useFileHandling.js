@@ -37,6 +37,14 @@ export const useFileHandling = (addDebugInfo) => {
     event.preventDefault();
     setIsDragOver(false);
     
+    console.log('🎯 Drop event triggered in Tauri app:', {
+      isTauri: !!window.__TAURI__,
+      eventType: event.type,
+      dataTransfer: event.dataTransfer,
+      items: event.dataTransfer?.items?.length,
+      files: event.dataTransfer?.files?.length
+    });
+    
     addDebugInfo("Drop event triggered");
     
     try {
@@ -60,6 +68,11 @@ export const useFileHandling = (addDebugInfo) => {
   // Handle drag over
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
+    console.log('🎯 Drag over event:', {
+      isTauri: !!window.__TAURI__,
+      eventType: e.type,
+      hasDataTransfer: !!e.dataTransfer
+    });
     setIsDragOver(true);
   }, []);
 

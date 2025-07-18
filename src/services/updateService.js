@@ -5,13 +5,31 @@ let tauriUpdater = null;
 let tauriProcess = null;
 
 const loadTauriAPIs = async () => {
-  if (window.__TAURI__ && !tauriUpdater) {
+  // Only load Tauri APIs in actual Tauri environment (not during development)
+  if (typeof window !== 'undefined' && window.__TAURI__ && !tauriUpdater) {
     try {
-      tauriUpdater = await import('@tauri-apps/api/updater');
-      tauriProcess = await import('@tauri-apps/api/process');
+      console.log('🔄 Loading Tauri APIs...');
+      // Use dynamic import with string concatenation to avoid Vite analysis during dev
+      const updaterModule = '@tauri-apps/api/' + 'updater';
+      const processModule = '@tauri-apps/api/' + 'process';
+      
+      tauriUpdater = await import(/* @vite-ignore */ updaterModule);
+      tauriProcess = await import(/* @vite-ignore */ processModule);
+      console.log('✅ Tauri APIs loaded successfully:', {
+        updater: !!tauriUpdater,
+        process: !!tauriProcess
+      });
     } catch (error) {
-      console.warn('Failed to load Tauri APIs:', error);
+      console.error('❌ Failed to load Tauri APIs:', error);
+      console.warn('⚠️ Tauri APIs not available:', error.message);
+      // This is expected when running outside Tauri environment
     }
+  } else {
+    console.log('🔍 Tauri API loading conditions:', {
+      hasWindow: typeof window !== 'undefined',
+      hasTauri: !!window.__TAURI__,
+      alreadyLoaded: !!tauriUpdater
+    });
   }
 };
 
@@ -46,9 +64,13 @@ export class UpdateService {
   }
 
   async init() {
+    console.log('🔧 UpdateService init:', { isStandalone: this.isStandalone });
     if (this.isStandalone) {
       await loadTauriAPIs();
       this.setupUpdaterListeners();
+      console.log('🔧 UpdateService initialized for standalone app');
+    } else {
+      console.log('🔧 UpdateService: Not standalone, skipping Tauri API loading');
     }
   }
 
@@ -56,7 +78,13 @@ export class UpdateService {
    * Detect if running as standalone Tauri app
    */
   detectStandaloneMode() {
-    return window.__TAURI__ !== undefined;
+    const isStandalone = window.__TAURI__ !== undefined;
+    console.log('🔍 Standalone detection:', {
+      isStandalone,
+      hasTauriGlobal: !!window.__TAURI__,
+      userAgent: navigator.userAgent
+    });
+    return isStandalone;
   }
 
   /**
