@@ -25,7 +25,10 @@
     "preview": "vite preview",
     "test": "node --test tests/**/*.test.js",
     "update-version": "node update-version.js",
-    "update-readme-version": "node -e \"const fs=require('fs');const pkg=require('./package.json');let readme=fs.readFileSync('README.md','utf8');readme=readme.replace(/version-[0-9.]+/g,'version-'+pkg.version).replace(/Version [0-9.]+/g,'Version '+pkg.version);fs.writeFileSync('README.md',readme);\""
+    "update-readme-version": "node -e \"const fs=require('fs');const pkg=require('./package.json');let readme=fs.readFileSync('README.md','utf8');readme=readme.replace(/version-[0-9.]+/g,'version-'+pkg.version).replace(/Version [0-9.]+/g,'Version '+pkg.version);fs.writeFileSync('README.md',readme);\"",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
@@ -40,6 +43,12 @@
     "video-metadata-extractor": "github:opensubtitles/video-metadata-extractor-js"
   },
   "devDependencies": {
+    "@tauri-apps/api": "^2.6.0",
+    "@tauri-apps/cli": "^2.6.2",
+    "@tauri-apps/plugin-dialog": "^2.3.0",
+    "@tauri-apps/plugin-fs": "^2.4.0",
+    "@tauri-apps/plugin-http": "^2.5.0",
+    "@tauri-apps/plugin-shell": "^2.3.0",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",

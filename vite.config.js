@@ -83,6 +83,8 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin'
     }
   },
+  // Tauri expects a fixed port, and vite server will fail if the port is not available
+  clearScreen: false,
   preview: {
     host: true, // Allow external connections
     allowedHosts: ['uploader.opensubtitles.org']

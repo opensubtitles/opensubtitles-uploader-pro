@@ -11,6 +11,8 @@ A professional React-based subtitle uploader application that integrates with bo
 
 **🚀 [Try it live at uploader.opensubtitles.org](https://uploader.opensubtitles.org)**
 
+**💻 Desktop App:** OpenSubtitles Uploader PRO is now available as a standalone desktop application for macOS, Windows, and Linux using Tauri!
+
 ## Features
 
 ### Core Functionality
@@ -38,12 +40,29 @@ A professional React-based subtitle uploader application that integrates with bo
 
 ## Quick Start
 
-### Prerequisites
+### Web Application
+
+The easiest way to get started is with the web version:
+
+**🚀 [Try it live at uploader.opensubtitles.org](https://uploader.opensubtitles.org)**
+
+### Desktop Application
+
+Download and install the native desktop application:
+
+- **macOS**: Download the `.dmg` file from the releases page
+- **Windows**: Download the `.exe` installer from the releases page  
+- **Linux**: Download the `.AppImage` or `.deb` file from the releases page
+
+### Development Setup
+
+#### Prerequisites
 
 - Node.js 16+ and npm
 - OpenSubtitles.com API account ([register here](https://www.opensubtitles.com/en/consumers))
+- For desktop builds: Rust and Cargo (see [Building Desktop Apps](#building-desktop-apps))
 
-### Installation
+#### Installation
 
 1. **Clone the repository**
    ```bash
@@ -74,6 +93,121 @@ A professional React-based subtitle uploader application that integrates with bo
    ```
    http://localhost:5173
    ```
+
+## Building Desktop Apps
+
+The application supports native desktop builds for macOS, Windows, and Linux using Tauri.
+
+### Prerequisites for Desktop Builds
+
+1. **Install Rust** (required for Tauri):
+   ```bash
+   # Option 1: Using rustup (recommended)
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   source ~/.cargo/env
+   
+   # Option 2: Using Homebrew (macOS)
+   brew install rust
+   
+   # Option 3: Using package manager (Linux)
+   # Ubuntu/Debian:
+   sudo apt install rustc cargo
+   # Fedora:
+   sudo dnf install rust cargo
+   # Arch Linux:
+   sudo pacman -S rust
+   ```
+
+2. **Install system dependencies**:
+   
+   **macOS**: No additional dependencies needed
+   
+   **Windows**: Install [Microsoft Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+   
+   **Linux**: Install system dependencies:
+   ```bash
+   # Ubuntu/Debian
+   sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+   
+   # Fedora
+   sudo dnf install webkit2gtk3-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel
+   
+   # Arch Linux
+   sudo pacman -S webkit2gtk gtk3 libappindicator-gtk3 librsvg
+   ```
+
+### Building for Your Platform
+
+1. **Install Node.js dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Build the desktop application**:
+   ```bash
+   # Development build (with console output)
+   npm run tauri:dev
+   
+   # Production build (optimized)
+   npm run tauri:build
+   ```
+
+3. **Find your built application**:
+   
+   **macOS**:
+   - App Bundle: `src-tauri/target/release/bundle/macos/OpenSubtitles Uploader PRO.app`
+   - DMG Installer: `src-tauri/target/release/bundle/dmg/OpenSubtitles Uploader PRO_1.1.2_aarch64.dmg`
+   
+   **Windows**:
+   - Executable: `src-tauri/target/release/bundle/nsis/OpenSubtitles Uploader PRO_1.1.2_x64_en-US.exe`
+   - MSI Installer: `src-tauri/target/release/bundle/msi/OpenSubtitles Uploader PRO_1.1.2_x64_en-US.msi`
+   
+   **Linux**:
+   - AppImage: `src-tauri/target/release/bundle/appimage/opensubtitles-uploader-pro_1.1.2_amd64.AppImage`
+   - DEB Package: `src-tauri/target/release/bundle/deb/opensubtitles-uploader-pro_1.1.2_amd64.deb`
+
+### Cross-Platform Building
+
+To build for different platforms:
+
+1. **Add target platforms**:
+   ```bash
+   # For Windows (from macOS/Linux)
+   rustup target add x86_64-pc-windows-msvc
+   
+   # For Linux (from macOS/Windows)
+   rustup target add x86_64-unknown-linux-gnu
+   
+   # For macOS (from Linux/Windows)
+   rustup target add x86_64-apple-darwin
+   rustup target add aarch64-apple-darwin
+   ```
+
+2. **Build for specific target**:
+   ```bash
+   npm run tauri:build -- --target x86_64-pc-windows-msvc
+   ```
+
+### Desktop App Features
+
+The desktop version includes all web features plus:
+
+- **Native File System Access**: Direct file operations without browser limitations
+- **System Integration**: Native file dialogs and OS notifications
+- **Offline Capability**: Works without internet for local file processing
+- **Performance**: Native performance for large file operations
+- **Auto-Updates**: Built-in update mechanism (when configured)
+
+### Troubleshooting Desktop Builds
+
+**Common Issues**:
+
+1. **Tauri Configuration Errors**: Ensure `src-tauri/tauri.conf.json` has valid plugin configurations
+2. **Missing Dependencies**: Install all required system dependencies for your platform
+3. **Build Failures**: Check that both Node.js and Rust are properly installed
+4. **Permission Issues**: On macOS, you may need to allow the app in System Preferences > Security & Privacy
+
+**Debug Mode**: Run `npm run tauri:dev` to see detailed error messages and console output.
 
 ## Configuration
 
