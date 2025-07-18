@@ -396,6 +396,10 @@ export class XmlRpcService {
       });
 
       if (!response.ok) {
+        // Handle 401 Unauthorized gracefully - it's expected when user isn't logged in
+        if (response.status === 401) {
+          return null; // Return null instead of throwing error
+        }
         throw new Error(`XML-RPC GetUserInfo failed: ${response.status} ${response.statusText}`);
       }
 
@@ -409,6 +413,9 @@ export class XmlRpcService {
         
         if (result.status === '200 OK' && result.data) {
           return result.data;
+        } else if (result.status && result.status.includes('401')) {
+          // Handle 401 Unauthorized gracefully - user isn't logged in
+          return null;
         } else {
           throw new Error(`GetUserInfo failed: ${result.status || 'Unknown error'}`);
         }

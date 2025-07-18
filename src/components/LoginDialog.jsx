@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
 
 /**
  * Login dialog component for user authentication
@@ -8,12 +9,12 @@ import { useAuth } from '../contexts/AuthContext.jsx';
  * @param {Function} props.onClose - Function to close dialog
  */
 const LoginDialog = ({ isOpen, onClose }) => {
-  const { login, loginAnonymous, loading, error, clearError } = useAuth();
+  const { login, loading, error, clearError } = useAuth();
+  const { isDark } = useTheme();
   
   const [formData, setFormData] = useState({
     username: '',
-    password: '',
-    language: 'en'
+    password: ''
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -37,15 +38,14 @@ const LoginDialog = ({ isOpen, onClose }) => {
       return;
     }
     
-    const result = await login(formData.username, formData.password, formData.language);
+    const result = await login(formData.username, formData.password, 'en');
     
     if (result.success) {
       onClose();
       // Reset form
       setFormData({
         username: '',
-        password: '',
-        language: 'en'
+        password: ''
       });
     }
   };
@@ -57,32 +57,19 @@ const LoginDialog = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  // Language options
-  const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Spanish' },
-    { code: 'fr', name: 'French' },
-    { code: 'de', name: 'German' },
-    { code: 'it', name: 'Italian' },
-    { code: 'pt', name: 'Portuguese' },
-    { code: 'ru', name: 'Russian' },
-    { code: 'zh', name: 'Chinese' },
-    { code: 'ja', name: 'Japanese' },
-    { code: 'ko', name: 'Korean' }
-  ];
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+      <div className={`${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} rounded-lg p-6 w-full max-w-md mx-4`}>
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Login to OpenSubtitles
           </h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className={`${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -91,7 +78,7 @@ const LoginDialog = ({ isOpen, onClose }) => {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+          <div className={`mb-4 p-3 border rounded-lg ${isDark ? 'bg-red-900/20 border-red-600 text-red-300' : 'bg-red-100 border-red-400 text-red-700'}`}>
             {error}
           </div>
         )}
@@ -99,7 +86,7 @@ const LoginDialog = ({ isOpen, onClose }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Username and Password */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="username" className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               Username
             </label>
             <input
@@ -108,14 +95,14 @@ const LoginDialog = ({ isOpen, onClose }) => {
               name="username"
               value={formData.username}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'}`}
               placeholder="Enter your username"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="password" className={`block text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'} mb-1`}>
               Password
             </label>
             <div className="relative">
@@ -125,14 +112,14 @@ const LoginDialog = ({ isOpen, onClose }) => {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'}`}
                 placeholder="Enter your password"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className={`absolute right-3 top-2.5 ${isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}
               >
                 {showPassword ? (
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,25 +135,6 @@ const LoginDialog = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Language Selection */}
-          <div>
-            <label htmlFor="language" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Language
-            </label>
-            <select
-              id="language"
-              name="language"
-              value={formData.language}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              {languages.map(lang => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.name}
-                </option>
-              ))}
-            </select>
-          </div>
 
           {/* Submit Button */}
           <button
@@ -190,13 +158,13 @@ const LoginDialog = ({ isOpen, onClose }) => {
 
         {/* Account Info */}
         <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             Don't have an account?{' '}
             <a 
               href="https://www.opensubtitles.org/register" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 font-medium"
+              className={`font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}
             >
               Register on OpenSubtitles.org
             </a>
@@ -204,7 +172,7 @@ const LoginDialog = ({ isOpen, onClose }) => {
         </div>
 
         {/* Info */}
-        <div className="mt-6 text-xs text-gray-500 dark:text-gray-400">
+        <div className={`mt-6 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
           <p>
             <strong>Required:</strong> You need an OpenSubtitles.org account to upload subtitles.
           </p>

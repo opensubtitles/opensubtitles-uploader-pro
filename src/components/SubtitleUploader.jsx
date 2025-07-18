@@ -29,7 +29,9 @@ import { APP_VERSION } from "../utils/constants.js";
 import { SessionManager } from "../services/sessionManager.js";
 import TestModePanel from "./TestModePanel.jsx";
 import UserProfile from "./UserProfile.jsx";
+import UpdateNotification from "./UpdateNotification.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useAppUpdate } from "../hooks/useAppUpdate.js";
 
 // Lazy load the DebugPanel component
 const DebugPanel = lazy(() => import("./DebugPanel.jsx").then(module => ({ default: module.DebugPanel })));
@@ -38,6 +40,7 @@ function SubtitleUploaderInner() {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = getThemeStyles(colors);
   const { isAuthenticated, user, isAnonymous } = useAuth();
+  const { isStandalone, startAutoUpdates } = useAppUpdate();
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null); // For temporary info messages
   
@@ -115,7 +118,13 @@ function SubtitleUploaderInner() {
     } catch (error) {
       console.error('Error loading config from localStorage:', error);
     }
-  }, []);
+
+    // Start auto-updates if running as standalone app
+    if (isStandalone) {
+      console.log('🔄 Starting auto-update system for standalone app');
+      startAutoUpdates();
+    }
+  }, [isStandalone, startAutoUpdates]);
 
   // Save config to localStorage whenever it changes
   useEffect(() => {
@@ -1628,6 +1637,9 @@ function SubtitleUploaderInner() {
 
   return (
     <div className="min-h-screen p-6" style={styles.background}>
+      {/* Update Notification */}
+      <UpdateNotification />
+      
       {/* Unified API and Ad Blocker Warning */}
       <ApiHealthCheck onApiBlocked={(reason) => {
         addDebugInfo(`🚫 API blocked by ${reason}: Ad blocker or network issue detected`);

@@ -148,21 +148,32 @@ class AuthService {
   }
 
   /**
-   * Check if user is currently authenticated by calling GetUserInfo
+   * Check if user is currently authenticated by calling GetUserInfo with session ID
+   * @param {string} sessionId - Optional session ID to check (from URL parameter)
    * @returns {Promise<Object>} User info if authenticated, null if not
    */
-  async checkAuthStatus() {
+  async checkAuthStatus(sessionId = null) {
     try {
       console.log('🔐 Checking authentication status with GetUserInfo...');
-      console.log('🔐 Using token:', this.token ? this.token.substring(0, 10) + '...' : 'null');
       
-      const response = await xmlrpcCall('GetUserInfo', [this.token || '']);
+      // Use provided sessionId or stored token
+      const tokenToUse = sessionId || this.token || '';
+      console.log('🔐 Using token:', tokenToUse ? tokenToUse.substring(0, 10) + '...' : 'null');
+      
+      const response = await xmlrpcCall('GetUserInfo', [tokenToUse]);
       console.log('🔐 GetUserInfo response:', response);
+      console.log('🔐 Response status:', response?.status);
+      console.log('🔐 Response data keys:', response?.data ? Object.keys(response.data) : 'no data');
       
       if (response && response.status && response.status.includes('200') && response.data) {
-        console.log('✅ User is authenticated');
+        console.log('✅ User is authenticated via session ID');
+        console.log('✅ User data:', response.data);
+        
+        // Store the valid session data
+        this.token = tokenToUse;
         this.isAuthenticated = true;
         this.userData = response.data;
+        
         return response.data;
       } else {
         console.log('❌ User is not authenticated');

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import authService from '../services/authService.js';
+import { SessionManager } from '../services/sessionManager.js';
 
 /**
  * Authentication context for managing login state across the application
@@ -37,35 +38,46 @@ export const AuthProvider = ({ children }) => {
         console.log('🔐 Initializing authentication...');
         console.log('🔐 AuthService available:', !!authService);
         
-        // First check for URL parameter sid (from opensubtitles.org)
+        // First check for URL parameter sid (from opensubtitles.org) or stored session
         const urlParams = new URLSearchParams(window.location.search);
         const sidFromUrl = urlParams.get('sid');
+        const storedSessionId = SessionManager.getStoredSessionId();
         
-        if (sidFromUrl) {
-          console.log('🔐 Found SID in URL:', sidFromUrl.substring(0, 10) + '...');
+        if (sidFromUrl || storedSessionId) {
+          const sessionId = sidFromUrl || storedSessionId;
+          console.log('🔐 Found session ID:', sessionId.substring(0, 10) + '...');
+          console.log('🔐 Source:', sidFromUrl ? 'URL parameter' : 'stored session');
           
-          // Set the token from URL and check if it's valid
-          authService.token = sidFromUrl;
-          const userInfo = await authService.checkAuthStatus();
+          // Check if the session ID is valid by calling GetUserInfo
+          const userInfo = await authService.checkAuthStatus(sessionId);
           
           if (userInfo) {
-            // Valid session from URL
+            // Valid session - user is already logged in on OpenSubtitles.org
             setIsAuthenticated(true);
             setUser(userInfo);
-            setToken(sidFromUrl);
-            console.log('✅ Valid session from URL parameter');
+            setToken(sessionId);
+            console.log('✅ Valid session authenticated');
             console.log('✅ User data:', userInfo);
+            console.log('✅ User:', userInfo.UserNickName);
+            console.log('✅ Rank:', userInfo.UserRank);
             
             // Store in localStorage for future use
-            localStorage.setItem('opensubtitles_token', sidFromUrl);
+            localStorage.setItem('opensubtitles_token', sessionId);
             localStorage.setItem('opensubtitles_user_data', JSON.stringify(userInfo));
             localStorage.setItem('opensubtitles_login_time', Date.now().toString());
+            
+            // If session came from URL, ensure it's stored by SessionManager
+            if (sidFromUrl) {
+              SessionManager.storeSessionId(sidFromUrl);
+            }
           } else {
-            // Invalid session ID from URL
-            console.log('❌ Invalid session ID from URL');
+            // Invalid session ID
+            console.log('❌ Invalid session ID');
             setIsAuthenticated(false);
             setUser(null);
             setToken(null);
+            // Clear invalid stored session
+            SessionManager.clearStoredSession();
           }
         } else {
           // No URL parameter, try to restore from localStorage
@@ -151,49 +163,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Anonymous login (no credentials required)
-   * @param {string} language - Language code (default: 'en')
-   * @returns {Promise<Object>} Login result
-   */
-  const loginAnonymous = async (language = 'en') => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      console.log('🔐 Attempting anonymous login...');
-      console.log('🔐 Language:', language);
-      console.log('🔐 AuthService methods available:', Object.getOwnPropertyNames(authService.__proto__));
-      
-      const result = await authService.login('', '', language);
-      console.log('🔐 AuthService.login result:', result);
-      
-      if (result.success) {
-        setIsAuthenticated(true);
-        setUser(result.userData);
-        setToken(result.token);
-        console.log('✅ Anonymous login successful');
-        console.log('✅ User data set:', result.userData);
-        console.log('✅ Token set:', result.token?.substring(0, 10) + '...');
-        return result;
-      } else {
-        const errorMsg = result.message || 'Anonymous login failed';
-        setError(errorMsg);
-        console.error('❌ Anonymous login failed:', result.error);
-        console.error('❌ Full result:', result);
-        return result;
-      }
-    } catch (error) {
-      const errorMessage = error.message || 'Anonymous login failed';
-      setError(errorMessage);
-      console.error('❌ Anonymous login error:', error);
-      console.error('❌ Error type:', error.constructor.name);
-      console.error('❌ Error stack:', error.stack);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /**
    * Logout current user
@@ -214,9 +183,6 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       
       console.log('✅ Logout completed');
-      
-      // Try to login anonymously after logout
-      await loginAnonymous();
       
       return result;
     } catch (error) {
@@ -269,8 +235,11 @@ export const AuthProvider = ({ children }) => {
         setError('Please login again to refresh your session');
         return { success: false, error: 'Session expired' };
       } else {
-        // For anonymous users, just login again
-        return await loginAnonymous();
+        // For anonymous users, clear auth state - can't refresh without credentials
+        setIsAuthenticated(false);
+        setUser(null);
+        setToken(null);
+        return { success: false, error: 'Session expired, please login again' };
       }
     } catch (error) {
       const errorMessage = error.message || 'Failed to refresh authentication';
@@ -293,7 +262,6 @@ export const AuthProvider = ({ children }) => {
     
     // Methods
     login,
-    loginAnonymous,
     logout,
     isAnonymous,
     getUserPreferredLanguages,

@@ -58,7 +58,9 @@ export const DropZone = ({
         </h3>
         <p style={{color: themeColors.textSecondary || '#454545'}}>
           Supports recursive folder scanning for video files ({VIDEO_EXTENSIONS.slice(0, 5).join(', ')}, etc.),
-          subtitle files ({SUBTITLE_EXTENSIONS.slice(0, 5).join(', ')}, etc.), and archives (.zip, .rar, .7z, .tar, etc. - max 100 MB)
+          subtitle files ({SUBTITLE_EXTENSIONS.slice(0, 5).join(', ')}, etc.),
+          <br />
+          and archives (.zip, .rar, .7z, .tar, etc. - max 100 MB)
         </p>
         <p className="text-sm font-medium" style={{color: themeColors.link || '#185DA0'}}>
           📁 Drag entire movie folders - automatically finds and pairs video files with subtitles

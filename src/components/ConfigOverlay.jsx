@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import UpdateSettings from './UpdateSettings.jsx';
 
 export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors, isDark, combinedLanguages }) => {
   const [localConfig, setLocalConfig] = useState(config);
@@ -440,6 +441,9 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
               </div>
             )}
           </div>
+
+          {/* Update Settings */}
+          <UpdateSettings />
         </div>
 
         {/* Footer */}

@@ -35,10 +35,19 @@ export const useUserSession = (addDebugInfo) => {
       setUserInfo(userData);
       
     } catch (err) {
-      setError(err.message);
-      setUserInfo(null);
-      if (addDebugInfo) {
-        addDebugInfo(`👤 Session validation failed: ${err.message}`);
+      // Handle 401 Unauthorized gracefully (user not logged in)
+      if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+        setError(null); // Don't treat 401 as an error - it's expected when not logged in
+        setUserInfo(null);
+        if (addDebugInfo) {
+          addDebugInfo(`👤 No valid session found - user not logged in`);
+        }
+      } else {
+        setError(err.message);
+        setUserInfo(null);
+        if (addDebugInfo) {
+          addDebugInfo(`👤 Session validation failed: ${err.message}`);
+        }
       }
     } finally {
       setIsLoading(false);

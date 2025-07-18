@@ -56,6 +56,15 @@ export const ThemeProvider = ({ children }) => {
     }
   }, []);
 
+  // Apply dark mode class to document root
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
   // Save theme preference to localStorage
   const toggleTheme = () => {
     const newTheme = !isDark;

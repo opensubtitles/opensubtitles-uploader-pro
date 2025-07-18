@@ -60,6 +60,14 @@ export class UserService {
       
       const userData = await XmlRpcService.getUserInfo();
       
+      if (userData === null) {
+        // User is not logged in (401 response handled gracefully)
+        if (addDebugInfo) {
+          addDebugInfo(`👤 User is not logged in`);
+        }
+        return null;
+      }
+      
       if (addDebugInfo) {
         addDebugInfo(`✅ User info loaded: ${userData?.UserNickName || 'Unknown'}`);
       }
