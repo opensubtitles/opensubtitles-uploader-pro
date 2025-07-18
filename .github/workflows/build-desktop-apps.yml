@@ -1,0 +1,178 @@
+name: Build Desktop Apps
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create a release'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-tauri:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Priority 1: Windows x64
+          - platform: 'windows-latest'
+            args: '--target x86_64-pc-windows-msvc'
+            target: 'x86_64-pc-windows-msvc'
+            arch: 'x64'
+            os: 'windows'
+          
+          # Priority 2: macOS Intel + Apple Silicon
+          - platform: 'macos-latest'
+            args: '--target aarch64-apple-darwin'
+            target: 'aarch64-apple-darwin'
+            arch: 'arm64'
+            os: 'macos'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            target: 'x86_64-apple-darwin'
+            arch: 'x64'
+            os: 'macos'
+          
+          # Priority 3: Linux x64
+          - platform: 'ubuntu-20.04'
+            args: ''
+            target: 'x86_64-unknown-linux-gnu'
+            arch: 'x64'
+            os: 'linux'
+
+    runs-on: ${{ matrix.platform }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-20.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'OpenSubtitles Uploader PRO v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-app-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            src-tauri/target/*/release/bundle/
+            !src-tauri/target/*/release/bundle/**/.*
+          retention-days: 30
+
+  create-release:
+    needs: build-tauri
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -la ./artifacts/
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.run_number }}
+          release_name: OpenSubtitles Uploader PRO v1.1.2-build${{ github.run_number }}
+          body: |
+            ## OpenSubtitles Uploader PRO Desktop Apps
+            
+            Native desktop applications for Windows, macOS, and Linux.
+            
+            ### Download the appropriate version for your platform:
+            
+            **Windows:**
+            - `OpenSubtitles Uploader PRO_1.1.2_x64_en-US.exe` - Windows installer
+            - `OpenSubtitles Uploader PRO_1.1.2_x64_en-US.msi` - Windows MSI package
+            
+            **macOS:**
+            - `OpenSubtitles Uploader PRO_1.1.2_aarch64.dmg` - Apple Silicon (M1/M2)
+            - `OpenSubtitles Uploader PRO_1.1.2_x64.dmg` - Intel Macs
+            
+            **Linux:**
+            - `opensubtitles-uploader-pro_1.1.2_amd64.AppImage` - Universal Linux
+            - `opensubtitles-uploader-pro_1.1.2_amd64.deb` - Debian/Ubuntu
+            
+            ### Installation Instructions:
+            
+            **Windows:** Download and run the `.exe` installer
+            **macOS:** Download the `.dmg` file and drag the app to Applications
+            **Linux:** Download the `.AppImage` and make it executable, or install the `.deb` package
+            
+            ### Features:
+            - Native file system access
+            - Drag & drop support
+            - All web app features
+            - System notifications
+            - Offline capability
+            
+            Built with Tauri framework for native performance and security.
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Assets
+        run: |
+          for file in ./artifacts/desktop-app-*/*; do
+            if [ -f "$file" ]; then
+              echo "Uploading: $file"
+              gh release upload ${{ steps.create_release.outputs.tag_name }} "$file"
+            fi
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

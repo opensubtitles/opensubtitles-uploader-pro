@@ -50,9 +50,15 @@ The easiest way to get started is with the web version:
 
 Download and install the native desktop application:
 
-- **macOS**: Download the `.dmg` file from the releases page
-- **Windows**: Download the `.exe` installer from the releases page  
-- **Linux**: Download the `.AppImage` or `.deb` file from the releases page
+**📦 [Download from Releases](https://github.com/opensubtitles/opensubtitles-uploader-pro/releases)**
+
+- **Windows x64**: `OpenSubtitles Uploader PRO_1.1.2_x64_en-US.exe` - Windows installer
+- **macOS (Apple Silicon)**: `OpenSubtitles Uploader PRO_1.1.2_aarch64.dmg` - M1/M2 Macs
+- **macOS (Intel)**: `OpenSubtitles Uploader PRO_1.1.2_x64.dmg` - Intel Macs
+- **Linux x64**: `opensubtitles-uploader-pro_1.1.2_amd64.AppImage` - Universal Linux binary
+- **Linux x64**: `opensubtitles-uploader-pro_1.1.2_amd64.deb` - Debian/Ubuntu package
+
+**✅ Automated Builds**: All desktop applications are automatically built using GitHub Actions for consistent, secure releases.
 
 ### Development Setup
 
@@ -285,7 +291,38 @@ npm run preview
 
 # Run test suite
 npm test
+
+# Desktop app development
+npm run tauri:dev
+
+# Desktop app production build
+npm run tauri:build
 ```
+
+### GitHub Actions Workflows
+
+The project includes automated CI/CD workflows for building desktop applications:
+
+**🚀 Automated Builds**: 
+- **Priority 1**: Windows x64 (`windows-latest`)
+- **Priority 2**: macOS Intel + Apple Silicon (`macos-latest`)  
+- **Priority 3**: Linux x64 (`ubuntu-20.04`)
+
+**Workflow Triggers**:
+- **CI Build**: Runs on every push/PR to test builds
+- **Release Build**: Triggered by git tags (`v*`) or manual dispatch
+- **Multi-platform**: Builds for all platforms simultaneously
+
+**Creating a Release**:
+```bash
+# Tag and push to trigger automated build
+git tag v1.1.3
+git push origin v1.1.3
+
+# Or use GitHub Actions UI: Actions → Build Desktop Apps → Run workflow
+```
+
+**Workflow Configuration**: See `.github/workflows/` for detailed configuration.
 
 ### Testing
 
