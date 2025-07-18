@@ -1,6 +1,19 @@
-import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
-import { relaunch } from '@tauri-apps/api/process';
 import { APP_VERSION } from '../utils/constants.js';
+
+// Dynamic imports for Tauri APIs - only available in Tauri environment
+let tauriUpdater = null;
+let tauriProcess = null;
+
+const loadTauriAPIs = async () => {
+  if (window.__TAURI__ && !tauriUpdater) {
+    try {
+      tauriUpdater = await import('@tauri-apps/api/updater');
+      tauriProcess = await import('@tauri-apps/api/process');
+    } catch (error) {
+      console.warn('Failed to load Tauri APIs:', error);
+    }
+  }
+};
 
 /**
  * Auto-update service for Tauri application
@@ -29,7 +42,14 @@ export class UpdateService {
     this.listeners = [];
     this.autoCheckInterval = null;
     this.isInstalling = false;
-    this.setupUpdaterListeners();
+    this.init();
+  }
+
+  async init() {
+    if (this.isStandalone) {
+      await loadTauriAPIs();
+      this.setupUpdaterListeners();
+    }
   }
 
   /**
@@ -43,10 +63,10 @@ export class UpdateService {
    * Setup updater event listeners
    */
   setupUpdaterListeners() {
-    if (!this.isStandalone) return;
+    if (!this.isStandalone || !tauriUpdater) return;
 
     try {
-      onUpdaterEvent(({ error, status }) => {
+      tauriUpdater.onUpdaterEvent(({ error, status }) => {
         console.log('🔄 Updater event:', { error, status });
         this.notifyListeners({ type: 'updater_event', error, status });
       });
@@ -85,7 +105,11 @@ export class UpdateService {
       console.log('🔍 Checking for updates...');
       console.log('📋 Current version:', APP_VERSION);
       
-      const updateInfo = await checkUpdate();
+      if (!tauriUpdater) {
+        throw new Error('Tauri updater not available');
+      }
+      
+      const updateInfo = await tauriUpdater.checkUpdate();
       console.log('🔄 Update check result:', updateInfo);
 
       // Update cache
@@ -152,7 +176,11 @@ export class UpdateService {
         type: 'update_install_start'
       });
 
-      await installUpdate();
+      if (!tauriUpdater) {
+        throw new Error('Tauri updater not available');
+      }
+      
+      await tauriUpdater.installUpdate();
       
       console.log('✅ Update installed successfully');
       
@@ -192,7 +220,12 @@ export class UpdateService {
 
     try {
       console.log('🔄 Restarting application...');
-      await relaunch();
+      
+      if (!tauriProcess) {
+        throw new Error('Tauri process not available');
+      }
+      
+      await tauriProcess.relaunch();
     } catch (error) {
       console.error('❌ Failed to restart application:', error);
     }

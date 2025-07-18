@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// https://tauri.app/v1/guides/getting-started/setup/vite
+const host = process.env.TAURI_DEV_HOST
+
 export default defineConfig({
   plugins: [react()],
   publicDir: 'public',
@@ -11,7 +14,7 @@ export default defineConfig({
     plugins: () => [react()]
   },
   
-  // Optimize dependencies for FFmpeg and archive-wasm
+  // Optimize dependencies for FFmpeg, archive-wasm, and Tauri
   optimizeDeps: {
     exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util', 'archive-wasm']
   },
@@ -20,6 +23,10 @@ export default defineConfig({
     target: 'esnext', // Support top-level await
     format: 'es',
     rollupOptions: {
+      external: [
+        '@tauri-apps/api/updater',
+        '@tauri-apps/api/process'
+      ],
       output: {
         manualChunks: {
           // Vendor chunks
@@ -76,7 +83,8 @@ export default defineConfig({
   },
   server: {
     sourcemapIgnoreList: () => true,
-    host: true, // Allow external connections
+    host: host || false, // Use Tauri host or allow external connections
+    port: 1420,
     allowedHosts: ['uploader.opensubtitles.org'],
     headers: {
       'Cross-Origin-Embedder-Policy': 'require-corp',
