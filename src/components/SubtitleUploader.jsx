@@ -44,6 +44,9 @@ function SubtitleUploaderInner() {
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState(null); // For temporary info messages
   
+  // Ref for auto-scrolling to matched pairs section
+  const matchedPairsRef = useRef(null);
+  
   // Function to show temporary notifications
   const showNotification = useCallback((message, type = 'info', duration = 5000) => {
     setNotification({ message, type });
@@ -1632,6 +1635,19 @@ function SubtitleUploaderInner() {
   
   const hasUploadableContent = successfulPairs.length > 0 || orphanedSubtitles.length > 0;
 
+  // Auto-scroll to matched pairs section when content becomes available
+  useEffect(() => {
+    if (hasUploadableContent && matchedPairsRef.current) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        matchedPairsRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }, 500);
+    }
+  }, [hasUploadableContent]);
+
   const hasUnpairedFiles = files.length > 0 && successfulPairs.length === 0;
 
 
@@ -1883,7 +1899,8 @@ function SubtitleUploaderInner() {
 
         {/* Matched Pairs */}
         {hasUploadableContent && (
-          <MatchedPairs
+          <div ref={matchedPairsRef}>
+            <MatchedPairs
             pairedFiles={pairedFiles}
             movieGuesses={movieGuesses}
             featuresByImdbId={featuresByImdbId}
@@ -1917,6 +1934,7 @@ function SubtitleUploaderInner() {
             isMetadataLoading={isMetadataLoading}
             getMetadataError={getMetadataError}
           />
+          </div>
         )}
 
         {/* Orphaned Subtitles */}
