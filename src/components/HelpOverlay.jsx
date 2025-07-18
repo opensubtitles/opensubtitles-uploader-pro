@@ -91,7 +91,7 @@ export const HelpOverlay = ({ isOpen, onClose, colors, isDark }) => {
                   <span className="text-base">🎬</span>
                   <div>
                     <div className="font-semibold" style={{ color: colors.text }}>Drag & Drop Interface</div>
-                    <div style={{ color: colors.textSecondary }}>Drop video and subtitle files directly into the browser</div>
+                    <div style={{ color: colors.textSecondary }}>Drop video and subtitle files, folders, or archives (.zip, .rar, .7z, .tar, etc.) directly into the browser</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -166,6 +166,20 @@ export const HelpOverlay = ({ isOpen, onClose, colors, isDark }) => {
                     <div style={{ color: colors.textSecondary }}>Automatically fetches and displays posters</div>
                   </div>
                 </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-base">📦</span>
+                  <div>
+                    <div className="font-semibold" style={{ color: colors.text }}>Archive Support</div>
+                    <div style={{ color: colors.textSecondary }}>Extracts and processes video/subtitle files from various archive formats (max 100MB)</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-base">📁</span>
+                  <div>
+                    <div className="font-semibold" style={{ color: colors.text }}>File Selection Button</div>
+                    <div style={{ color: colors.textSecondary }}>Click to browse and select files as an alternative to drag & drop</div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -220,6 +234,18 @@ export const HelpOverlay = ({ isOpen, onClose, colors, isDark }) => {
                     .srt, .vtt, .ass, .ssa, .sub, .txt, .smi, .mpl, .tmp
                   </div>
                 </div>
+                <div>
+                  <div className="font-semibold mb-2" style={{ color: colors.text }}>Archive Files</div>
+                  <div style={{ color: colors.textSecondary }}>
+                    .zip, .rar, .7z, .tar.gz, .tar.bz2, .tar.xz, .lha, .cab, .iso, .cpio, .gz, .bz2, .xz, .lz4, .zst files containing video and subtitle files (max 100MB)
+                  </div>
+                </div>
+                <div>
+                  <div className="font-semibold mb-2" style={{ color: colors.text }}>Folder Support</div>
+                  <div style={{ color: colors.textSecondary }}>
+                    Entire directories with nested subdirectories
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -240,6 +266,14 @@ export const HelpOverlay = ({ isOpen, onClose, colors, isDark }) => {
                 <div className="flex gap-3">
                   <span>•</span>
                   <span>Use descriptive filenames - they help with movie detection</span>
+                </div>
+                <div className="flex gap-3">
+                  <span>•</span>
+                  <span>Archive files (.zip, .rar, .7z, .tar, etc.) are automatically extracted and processed for media files</span>
+                </div>
+                <div className="flex gap-3">
+                  <span>•</span>
+                  <span>Use the file selection button if drag & drop isn't working</span>
                 </div>
                 <div className="flex gap-3">
                   <span>•</span>

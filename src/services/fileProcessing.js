@@ -42,20 +42,20 @@ export class FileProcessingService {
       const fileType = file.type;
       const fullPath = path + fileName;
       
-      // Check if it's a ZIP file
-      if (ZipProcessingService.isZipFile(file)) {
+      // Check if it's an archive file
+      if (ZipProcessingService.isArchiveFile(file)) {
         try {
-          // Validate ZIP file size before processing
-          const sizeValidation = ZipProcessingService.validateZipSize(file);
+          // Validate archive file size before processing
+          const sizeValidation = ZipProcessingService.validateArchiveSize(file);
           if (!sizeValidation.isValid) {
-            console.error(`ZIP file size validation failed: ${sizeValidation.error}`);
+            console.error(`Archive file size validation failed: ${sizeValidation.error}`);
             return;
           }
           
-          const extractedFiles = await ZipProcessingService.processZipFile(file);
+          const extractedFiles = await ZipProcessingService.processArchiveFile(file);
           output.push(...extractedFiles);
         } catch (error) {
-          console.error(`Error processing ZIP file ${fileName}:`, error);
+          console.error(`Error processing archive file ${fileName}:`, error);
         }
         return;
       }

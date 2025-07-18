@@ -1,38 +1,46 @@
-import JSZip from 'jszip';
-import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS } from '../utils/constants.js';
+import { extract } from 'archive-wasm';
+import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, ARCHIVE_EXTENSIONS, ARCHIVE_MIME_TYPES } from '../utils/constants.js';
 
 /**
- * ZIP Processing Service
- * Handles extraction and processing of ZIP files
+ * Archive Processing Service
+ * Handles extraction and processing of archive files using archive-wasm
+ * Supports: ZIP, 7z, TAR, RAR, LHA, CAB, ISO, CPIO, and compressed files
  */
-export class ZipProcessingService {
+export class ArchiveProcessingService {
   
-  // Maximum ZIP file size in bytes (100 MB)
-  static MAX_ZIP_SIZE = 100 * 1024 * 1024;
+  // Maximum archive file size in bytes (100 MB)
+  static MAX_ARCHIVE_SIZE = 100 * 1024 * 1024;
   
   /**
-   * Check if a file is a ZIP file
+   * Check if a file is an archive file
    * @param {File} file - The file to check
-   * @returns {boolean} - True if the file is a ZIP file
+   * @returns {boolean} - True if the file is an archive file
    */
-  static isZipFile(file) {
-    return file.name.toLowerCase().endsWith('.zip') || 
-           file.type === 'application/zip' ||
-           file.type === 'application/x-zip-compressed';
+  static isArchiveFile(file) {
+    const fileName = file.name.toLowerCase();
+    const fileType = file.type;
+    
+    // Check by extension
+    const isArchiveByExtension = ARCHIVE_EXTENSIONS.some(ext => fileName.endsWith(ext));
+    
+    // Check by MIME type
+    const isArchiveByMimeType = ARCHIVE_MIME_TYPES.includes(fileType);
+    
+    return isArchiveByExtension || isArchiveByMimeType;
   }
 
   /**
-   * Validate ZIP file size
-   * @param {File} file - The ZIP file to validate
+   * Validate archive file size
+   * @param {File} file - The archive file to validate
    * @returns {object} - Object with isValid boolean and error message
    */
-  static validateZipSize(file) {
-    if (file.size > this.MAX_ZIP_SIZE) {
-      const maxSizeMB = (this.MAX_ZIP_SIZE / 1024 / 1024).toFixed(0);
+  static validateArchiveSize(file) {
+    if (file.size > this.MAX_ARCHIVE_SIZE) {
+      const maxSizeMB = (this.MAX_ARCHIVE_SIZE / 1024 / 1024).toFixed(0);
       const fileSizeMB = (file.size / 1024 / 1024).toFixed(1);
       return {
         isValid: false,
-        error: `ZIP file "${file.name}" is too large (${fileSizeMB} MB). Maximum allowed size is ${maxSizeMB} MB.`
+        error: `Archive file "${file.name}" is too large (${fileSizeMB} MB). Maximum allowed size is ${maxSizeMB} MB.`
       };
     }
     return { isValid: true, error: null };
@@ -62,29 +70,38 @@ export class ZipProcessingService {
   }
 
   /**
-   * Extract and process a ZIP file
-   * @param {File} zipFile - The ZIP file to process
+   * Extract and process an archive file
+   * @param {File} archiveFile - The archive file to process
    * @param {Function} progressCallback - Callback for progress updates (optional)
    * @returns {Promise<Array>} - Array of processed file objects
    */
-  static async processZipFile(zipFile, progressCallback = null) {
+  static async processArchiveFile(archiveFile, progressCallback = null) {
     try {
-      // Validate ZIP file size
-      const sizeValidation = this.validateZipSize(zipFile);
+      // Validate archive file size
+      const sizeValidation = this.validateArchiveSize(archiveFile);
       if (!sizeValidation.isValid) {
         throw new Error(sizeValidation.error);
       }
 
-      // Load the ZIP file
-      const zip = new JSZip();
-      const zipData = await zip.loadAsync(zipFile);
+      // Convert File to ArrayBuffer for archive-wasm
+      const arrayBuffer = await archiveFile.arrayBuffer();
+      const archiveData = new Uint8Array(arrayBuffer);
       
       const processedFiles = [];
-      const totalFiles = Object.keys(zipData.files).length;
+      const allEntries = [];
+      
+      // First pass: collect all entries to calculate total count
+      for (const entry of extract(archiveData)) {
+        if (entry.type === 'FILE') {
+          allEntries.push(entry);
+        }
+      }
+      
+      const totalFiles = allEntries.length;
       let processedCount = 0;
       
-      // Process each file in the ZIP
-      for (const [filename, zipEntry] of Object.entries(zipData.files)) {
+      // Process each file in the archive
+      for (const entry of allEntries) {
         processedCount++;
         
         // Update progress if callback provided
@@ -92,49 +109,41 @@ export class ZipProcessingService {
           progressCallback({
             current: processedCount,
             total: totalFiles,
-            filename: filename,
+            filename: entry.path,
             stage: 'extracting'
           });
         }
         
-        // Skip directories
-        if (zipEntry.dir) {
-          continue;
-        }
-        
         // Check if it's a valid media file
-        const fileType = this.isValidMediaFile(filename);
+        const fileType = this.isValidMediaFile(entry.path);
         if (!fileType.isValid) {
           continue;
         }
         
         try {
-          // Extract the file as a blob
-          const fileData = await zipEntry.async('blob');
-          
-          // Create a File object from the blob
-          const extractedFile = new File([fileData], filename, {
-            type: this.getMimeType(filename),
-            lastModified: zipEntry.date ? zipEntry.date.getTime() : Date.now()
+          // Create a File object from the extracted data
+          const extractedFile = new File([entry.data], entry.path, {
+            type: this.getMimeType(entry.path),
+            lastModified: Date.now()
           });
           
           // Create processed file object matching the expected structure
           const processedFile = {
             file: extractedFile,
-            fullPath: filename,
-            name: filename,
+            fullPath: entry.path,
+            name: entry.path,
             size: extractedFile.size,
             type: extractedFile.type,
             lastModified: extractedFile.lastModified,
             isVideo: fileType.isVideo,
             isSubtitle: fileType.isSubtitle,
-            extractedFrom: zipFile.name // Track which ZIP this came from
+            extractedFrom: archiveFile.name // Track which archive this came from
           };
           
           processedFiles.push(processedFile);
           
         } catch (fileError) {
-          console.warn(`Error extracting file ${filename} from ZIP:`, fileError);
+          console.warn(`Error extracting file ${entry.path} from archive:`, fileError);
           continue;
         }
       }
@@ -151,30 +160,30 @@ export class ZipProcessingService {
       return processedFiles;
       
     } catch (error) {
-      console.error('Error processing ZIP file:', error);
-      throw new Error(`Failed to process ZIP file ${zipFile.name}: ${error.message}`);
+      console.error('Error processing archive file:', error);
+      throw new Error(`Failed to process archive file ${archiveFile.name}: ${error.message}`);
     }
   }
 
   /**
-   * Process multiple ZIP files
-   * @param {Array<File>} zipFiles - Array of ZIP files to process
+   * Process multiple archive files
+   * @param {Array<File>} archiveFiles - Array of archive files to process
    * @param {Function} progressCallback - Callback for progress updates (optional)
    * @returns {Promise<Array>} - Array of all processed file objects
    */
-  static async processMultipleZipFiles(zipFiles, progressCallback = null) {
+  static async processMultipleArchiveFiles(archiveFiles, progressCallback = null) {
     const allProcessedFiles = [];
     
-    for (let i = 0; i < zipFiles.length; i++) {
-      const zipFile = zipFiles[i];
+    for (let i = 0; i < archiveFiles.length; i++) {
+      const archiveFile = archiveFiles[i];
       
       try {
-        const processedFiles = await this.processZipFile(zipFile, (fileProgress) => {
+        const processedFiles = await this.processArchiveFile(archiveFile, (fileProgress) => {
           if (progressCallback) {
             progressCallback({
-              zipIndex: i,
-              totalZips: zipFiles.length,
-              zipName: zipFile.name,
+              archiveIndex: i,
+              totalArchives: archiveFiles.length,
+              archiveName: archiveFile.name,
               fileProgress: fileProgress
             });
           }
@@ -183,8 +192,8 @@ export class ZipProcessingService {
         allProcessedFiles.push(...processedFiles);
         
       } catch (error) {
-        console.error(`Error processing ZIP file ${zipFile.name}:`, error);
-        // Continue processing other ZIP files even if one fails
+        console.error(`Error processing archive file ${archiveFile.name}:`, error);
+        // Continue processing other archive files even if one fails
       }
     }
     
@@ -221,7 +230,7 @@ export class ZipProcessingService {
   }
 
   /**
-   * Get summary statistics for ZIP processing
+   * Get summary statistics for archive processing
    * @param {Array} processedFiles - Array of processed files
    * @returns {object} - Statistics object
    */
@@ -230,8 +239,8 @@ export class ZipProcessingService {
       totalFiles: processedFiles.length,
       videoFiles: 0,
       subtitleFiles: 0,
-      zipSources: new Set(),
-      filesByZip: {}
+      archiveSources: new Set(),
+      filesByArchive: {}
     };
     
     processedFiles.forEach(file => {
@@ -239,19 +248,39 @@ export class ZipProcessingService {
       if (file.isSubtitle) stats.subtitleFiles++;
       
       if (file.extractedFrom) {
-        stats.zipSources.add(file.extractedFrom);
+        stats.archiveSources.add(file.extractedFrom);
         
-        if (!stats.filesByZip[file.extractedFrom]) {
-          stats.filesByZip[file.extractedFrom] = { videos: 0, subtitles: 0 };
+        if (!stats.filesByArchive[file.extractedFrom]) {
+          stats.filesByArchive[file.extractedFrom] = { videos: 0, subtitles: 0 };
         }
         
-        if (file.isVideo) stats.filesByZip[file.extractedFrom].videos++;
-        if (file.isSubtitle) stats.filesByZip[file.extractedFrom].subtitles++;
+        if (file.isVideo) stats.filesByArchive[file.extractedFrom].videos++;
+        if (file.isSubtitle) stats.filesByArchive[file.extractedFrom].subtitles++;
       }
     });
     
-    stats.zipSources = Array.from(stats.zipSources);
+    stats.archiveSources = Array.from(stats.archiveSources);
     
     return stats;
   }
+
+  // Legacy methods for backward compatibility
+  static isZipFile(file) {
+    return this.isArchiveFile(file);
+  }
+
+  static validateZipSize(file) {
+    return this.validateArchiveSize(file);
+  }
+
+  static async processZipFile(file, progressCallback = null) {
+    return this.processArchiveFile(file, progressCallback);
+  }
+
+  static async processMultipleZipFiles(files, progressCallback = null) {
+    return this.processMultipleArchiveFiles(files, progressCallback);
+  }
 }
+
+// Export with both names for backward compatibility
+export { ArchiveProcessingService as ZipProcessingService };

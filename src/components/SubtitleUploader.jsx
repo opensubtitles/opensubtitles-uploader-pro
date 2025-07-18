@@ -36,6 +36,13 @@ function SubtitleUploaderInner() {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = getThemeStyles(colors);
   const [error, setError] = useState(null);
+  const [notification, setNotification] = useState(null); // For temporary info messages
+  
+  // Function to show temporary notifications
+  const showNotification = useCallback((message, type = 'info', duration = 5000) => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), duration);
+  }, []);
   const [previewSubtitle, setPreviewSubtitle] = useState(null);
   const [subtitleContent, setSubtitleContent] = useState('');
   const [openDropdowns, setOpenDropdowns] = useState({});
@@ -81,7 +88,8 @@ function SubtitleUploaderInner() {
     uploadOptionsExpanded: false, // Default to collapsed (current behavior)
     globalComment: '', // Global comment for all subtitles
     defaultLanguage: '', // Default language for all subtitles (empty = auto-detect)
-    defaultFps: '' // Default FPS for orphaned subtitles (empty = no default)
+    defaultFps: '', // Default FPS for orphaned subtitles (empty = no default)
+    defaultTranslator: '' // Default translator for all subtitles (empty = no default)
   });
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -503,6 +511,41 @@ function SubtitleUploaderInner() {
     }
   }, [orphanedSubtitles, config.defaultFps, orphanedSubtitlesFps, addDebugInfo]);
 
+  // Apply default translator to all subtitles
+  const applyDefaultTranslatorToAllSubtitles = useCallback((defaultTranslator) => {
+    const allSubtitlePaths = [];
+    
+    // Collect all subtitle paths from paired files
+    pairedFiles.forEach(pair => {
+      if (pair.subtitles && pair.subtitles.length > 0) {
+        pair.subtitles.forEach(subtitle => {
+          allSubtitlePaths.push(subtitle.fullPath);
+        });
+      }
+    });
+    
+    // Add orphaned subtitles
+    orphanedSubtitles.forEach(subtitle => {
+      allSubtitlePaths.push(subtitle.fullPath);
+    });
+    
+    // Update upload options for all subtitles
+    if (allSubtitlePaths.length > 0) {
+      setUploadOptions(prev => {
+        const newOptions = { ...prev };
+        allSubtitlePaths.forEach(path => {
+          newOptions[path] = {
+            ...newOptions[path],
+            subtranslator: defaultTranslator
+          };
+        });
+        return newOptions;
+      });
+      
+      addDebugInfo(`Applied default translator "${defaultTranslator}" to ${allSubtitlePaths.length} subtitles`);
+    }
+  }, [pairedFiles, orphanedSubtitles, addDebugInfo]);
+
   // Config handlers (moved after all required variables are defined)
   const handleConfigChange = useCallback((newConfig) => {
     const oldConfig = config;
@@ -523,7 +566,12 @@ function SubtitleUploaderInner() {
     if (oldConfig.defaultFps !== newConfig.defaultFps) {
       applyDefaultFpsToOrphanedSubtitles(newConfig.defaultFps);
     }
-  }, [addDebugInfo, config, applyGlobalCommentToAllSubtitles, applyDefaultLanguageToAllSubtitles, applyDefaultFpsToOrphanedSubtitles]);
+    
+    // Apply default translator to all existing subtitles if it changed
+    if (oldConfig.defaultTranslator !== newConfig.defaultTranslator) {
+      applyDefaultTranslatorToAllSubtitles(newConfig.defaultTranslator);
+    }
+  }, [addDebugInfo, config, applyGlobalCommentToAllSubtitles, applyDefaultLanguageToAllSubtitles, applyDefaultFpsToOrphanedSubtitles, applyDefaultTranslatorToAllSubtitles]);
 
   // Handle subtitle upload toggle
   const handleSubtitleUploadToggle = useCallback((subtitlePath, enabled) => {
@@ -729,11 +777,11 @@ function SubtitleUploaderInner() {
   const handleFileSelect = async (event) => {
     try {
       // If files have already been selected, prevent and refresh page
-      if (hasDroppedFiles) {
-        event.preventDefault();
-        window.location.reload();
-        return;
-      }
+      // if (hasDroppedFiles) {
+      //   event.preventDefault();
+      //   window.location.reload();
+      //   return;
+      // }
       
       setError(null);
       
@@ -747,67 +795,57 @@ function SubtitleUploaderInner() {
         return;
       }
       
-      addDebugInfo(`🔄 ${selectedFiles.length} files selected via file input - clearing ALL previous state...`);
+      addDebugInfo(`🔄 ${selectedFiles.length} files selected via file input - adding to existing files...`);
       
-      // Clear all hook state completely (this will reset everything)
-      clearAllState(); // Movie guesses, features, processing state
-      clearAllGuessItState(); // GuessIt data and processing state
-      clearAllLanguageState(); // Language detection processing state
-      clearSubtitleLanguages(); // Subtitle language selections
-      clearHashCheckResults(); // Clear CheckSubHash results
-      clearAllVideoMetadata(); // Clear video metadata
-      
-      // Reset all UI state when new files are selected
-      setUploadStates({}); // Clear upload enable/disable states
-      setUploadOptions({}); // Clear upload options (release name, comments, etc.)
-      setUploadResults({}); // Clear upload results
-      setSubcontentData({}); // Clear subcontent data
-      setOrphanedSubtitlesFps({}); // Clear orphaned subtitles FPS
-      setOpenDropdowns({}); // Clear dropdown states
-      setDropdownSearch({}); // Clear search states
+      // Only clear states that need to be reset when adding new files
+      // Don't clear everything - preserve existing files and their state
+      setUploadResults({}); // Clear upload results for new upload session
       setPreviewSubtitle(null); // Clear preview
       setSubtitleContent(''); // Clear subtitle content
       
-      // Reset upload progress
-      setUploadProgress({ 
-        isUploading: false,
-        isComplete: false,
-        processed: 0, 
-        total: 0,
-        successful: 0,
-        alreadyExists: 0,
-        failed: 0,
-        currentSubtitle: '',
-        results: []
-      });
+      // Reset upload progress only if not currently uploading
+      if (!uploadProgress.isUploading) {
+        setUploadProgress({ 
+          isUploading: false,
+          isComplete: false,
+          processed: 0, 
+          total: 0,
+          successful: 0,
+          alreadyExists: 0,
+          failed: 0,
+          currentSubtitle: '',
+          results: []
+        });
+      }
       
       // Process selected files similar to FileProcessingService
       const processedFiles = [];
       
       for (const file of selectedFiles) {
-        // Check if it's a ZIP file and extract contents
-        if (file.name.toLowerCase().endsWith('.zip') || file.type === 'application/zip') {
+        // Check if it's an archive file and extract contents
+        const { isArchiveFile } = await import('../utils/fileUtils.js');
+        if (isArchiveFile(file)) {
           try {
-            addDebugInfo(`📦 Processing ZIP file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            addDebugInfo(`📦 Processing archive file: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
             const { ZipProcessingService } = await import('../services/zipProcessing.js');
             
-            // Validate ZIP file size before processing
-            const sizeValidation = ZipProcessingService.validateZipSize(file);
+            // Validate archive file size before processing
+            const sizeValidation = ZipProcessingService.validateArchiveSize(file);
             if (!sizeValidation.isValid) {
-              addDebugInfo(`❌ ZIP file size validation failed: ${sizeValidation.error}`);
+              addDebugInfo(`❌ Archive file size validation failed: ${sizeValidation.error}`);
               setError(sizeValidation.error);
               setHasDroppedFiles(false);
               return;
             }
             
-            const extractedFiles = await ZipProcessingService.processZipFile(file);
+            const extractedFiles = await ZipProcessingService.processArchiveFile(file);
             addDebugInfo(`📦 Extracted ${extractedFiles.length} files from ${file.name}`);
             processedFiles.push(...extractedFiles);
             continue;
           } catch (error) {
-            addDebugInfo(`❌ Error processing ZIP file ${file.name}: ${error.message}`);
-            setError(`Error processing ZIP file ${file.name}: ${error.message}`);
-            console.error(`Error processing ZIP file ${file.name}:`, error);
+            addDebugInfo(`❌ Error processing archive file ${file.name}: ${error.message}`);
+            setError(`Error processing archive file ${file.name}: ${error.message}`);
+            console.error(`Error processing archive file ${file.name}:`, error);
             setHasDroppedFiles(false);
             return;
           }
@@ -833,12 +871,43 @@ function SubtitleUploaderInner() {
       addDebugInfo(`📁 Processed ${processedFiles.length} valid media files from file selection`);
       
       if (processedFiles.length > 0) {
-        // Use the same processing as drag and drop
-        setFiles(processedFiles);
+        // Add new files to existing files instead of replacing them
+        setFiles(prevFiles => {
+          // Filter out duplicates based on fullPath and size
+          const existingFilePaths = new Set(prevFiles.map(f => f.fullPath + '|' + f.size));
+          const newFiles = processedFiles.filter(f => !existingFilePaths.has(f.fullPath + '|' + f.size));
+          const duplicateCount = processedFiles.length - newFiles.length;
+          
+          if (duplicateCount > 0) {
+            addDebugInfo(`📁 Skipped ${duplicateCount} duplicate files`);
+            showNotification(
+              `${duplicateCount} duplicate file${duplicateCount > 1 ? 's' : ''} ${duplicateCount > 1 ? 'were' : 'was'} skipped (already added)`,
+              'info',
+              4000
+            );
+          }
+          
+          const combinedFiles = [...prevFiles, ...newFiles];
+          addDebugInfo(`📁 Total files after adding: ${combinedFiles.length} (${prevFiles.length} existing + ${newFiles.length} new)`);
+          
+          // Show success notification for new files added
+          if (newFiles.length > 0) {
+            showNotification(
+              `${newFiles.length} new file${newFiles.length > 1 ? 's' : ''} added successfully`,
+              'info',
+              3000
+            );
+          }
+          
+          return combinedFiles;
+        });
       } else {
         addDebugInfo('⚠️ No valid media files found in selection');
-        setError('No valid video or subtitle files found. Please select .mp4, .mkv, .avi, .srt, .vtt, .ass files, ZIP archives, etc.');
-        setHasDroppedFiles(false);
+        setError('No valid video or subtitle files found. Please select .mp4, .mkv, .avi, .srt, .vtt, .ass files, archives (.zip, .rar, .7z, .tar, etc.), etc.');
+        // Don't set hasDroppedFiles to false if we already have files
+        if (files.length === 0) {
+          setHasDroppedFiles(false);
+        }
       }
       
       // Reset file input
@@ -856,12 +925,12 @@ function SubtitleUploaderInner() {
   const handleFileDropComplete = async (event) => {
     try {
       // If files have already been dropped, prevent default behavior and refresh page immediately
-      if (hasDroppedFiles) {
-        event.preventDefault();
-        event.stopPropagation();
-        window.location.reload();
-        return;
-      }
+      // if (hasDroppedFiles) {
+      //   event.preventDefault();
+      //   event.stopPropagation();
+      //   window.location.reload();
+      //   return;
+      // }
       
       setError(null);
       
@@ -1535,6 +1604,16 @@ function SubtitleUploaderInner() {
     }
   }, [pairedFiles.length, orphanedSubtitles.length, config.globalComment, applyGlobalCommentToAllSubtitles]);
 
+  // Apply default translator to new subtitles when files change
+  useEffect(() => {
+    if (config.defaultTranslator && (pairedFiles.length > 0 || orphanedSubtitles.length > 0)) {
+      // Small delay to ensure files are processed first
+      setTimeout(() => {
+        applyDefaultTranslatorToAllSubtitles(config.defaultTranslator);
+      }, 100);
+    }
+  }, [pairedFiles.length, orphanedSubtitles.length, config.defaultTranslator, applyDefaultTranslatorToAllSubtitles]);
+
 
   // Filter successful pairs
   const successfulPairs = pairedFiles.filter(pair => pair.video && pair.subtitles.length > 0);
@@ -1776,6 +1855,21 @@ function SubtitleUploaderInner() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Notification Display */}
+        {notification && (
+          <div className="rounded-lg p-3 mb-4 transition-all duration-300 ease-in-out" 
+               style={{
+                 backgroundColor: notification.type === 'info' ? colors.cardBackground : colors.cardBackground,
+                 border: `1px solid ${notification.type === 'info' ? colors.success : colors.warning}`,
+                 borderLeft: `4px solid ${notification.type === 'info' ? colors.success : colors.warning}`
+               }}>
+            <div className="flex items-center gap-2">
+              <span>{notification.type === 'info' ? '💡' : '⚠️'}</span>
+              <p style={{color: colors.text, margin: 0, fontSize: '14px'}}>{notification.message}</p>
+            </div>
           </div>
         )}
 
@@ -2079,6 +2173,19 @@ function SubtitleUploaderInner() {
               >
                 <span>📦</span>
                 GitHub Repository
+              </a>
+              <span className="text-xs opacity-60">•</span>
+              <a 
+                href="https://www.opensubtitles.org/upload" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="hover:underline transition-all flex items-center gap-1"
+                style={styles.link}
+                {...createHoverHandlers(colors, styles.link, styles.linkHover)}
+                title="Use the original OpenSubtitles uploader"
+              >
+                <span>🔄</span>
+                Legacy Uploader
               </a>
             </div>
             <p className="text-xs opacity-75">

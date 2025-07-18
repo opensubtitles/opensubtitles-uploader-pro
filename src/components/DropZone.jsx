@@ -1,5 +1,5 @@
 import React from 'react';
-import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS } from '../utils/constants.js';
+import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, ARCHIVE_EXTENSIONS } from '../utils/constants.js';
 
 export const DropZone = ({ 
   isDragOver, 
@@ -58,7 +58,7 @@ export const DropZone = ({
         </h3>
         <p style={{color: themeColors.textSecondary || '#454545'}}>
           Supports recursive folder scanning for video files ({VIDEO_EXTENSIONS.slice(0, 5).join(', ')}, etc.),
-          subtitle files ({SUBTITLE_EXTENSIONS.slice(0, 5).join(', ')}, etc.), and ZIP archives (max 100 MB)
+          subtitle files ({SUBTITLE_EXTENSIONS.slice(0, 5).join(', ')}, etc.), and archives (.zip, .rar, .7z, .tar, etc. - max 100 MB)
         </p>
         <p className="text-sm font-medium" style={{color: themeColors.link || '#185DA0'}}>
           📁 Drag entire movie folders - automatically finds and pairs video files with subtitles
@@ -78,7 +78,7 @@ export const DropZone = ({
           </div>
           <div className="text-center">
             <div className="text-2xl mb-1">📦</div>
-            <div className="text-xs" style={{color: themeColors.textMuted || '#808080'}}>ZIP Files</div>
+            <div className="text-xs" style={{color: themeColors.textMuted || '#808080'}}>Archives</div>
           </div>
         </div>
         
@@ -88,7 +88,7 @@ export const DropZone = ({
             type="file"
             id="file-input"
             multiple
-            accept={`${VIDEO_EXTENSIONS.join(',')},${SUBTITLE_EXTENSIONS.join(',')}, .zip`}
+            accept={`${VIDEO_EXTENSIONS.join(',')},${SUBTITLE_EXTENSIONS.join(',')},${ARCHIVE_EXTENSIONS.join(',')}`}
             onChange={onFileSelect}
             style={{ display: 'none' }}
           />
@@ -106,8 +106,9 @@ export const DropZone = ({
               e.target.style.backgroundColor = themeColors.link || '#2878C0';
               e.target.style.transform = 'translateY(0)';
             }}
+            title={hasFiles ? "Add more files to the existing selection" : "Select files to upload"}
           >
-            📁 Select Files
+            📁 {hasFiles ? "Add More Files" : "Select Files"}
           </label>
         </div>
       </div>

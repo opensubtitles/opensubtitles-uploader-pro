@@ -11,12 +11,14 @@ export default defineConfig({
     plugins: () => [react()]
   },
   
-  // Optimize dependencies for FFmpeg
+  // Optimize dependencies for FFmpeg and archive-wasm
   optimizeDeps: {
-    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util']
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util', 'archive-wasm']
   },
   build: {
     sourcemap: false,
+    target: 'esnext', // Support top-level await
+    format: 'es',
     rollupOptions: {
       output: {
         manualChunks: {
@@ -86,7 +88,8 @@ export default defineConfig({
     allowedHosts: ['uploader.opensubtitles.org']
   },
   esbuild: {
-    sourcemap: false
+    sourcemap: false,
+    target: 'esnext' // Support top-level await
   }
 })
 

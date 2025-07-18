@@ -424,10 +424,11 @@ for cmd in git node npm curl lsof; do
 done
 
 print_step "🔄 Pulling latest changes from GitHub..."
-if git pull origin main; then
-  print_success "Code updated successfully"
+print_step "Fetching latest changes and resetting to GitHub state..."
+if git fetch origin main && git reset --hard origin/main; then
+  print_success "Code updated successfully (local changes overwritten)"
 else
-  print_warning "Git pull failed or no changes to pull"
+  print_warning "Git fetch/reset failed or no changes to pull"
 fi
 
 print_step "📦 Checking dependencies..."

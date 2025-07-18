@@ -54,6 +54,20 @@ export const SubtitleUploadOptions = ({
     processedHearingImpairedRef.current = false;
   }, [subtitlePath]);
 
+  // Initialize translator with default value from config when subtitle path changes
+  useEffect(() => {
+    if (config.defaultTranslator && !uploadOptions?.subtranslator && !localTranslatorValue) {
+      setLocalTranslatorValue(config.defaultTranslator);
+      // Also notify parent component to update the options
+      if (onUpdateOptions) {
+        onUpdateOptions(subtitlePath, {
+          ...uploadOptions,
+          subtranslator: config.defaultTranslator
+        });
+      }
+    }
+  }, [subtitlePath, config.defaultTranslator, uploadOptions?.subtranslator, localTranslatorValue]);
+
   // Enhanced detection function that checks all file path elements
   const checkFeatureFromPath = (filePath, featureType) => {
     if (!filePath) return false;
@@ -470,7 +484,7 @@ export const SubtitleUploadOptions = ({
       </div>
 
       {/* Translator */}
-      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-2 relative" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1 text-xs min-w-[80px]">
           <span title="Subtitle Translator">🌐</span>
           <span style={{ color: colors.textSecondary }}>Translator</span>
@@ -487,6 +501,19 @@ export const SubtitleUploadOptions = ({
             color: colors.text
           }}
         />
+        {config.defaultTranslator && currentOptions.subtranslator === config.defaultTranslator && (
+          <div 
+            className="absolute top-0 right-0 -mt-1 -mr-1 px-1 py-0.5 text-xs rounded-full text-white flex items-center gap-1"
+            style={{
+              backgroundColor: colors.info || colors.primary,
+              fontSize: '10px'
+            }}
+            title="Default translator applied from config"
+          >
+            <span>🌐</span>
+            <span>Default</span>
+          </div>
+        )}
       </div>
 
       {/* Movie AKA (Movie Title in Subtitle Language) */}

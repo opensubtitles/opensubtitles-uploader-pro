@@ -1,5 +1,5 @@
 // Application version - updated manually to match package.json
-export const APP_VERSION = '1.1.0';
+export const APP_VERSION = '1.1.1';
 
 // API Configuration - from environment variables
 export const OPENSUBTITLES_COM_API_KEY = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env.VITE_OPENSUBTITLES_API_KEY || '' : '';
@@ -66,6 +66,25 @@ export const SUBTITLE_EXTENSIONS = [
   ".srt", ".vtt", ".ass", ".ssa", ".sub", ".txt", ".smi", ".mpl", ".tmp"
 ];
 
+export const ARCHIVE_EXTENSIONS = [
+  // ZIP formats
+  ".zip",
+  // 7z format
+  ".7z",
+  // TAR formats (with various compressions)
+  ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz", ".tar.lz4", ".tar.lz", ".tar.lzma", ".tar.zst",
+  // RAR formats
+  ".rar", ".r00", ".r01", ".r02", ".r03", ".r04", ".r05", ".r06", ".r07", ".r08", ".r09",
+  // Other archive formats
+  ".lha", ".lzh", ".arj", ".cab", ".iso", ".img", ".dmg",
+  // Unix ar format
+  ".ar", ".a", ".deb",
+  // CPIO format
+  ".cpio",
+  // Compressed individual files
+  ".gz", ".bz2", ".xz", ".lz4", ".lz", ".lzma", ".zst", ".Z"
+];
+
 // MIME Types
 export const VIDEO_MIME_TYPES = [
   'video/mp4', 'video/x-msvideo', 'video/quicktime', 'video/x-ms-wmv',
@@ -74,6 +93,33 @@ export const VIDEO_MIME_TYPES = [
 
 export const SUBTITLE_MIME_TYPES = [
   'text/srt', 'text/vtt', 'text/plain', 'application/x-subrip'
+];
+
+export const ARCHIVE_MIME_TYPES = [
+  // ZIP formats
+  'application/zip', 'application/x-zip-compressed',
+  // 7z format
+  'application/x-7z-compressed',
+  // TAR formats
+  'application/x-tar', 'application/x-gtar',
+  // Compressed TAR formats
+  'application/gzip', 'application/x-gzip', 'application/x-tgz',
+  'application/x-bzip2', 'application/x-bzip', 'application/x-tbz2',
+  'application/x-xz', 'application/x-lzip', 'application/x-lzma',
+  'application/x-zstd',
+  // RAR formats
+  'application/x-rar-compressed', 'application/vnd.rar',
+  // Other archive formats
+  'application/x-lha', 'application/x-lzh', 'application/x-arj',
+  'application/vnd.ms-cab-compressed', 'application/x-cab',
+  // ISO formats
+  'application/x-iso9660-image', 'application/x-cd-image',
+  // Unix ar format
+  'application/x-archive', 'application/x-ar',
+  // CPIO format
+  'application/x-cpio',
+  // Compressed individual files
+  'application/x-compress', 'application/x-lz4'
 ];
 
 // API Endpoints - public URLs

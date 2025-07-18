@@ -377,6 +377,69 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
               )}
             </div>
           </div>
+          
+          {/* Minimal separator line */}
+          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+          
+          {/* Default Translator Setting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium" style={{ color: colors.text }}>
+              Default Translator
+            </label>
+            <p className="text-xs" style={{ color: colors.textSecondary }}>
+              Pre-fill translator field for all subtitles (current and future)
+            </p>
+            <input
+              type="text"
+              value={localConfig.defaultTranslator || ''}
+              onChange={(e) => handleChange('defaultTranslator', e.target.value)}
+              placeholder="Enter default translator name..."
+              className="w-full px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2"
+              style={{
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                color: colors.text,
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = colors.primary;
+                e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = colors.border;
+                e.target.style.boxShadow = 'none';
+              }}
+              maxLength={32}
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-xs" style={{ color: colors.textSecondary }}>
+                {localConfig.defaultTranslator?.length || 0}/32 characters
+              </span>
+              {localConfig.defaultTranslator && (
+                <button
+                  onClick={() => handleChange('defaultTranslator', '')}
+                  className="text-xs px-2 py-1 rounded transition-colors"
+                  style={{
+                    color: colors.error,
+                    backgroundColor: colors.error + '10',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.backgroundColor = colors.error + '20';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.backgroundColor = colors.error + '10';
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {localConfig.defaultTranslator && (
+              <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
+                <span>✓</span>
+                <span>All subtitles will be pre-filled with "{localConfig.defaultTranslator}"</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}

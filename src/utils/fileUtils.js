@@ -1,4 +1,4 @@
-import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, VIDEO_MIME_TYPES, SUBTITLE_MIME_TYPES } from './constants.js';
+import { VIDEO_EXTENSIONS, SUBTITLE_EXTENSIONS, ARCHIVE_EXTENSIONS, VIDEO_MIME_TYPES, SUBTITLE_MIME_TYPES, ARCHIVE_MIME_TYPES } from './constants.js';
 
 /**
  * Check if a file is a video file based on extension
@@ -97,6 +97,15 @@ export const isSubtitleFile = (fileOrName) => {
 };
 
 /**
+ * Check if a file is an archive file based on extension
+ */
+export const isArchiveFile = (fileOrName) => {
+  const fileName = typeof fileOrName === 'string' ? fileOrName : fileOrName.name;
+  const lower = fileName.toLowerCase();
+  return ARCHIVE_EXTENSIONS.some(ext => lower.endsWith(ext));
+};
+
+/**
  * Get base name of a file (without extension)
  */
 export const getBaseName = (fileName) => {
@@ -150,6 +159,7 @@ export const isMediaFile = (file) => {
   
   let isVideo = isVideoFile(fileName);
   let isSubtitle = isSubtitleFile(fileName);
+  let isArchive = isArchiveFile(fileName);
   let fileKind = null;
   
   // For .txt files, default to "Unknown text file" and require content analysis
@@ -159,7 +169,7 @@ export const isMediaFile = (file) => {
   }
   
   // If no extension detected, check MIME type
-  if (!isVideo && !isSubtitle) {
+  if (!isVideo && !isSubtitle && !isArchive) {
     if (VIDEO_MIME_TYPES.includes(fileType)) {
       isVideo = true;
     } else if (SUBTITLE_MIME_TYPES.includes(fileType)) {
@@ -167,6 +177,8 @@ export const isMediaFile = (file) => {
       if (!fileName.toLowerCase().endsWith('.txt')) {
         isSubtitle = true;
       }
+    } else if (ARCHIVE_MIME_TYPES.includes(fileType)) {
+      isArchive = true;
     } else if (fileType.startsWith('text/')) {
       // For other text extensions, check if they're subtitle extensions
       const extension = fileName.toLowerCase().split('.').pop();
@@ -183,7 +195,7 @@ export const isMediaFile = (file) => {
     }
   }
   
-  return { isVideo, isSubtitle, isMedia: isVideo || isSubtitle, fileKind };
+  return { isVideo, isSubtitle, isArchive, isMedia: isVideo || isSubtitle || isArchive, fileKind };
 };
 
 /**
