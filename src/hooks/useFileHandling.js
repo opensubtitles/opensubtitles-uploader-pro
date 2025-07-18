@@ -73,6 +73,12 @@ export const useFileHandling = (addDebugInfo) => {
       eventType: e.type,
       hasDataTransfer: !!e.dataTransfer
     });
+    
+    // Add visual feedback for debugging
+    if (window.__TAURI__) {
+      console.log('🔥 TAURI DRAG DETECTED - This should work!');
+    }
+    
     setIsDragOver(true);
   }, []);
 

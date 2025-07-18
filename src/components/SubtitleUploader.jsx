@@ -1826,6 +1826,37 @@ function SubtitleUploaderInner() {
           onFileSelect={handleFileSelect}
         />
 
+        {/* Runtime Environment Indicator */}
+        <div className="rounded-lg p-3 mb-4" style={{
+          backgroundColor: colors.cardBackground,
+          border: `1px solid ${colors.border}`,
+          fontSize: '12px'
+        }}>
+          <div className="flex items-center gap-3">
+            <span style={{ color: colors.textSecondary }}>🔍 Runtime Environment:</span>
+            <div className="flex items-center gap-4">
+              <span style={{ 
+                color: window.__TAURI__ ? colors.success : colors.textSecondary,
+                fontWeight: window.__TAURI__ ? 'bold' : 'normal'
+              }}>
+                {window.__TAURI__ ? '✅ Standalone Tauri App' : '🌐 Web Browser'}
+              </span>
+              <span style={{ color: colors.textSecondary }}>|</span>
+              <span style={{ color: colors.textSecondary }}>
+                User Agent: {navigator.userAgent.includes('Tauri') ? 'Tauri' : 'Browser'}
+              </span>
+              {window.__TAURI__ && (
+                <>
+                  <span style={{ color: colors.textSecondary }}>|</span>
+                  <span style={{ color: colors.textSecondary }}>
+                    Drag & Drop: {window.__TAURI__ ? 'Should be enabled' : 'Browser native'}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Error Display */}
         {error && (
           <div className="rounded-lg p-4 mb-6" 
