@@ -424,11 +424,49 @@ for cmd in git node npm curl lsof; do
 done
 
 print_step "🔄 Pulling latest changes from GitHub..."
-print_step "Fetching latest changes and resetting to GitHub state..."
-if git fetch origin main && git reset --hard origin/main; then
-  print_success "Code updated successfully (local changes overwritten)"
+print_step "Ensuring we have the absolute latest state from GitHub..."
+
+# Get current commit before update
+BEFORE_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+print_step "Current commit: $BEFORE_COMMIT"
+
+# Force fetch everything to avoid stale cache issues
+print_step "Force fetching all refs from origin..."
+if ! git fetch --all --force --prune; then
+  print_error "Failed to fetch from GitHub"
+  exit 1
+fi
+
+# Show what we're about to reset to
+REMOTE_COMMIT=$(git rev-parse origin/main 2>/dev/null || echo "unknown")
+print_step "Remote main commit: $REMOTE_COMMIT"
+
+# Force reset to origin/main to ensure we're exactly in sync
+print_step "Hard resetting to origin/main..."
+if git reset --hard origin/main; then
+  AFTER_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+  if [ "$BEFORE_COMMIT" != "$AFTER_COMMIT" ]; then
+    print_success "Code updated: $BEFORE_COMMIT → $AFTER_COMMIT"
+  else
+    print_success "Code already up to date: $AFTER_COMMIT"
+  fi
 else
-  print_warning "Git fetch/reset failed or no changes to pull"
+  print_error "Failed to reset to origin/main"
+  exit 1
+fi
+
+# Clean any untracked files that might interfere
+print_step "Cleaning untracked files..."
+git clean -fd
+
+# Verify we're truly in sync
+LOCAL_COMMIT=$(git rev-parse HEAD)
+REMOTE_COMMIT=$(git rev-parse origin/main)
+if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
+  print_success "✅ Verified: Local and remote are in perfect sync ($LOCAL_COMMIT)"
+else
+  print_error "❌ Sync verification failed: Local=$LOCAL_COMMIT, Remote=$REMOTE_COMMIT"
+  exit 1
 fi
 
 print_step "📦 Checking dependencies..."
