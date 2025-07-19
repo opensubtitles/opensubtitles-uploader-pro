@@ -440,91 +440,10 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
             )}
           </div>
           
-            </>
-          )}
-
-          {/* Processing Tab */}
-          {activeTab === 'processing' && (
-            <>
-              {/* MKV Subtitle Extraction Setting */}
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="block text-sm font-medium" style={{ color: colors.text }}>
-                Extract Subtitles from MKV
-              </label>
-              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
-                Automatically detect and extract embedded subtitles from MKV files
-              </p>
-            </div>
-            <div className="ml-4">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localConfig.extractMkvSubtitles !== false} // Default to true if not set
-                  onChange={(e) => handleChange('extractMkvSubtitles', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div 
-                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
-                  style={{
-                    backgroundColor: (localConfig.extractMkvSubtitles !== false) ? colors.success : colors.border,
-                  }}
-                />
-              </label>
-            </div>
-          </div>
-          {localConfig.extractMkvSubtitles !== false && (
-            <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
-              <span>✓</span>
-              <span>MKV files will be automatically processed for embedded subtitles</span>
-            </div>
-          )}
-          {localConfig.extractMkvSubtitles === false && (
-            <div className="flex items-center gap-2 text-xs" style={{ color: colors.textSecondary }}>
-              <span>⚠️</span>
-              <span>MKV subtitle extraction is disabled</span>
-            </div>
-          )}
-          
           {/* Minimal separator line */}
           <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
           
-          {/* Default Expanded State */}
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="block text-sm font-medium" style={{ color: colors.text }}>
-                Default Expanded State
-              </label>
-              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
-                Set whether upload options are expanded by default
-              </p>
-            </div>
-            <div className="ml-4">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localConfig.uploadOptionsExpanded}
-                  onChange={(e) => handleChange('uploadOptionsExpanded', e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div 
-                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
-                  style={{
-                    backgroundColor: localConfig.uploadOptionsExpanded ? colors.success : colors.border,
-                  }}
-                />
-              </label>
-            </div>
-          </div>
-            </>
-          )}
-
-          {/* Settings that appear in both tabs or are always visible */}
-          <div className="space-y-4">
-            {/* Minimal separator line */}
-            <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
-            
-            {/* Global Comment Setting */}
+          {/* Global Comment Setting */}
           <div className="space-y-2">
             <label className="block text-sm font-medium" style={{ color: colors.text }}>
               Global Comment
@@ -641,6 +560,90 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
               </div>
             )}
           </div>
+          
+            </>
+          )}
+
+          {/* Processing Tab */}
+          {activeTab === 'processing' && (
+            <>
+              {/* MKV Subtitle Extraction Setting */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-medium" style={{ color: colors.text }}>
+                Extract Subtitles from MKV
+              </label>
+              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
+                Automatically detect and extract embedded subtitles from MKV files
+              </p>
+            </div>
+            <div className="ml-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localConfig.extractMkvSubtitles !== false} // Default to true if not set
+                  onChange={(e) => handleChange('extractMkvSubtitles', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div 
+                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+                  style={{
+                    backgroundColor: (localConfig.extractMkvSubtitles !== false) ? colors.success : colors.border,
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+          {localConfig.extractMkvSubtitles !== false && (
+            <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
+              <span>✓</span>
+              <span>MKV files will be automatically processed for embedded subtitles</span>
+            </div>
+          )}
+          {localConfig.extractMkvSubtitles === false && (
+            <div className="flex items-center gap-2 text-xs" style={{ color: colors.textSecondary }}>
+              <span>⚠️</span>
+              <span>MKV subtitle extraction is disabled</span>
+            </div>
+          )}
+          
+          {/* Minimal separator line */}
+          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+          
+          {/* Default Expanded State */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-medium" style={{ color: colors.text }}>
+                Default Expanded State
+              </label>
+              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
+                Set whether upload options are expanded by default
+              </p>
+            </div>
+            <div className="ml-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localConfig.uploadOptionsExpanded}
+                  onChange={(e) => handleChange('uploadOptionsExpanded', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div 
+                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+                  style={{
+                    backgroundColor: localConfig.uploadOptionsExpanded ? colors.success : colors.border,
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+            </>
+          )}
+
+          {/* Shared settings (only Update Settings for now) */}
+          <div className="space-y-4">
+            {/* Minimal separator line */}
+            <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
 
           {/* Update Settings */}
           <UpdateSettings />
