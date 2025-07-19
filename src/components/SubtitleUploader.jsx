@@ -241,7 +241,7 @@ function SubtitleUploaderInner() {
     clearFiles,
     updateFile,
     setFiles
-  } = useFileHandling(addDebugInfo);
+  } = useFileHandling(addDebugInfo, config);
 
   // Override drag handlers to prevent default behavior when files already dropped
   const handleDragOver = useCallback((e) => {
@@ -879,6 +879,9 @@ function SubtitleUploaderInner() {
           }
         }
         
+        const isVideo = file.name.match(/\.(mp4|mkv|avi|mov|webm|flv|wmv|mpeg|mpg|ts|m2ts|mts|f4v|ogv|ogg|amv|nsv|yuv|nut|nuv|wtv|tivo|ty)$/i);
+        const isSubtitle = file.name.match(/\.(srt|vtt|ass|ssa|sub|txt|smi|mpl|tmp)$/i);
+        
         const processedFile = {
           file: file,
           fullPath: file.name,
@@ -886,9 +889,31 @@ function SubtitleUploaderInner() {
           size: file.size,
           type: file.type,
           lastModified: file.lastModified,
-          isVideo: file.name.match(/\.(mp4|mkv|avi|mov|webm|flv|wmv|mpeg|mpg|ts|m2ts|mts|f4v|ogv|ogg|amv|nsv|yuv|nut|nuv|wtv|tivo|ty)$/i),
-          isSubtitle: file.name.match(/\.(srt|vtt|ass|ssa|sub|txt|smi|mpl|tmp)$/i)
+          isVideo: isVideo,
+          isSubtitle: isSubtitle,
+          movieHash: null,
+          detectedLanguage: null,
+          recognized: true
         };
+        
+        // Debug MKV detection for file selection
+        if (file.name.toLowerCase().endsWith('.mkv')) {
+          console.log(`🔍 MKV file detected via file selection: ${file.name}`);
+          addDebugInfo(`🔍 MKV file detected via file selection: ${file.name}`);
+          
+          if (isVideo) {
+            // Mark this MKV file for subtitle extraction
+            processedFile.hasMkvSubtitleExtraction = true;
+            processedFile.mkvExtractionStatus = 'pending';
+            
+            console.log(`🎬 Detected MKV file via file selection: ${file.name}, will detect embedded subtitles...`);
+            addDebugInfo(`🎬 MKV file detected: ${file.name}`);
+            addDebugInfo(`📺 Subtitle detection will start automatically for this MKV file`);
+          } else {
+            console.log(`⚠️ MKV file ${file.name} not flagged for extraction: isVideo=${isVideo}`);
+            addDebugInfo(`⚠️ MKV file ${file.name} not flagged for extraction: isVideo=${isVideo}`);
+          }
+        }
         
         // Only add valid media files
         if (processedFile.isVideo || processedFile.isSubtitle) {
@@ -925,6 +950,45 @@ function SubtitleUploaderInner() {
               'info',
               3000
             );
+          }
+          
+          // Process MKV files for subtitle detection and auto-extraction from new files
+          const mkvFilesInNewFiles = newFiles.filter(file => file.hasMkvSubtitleExtraction);
+          if (mkvFilesInNewFiles.length > 0) {
+            addDebugInfo(`🎬 Starting MKV subtitle detection and auto-extraction for ${mkvFilesInNewFiles.length} file(s) from file selection`);
+            
+            // Start MKV detection and auto-extraction process asynchronously
+            setTimeout(async () => {
+              try {
+                const { FileProcessingService } = await import('../services/fileProcessing.js');
+                await FileProcessingService.processMkvExtractions(
+                  mkvFilesInNewFiles,
+                  // onFileUpdate callback
+                  (filePath, updates) => {
+                    setFiles(prevFiles => 
+                      prevFiles.map(file => 
+                        file.fullPath === filePath ? { ...file, ...updates } : file
+                      )
+                    );
+                    if (updates.mkvExtractionStatus === 'extracting_all' && updates.extractedCount !== undefined) {
+                      addDebugInfo(`MKV extraction progress: ${updates.extractedCount}/${updates.streamCount} subtitles extracted`);
+                    } else {
+                      addDebugInfo(`MKV status update: ${updates.mkvExtractionStatus}`);
+                    }
+                  },
+                  // onSubtitleExtracted callback
+                  (subtitleFile) => {
+                    setFiles(prevFiles => [...prevFiles, subtitleFile]);
+                    addDebugInfo(`Auto-extracted and paired: ${subtitleFile.name} (${subtitleFile.language}) from ${subtitleFile.originalMkvFile}`);
+                  },
+                  // addDebugInfo callback
+                  addDebugInfo
+                );
+              } catch (error) {
+                console.error('MKV processing failed:', error);
+                addDebugInfo(`MKV processing failed: ${error.message}`);
+              }
+            }, 100); // Small delay to ensure UI updates first
           }
           
           return combinedFiles;

@@ -26,21 +26,9 @@ const UpdateSettings = () => {
     getLastCheckedFormatted
   } = useAppUpdate();
 
+  // Don't render anything when not in standalone mode (browser)
   if (!isStandalone) {
-    return (
-      <div className={`p-4 rounded-lg border ${
-        isDark 
-          ? 'bg-gray-800 border-gray-700' 
-          : 'bg-gray-50 border-gray-200'
-      }`}>
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Auto-Update
-        </h3>
-        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Auto-update is only available in the standalone desktop application.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   const handleCheckForUpdates = async () => {

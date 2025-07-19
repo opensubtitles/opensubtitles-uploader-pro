@@ -491,6 +491,66 @@ export class OpenSubtitlesApiService {
   }
 
   /**
+   * Retry language detection with specific retry logic for 500 errors
+   * @param {Function} fn - Function to retry
+   * @param {string} filename - Filename for logging
+   * @param {Function} addDebugInfo - Debug info callback
+   * @returns {Promise} - Result of the function
+   */
+  static async retryLanguageDetection(fn, filename, addDebugInfo) {
+    const MAX_ATTEMPTS = 3;
+    const RETRY_DELAY = 500; // 0.5 seconds as requested
+    let lastError;
+    
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 1 && addDebugInfo) {
+          addDebugInfo(`🔄 Language detection retry ${attempt}/${MAX_ATTEMPTS} for ${filename}`);
+        }
+        
+        const result = await fn();
+        
+        if (attempt > 1 && addDebugInfo) {
+          addDebugInfo(`✅ Language detection succeeded on attempt ${attempt}/${MAX_ATTEMPTS} for ${filename}`);
+        }
+        
+        return result;
+      } catch (error) {
+        lastError = error;
+        
+        // Check if this is a 500 error that should be retried
+        const is500Error = error.message.includes('500') || 
+                          error.status === 500 || 
+                          error.statusCode === 500;
+        
+        if (attempt === MAX_ATTEMPTS) {
+          // Last attempt failed
+          if (addDebugInfo) {
+            addDebugInfo(`❌ Language detection failed after ${MAX_ATTEMPTS} attempts for ${filename}: ${error.message}`);
+          }
+          throw new Error(`Language detection failed after ${MAX_ATTEMPTS} attempts: ${error.message}`);
+        }
+        
+        if (is500Error) {
+          // Wait 0.5 seconds before retrying for 500 errors
+          if (addDebugInfo) {
+            addDebugInfo(`⚠️ Server error (500) for ${filename}, retrying in 0.5 seconds (attempt ${attempt}/${MAX_ATTEMPTS})`);
+          }
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        } else {
+          // For non-500 errors, don't retry
+          if (addDebugInfo) {
+            addDebugInfo(`❌ Non-retryable error for ${filename}: ${error.message}`);
+          }
+          throw error;
+        }
+      }
+    }
+    
+    throw lastError;
+  }
+
+  /**
    * Detect language of a subtitle file with retry logic
    */
   static async detectLanguageWithRetry(subtitleFile, addDebugInfo = null) {
@@ -512,17 +572,10 @@ export class OpenSubtitlesApiService {
         addDebugInfo(`❌ Language Detection cache MISS for ${subtitleFile.name}, making API call with retry`);
       }
 
-      return retryAsync(
+      return this.retryLanguageDetection(
         () => this.detectLanguageUncached(subtitleFile),
-        3, // max attempts
-        DEFAULT_SETTINGS.LANGUAGE_DETECTION_DELAY, // use setting
-        (attempt, maxAttempts) => {
-          if (addDebugInfo) {
-            if (attempt > 1) {
-              addDebugInfo(`Language detection attempt ${attempt}/${maxAttempts} for ${subtitleFile.name}`);
-            }
-          }
-        }
+        subtitleFile.name,
+        addDebugInfo
       ).then(data => {
         // Save successful result to cache
         this.saveLanguageDetectionToCache(fileHash, data);

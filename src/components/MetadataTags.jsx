@@ -7,7 +7,8 @@ export const MetadataTags = ({
   getGuessItProcessingStatus,
   getFormattedTags,
   compact = false, // Optional prop for compact display
-  isDark = false // Add isDark prop
+  isDark = false, // Add isDark prop
+  video = null // Add video prop for MKV extraction status
 }) => {
   const status = getGuessItProcessingStatus(filePath);
   const tags = getFormattedTags(filePath);
@@ -40,6 +41,90 @@ export const MetadataTags = ({
     );
   }
 
+  // Helper function to create MKV extraction badge
+  const createMkvExtractionBadge = () => {
+    if (!video?.hasMkvSubtitleExtraction) return null;
+
+    const status = video.mkvExtractionStatus;
+    let badgeContent = null;
+
+    switch (status) {
+      case 'pending':
+        badgeContent = {
+          label: 'MKV',
+          value: 'Pending',
+          backgroundColor: isDark ? 'rgba(251, 191, 36, 0.2)' : '#fef3c7',
+          color: isDark ? '#fbbf24' : '#d97706',
+          borderColor: isDark ? '#f59e0b' : '#f59e0b'
+        };
+        break;
+      case 'detecting':
+        badgeContent = {
+          label: 'MKV',
+          value: 'Detecting...',
+          backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe',
+          color: isDark ? '#60a5fa' : '#2563eb',
+          borderColor: isDark ? '#3b82f6' : '#3b82f6'
+        };
+        break;
+      case 'extracting_all':
+        badgeContent = {
+          label: 'MKV',
+          value: `Extracting ${video.extractedCount || 0}/${video.streamCount || 0}`,
+          backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#dbeafe',
+          color: isDark ? '#60a5fa' : '#2563eb',
+          borderColor: isDark ? '#3b82f6' : '#3b82f6'
+        };
+        break;
+      case 'completed':
+        badgeContent = {
+          label: 'MKV',
+          value: `✓ ${video.extractedCount || 0}/${video.streamCount || 0} Extracted`,
+          backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
+          color: isDark ? '#4ade80' : '#16a34a',
+          borderColor: isDark ? '#22c55e' : '#22c55e'
+        };
+        break;
+      case 'no_streams':
+      case 'no_subtitles':
+        badgeContent = {
+          label: 'MKV',
+          value: 'No Subtitles',
+          backgroundColor: isDark ? 'rgba(107, 114, 128, 0.2)' : '#f3f4f6',
+          color: isDark ? '#9ca3af' : '#6b7280',
+          borderColor: isDark ? '#6b7280' : '#9ca3af'
+        };
+        break;
+      case 'error':
+        badgeContent = {
+          label: 'MKV',
+          value: 'Error',
+          backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fef2f2',
+          color: isDark ? '#f87171' : '#dc2626',
+          borderColor: isDark ? '#ef4444' : '#ef4444'
+        };
+        break;
+      default:
+        return null;
+    }
+
+    return (
+      <span
+        key="mkv-extraction"
+        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border transition-all hover:scale-105"
+        style={{
+          backgroundColor: badgeContent.backgroundColor,
+          color: badgeContent.color,
+          borderColor: badgeContent.borderColor
+        }}
+        title={`MKV Subtitle Extraction: ${badgeContent.value}`}
+      >
+        <span className="font-semibold">{badgeContent.label}:</span>
+        <span className="ml-1 truncate max-w-32">{badgeContent.value}</span>
+      </span>
+    );
+  };
+
   // Show tags if we have data
   if (tags.length > 0) {
     // Filter out title and year for compact mode (already shown elsewhere)
@@ -55,6 +140,8 @@ export const MetadataTags = ({
     return (
       <div className="mt-2">
         <div className="flex flex-wrap gap-1">
+          {/* Add MKV extraction badge first if available */}
+          {createMkvExtractionBadge()}
           {finalTags.map((tag) => {
             const tagStyles = GuessItService.getTagColorStyles(tag.color, isDark);
             
@@ -97,6 +184,18 @@ export const MetadataTags = ({
               +{displayTags.length - 8} more
             </span>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show MKV extraction badge even if no other tags
+  const mkvBadge = createMkvExtractionBadge();
+  if (mkvBadge) {
+    return (
+      <div className="mt-2">
+        <div className="flex flex-wrap gap-1">
+          {mkvBadge}
         </div>
       </div>
     );

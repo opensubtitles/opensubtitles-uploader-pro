@@ -3,6 +3,7 @@ import UpdateSettings from './UpdateSettings.jsx';
 
 export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors, isDark, combinedLanguages }) => {
   const [localConfig, setLocalConfig] = useState(config);
+  const [activeTab, setActiveTab] = useState('general');
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState('');
   const [fpsDropdownOpen, setFpsDropdownOpen] = useState(false);
@@ -156,10 +157,62 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Tab Navigation */}
+        <div className="flex border-b" style={{ borderBottomColor: colors.border }}>
+          <button
+            onClick={() => setActiveTab('general')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'general' ? 'border-b-2' : ''
+            }`}
+            style={{
+              color: activeTab === 'general' ? colors.link : colors.textSecondary,
+              borderBottomColor: activeTab === 'general' ? colors.link : 'transparent',
+              backgroundColor: activeTab === 'general' ? colors.background : 'transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'general') {
+                e.target.style.backgroundColor = colors.hoverBackground || (isDark ? '#3a3a3a' : '#f5f5f5');
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'general') {
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            General
+          </button>
+          <button
+            onClick={() => setActiveTab('processing')}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'processing' ? 'border-b-2' : ''
+            }`}
+            style={{
+              color: activeTab === 'processing' ? colors.link : colors.textSecondary,
+              borderBottomColor: activeTab === 'processing' ? colors.link : 'transparent',
+              backgroundColor: activeTab === 'processing' ? colors.background : 'transparent'
+            }}
+            onMouseEnter={(e) => {
+              if (activeTab !== 'processing') {
+                e.target.style.backgroundColor = colors.hoverBackground || (isDark ? '#3a3a3a' : '#f5f5f5');
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeTab !== 'processing') {
+                e.target.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            Processing
+          </button>
+        </div>
 
         {/* Content */}
         <div className="p-4 space-y-4">
-          {/* Default Language Setting */}
+          {/* General Tab */}
+          {activeTab === 'general' && (
+            <>
+              {/* Default Language Setting */}
           <div className="space-y-2">
             <label className="block text-sm font-medium" style={{ color: colors.text }}>
               Default Language
@@ -387,6 +440,52 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
             )}
           </div>
           
+            </>
+          )}
+
+          {/* Processing Tab */}
+          {activeTab === 'processing' && (
+            <>
+              {/* MKV Subtitle Extraction Setting */}
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="block text-sm font-medium" style={{ color: colors.text }}>
+                Extract Subtitles from MKV
+              </label>
+              <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
+                Automatically detect and extract embedded subtitles from MKV files
+              </p>
+            </div>
+            <div className="ml-4">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localConfig.extractMkvSubtitles !== false} // Default to true if not set
+                  onChange={(e) => handleChange('extractMkvSubtitles', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div 
+                  className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+                  style={{
+                    backgroundColor: (localConfig.extractMkvSubtitles !== false) ? colors.success : colors.border,
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+          {localConfig.extractMkvSubtitles !== false && (
+            <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
+              <span>✓</span>
+              <span>MKV files will be automatically processed for embedded subtitles</span>
+            </div>
+          )}
+          {localConfig.extractMkvSubtitles === false && (
+            <div className="flex items-center gap-2 text-xs" style={{ color: colors.textSecondary }}>
+              <span>⚠️</span>
+              <span>MKV subtitle extraction is disabled</span>
+            </div>
+          )}
+          
           {/* Minimal separator line */}
           <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
           
@@ -417,11 +516,15 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
               </label>
             </div>
           </div>
-          
-          {/* Minimal separator line */}
-          <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
-          
-          {/* Global Comment Setting */}
+            </>
+          )}
+
+          {/* Settings that appear in both tabs or are always visible */}
+          <div className="space-y-4">
+            {/* Minimal separator line */}
+            <div className="h-px" style={{ backgroundColor: colors.border, opacity: 0.3 }} />
+            
+            {/* Global Comment Setting */}
           <div className="space-y-2">
             <label className="block text-sm font-medium" style={{ color: colors.text }}>
               Global Comment
@@ -541,6 +644,7 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
 
           {/* Update Settings */}
           <UpdateSettings />
+          </div>
         </div>
 
         {/* Footer */}

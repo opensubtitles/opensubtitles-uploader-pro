@@ -5,7 +5,7 @@ import { pairVideoAndSubtitleFiles } from '../utils/fileUtils.js';
 /**
  * Custom hook for file handling functionality
  */
-export const useFileHandling = (addDebugInfo) => {
+export const useFileHandling = (addDebugInfo, config = {}) => {
   const [files, setFiles] = useState([]);
   
   const [pairedFiles, setPairedFiles] = useState([]);
@@ -67,7 +67,9 @@ export const useFileHandling = (addDebugInfo) => {
         console.log('✅ Files available in Tauri drop event');
       }
       
-      const collectedFiles = await FileProcessingService.processDroppedItems(event);
+      console.log('🎯 Starting file processing...');
+      const collectedFiles = await FileProcessingService.processDroppedItems(event, config);
+      console.log('🎯 File processing completed. Collected files:', collectedFiles.length);
       
       addDebugInfo(`Collected ${collectedFiles.length} valid media files`);
       console.log('📁 Collected files:', collectedFiles.map(f => ({ name: f.name, path: f.fullPath, type: f.type })));
@@ -78,10 +80,20 @@ export const useFileHandling = (addDebugInfo) => {
         
         // Process MKV files for subtitle extraction
         const mkvFiles = collectedFiles.filter(file => file.hasMkvSubtitleExtraction);
+        const allMkvFiles = collectedFiles.filter(file => file.name.toLowerCase().endsWith('.mkv'));
+        
+        console.log(`🔍 MKV file analysis:`);
+        console.log(`🔍 Total files: ${collectedFiles.length}`);
+        console.log(`🔍 Files ending with .mkv: ${allMkvFiles.length}`);
+        console.log(`🔍 Files flagged for MKV extraction: ${mkvFiles.length}`);
+        allMkvFiles.forEach(file => {
+          console.log(`🔍 MKV file: ${file.name} - hasMkvSubtitleExtraction: ${file.hasMkvSubtitleExtraction}, isVideo: ${file.isVideo}`);
+        });
+        
         if (mkvFiles.length > 0) {
-          addDebugInfo(`Starting MKV subtitle extraction for ${mkvFiles.length} file(s)`);
+          addDebugInfo(`Starting MKV subtitle detection and auto-extraction for ${mkvFiles.length} file(s)`);
           
-          // Start MKV extraction process asynchronously (don't await to avoid blocking UI)
+          // Start MKV detection and auto-extraction process asynchronously
           setTimeout(() => {
             FileProcessingService.processMkvExtractions(
               collectedFiles,
@@ -92,16 +104,24 @@ export const useFileHandling = (addDebugInfo) => {
                     file.fullPath === filePath ? { ...file, ...updates } : file
                   )
                 );
-                addDebugInfo(`MKV extraction status update: ${updates.mkvExtractionStatus}`);
+                if (updates.mkvExtractionStatus === 'extracting_all' && updates.extractedCount !== undefined) {
+                  addDebugInfo(`MKV extraction progress: ${updates.extractedCount}/${updates.streamCount} subtitles extracted`);
+                } else {
+                  addDebugInfo(`MKV status update: ${updates.mkvExtractionStatus}`);
+                }
               },
               // onSubtitleExtracted callback
               (subtitleFile) => {
                 setFiles(prevFiles => [...prevFiles, subtitleFile]);
-                addDebugInfo(`Extracted subtitle: ${subtitleFile.name} from ${subtitleFile.originalMkvFile}`);
-              }
-            ).catch(error => {
-              console.error('MKV extraction process failed:', error);
-              addDebugInfo(`MKV extraction failed: ${error.message}`);
+                addDebugInfo(`Auto-extracted and paired: ${subtitleFile.name} (${subtitleFile.language}) from ${subtitleFile.originalMkvFile}`);
+              },
+              // addDebugInfo callback
+              addDebugInfo
+            ).then(() => {
+              addDebugInfo(`🎉 MKV processing completed successfully`);
+            }).catch(error => {
+              console.error('MKV processing failed:', error);
+              addDebugInfo(`MKV processing failed: ${error.message}`);
             });
           }, 100); // Small delay to ensure UI updates first
         }
@@ -114,7 +134,7 @@ export const useFileHandling = (addDebugInfo) => {
       addDebugInfo(`Error processing dropped items: ${error.message}`);
       throw error;
     }
-  }, [addDebugInfo]);
+  }, [addDebugInfo, config]);
 
   // Handle drag over
   const handleDragOver = useCallback((e) => {

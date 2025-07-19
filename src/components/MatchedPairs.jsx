@@ -356,6 +356,7 @@ export const MatchedPairs = ({
                   getFormattedTags={getFormattedTags}
                   colors={themeColors}
                   isDark={isDark}
+                  video={pair.video}
                 />
                 
                 {/* Movie Display Component - BASIC version without episode detection */}

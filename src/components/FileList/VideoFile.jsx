@@ -8,6 +8,17 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
   const [movieSearchResults, setMovieSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Debug MKV extraction status
+  if (video.hasMkvSubtitleExtraction) {
+    console.log(`VideoFile debug for ${video.name}:`, {
+      mkvExtractionStatus: video.mkvExtractionStatus,
+      extractedCount: video.extractedCount,
+      streamCount: video.streamCount,
+      hasMkvSubtitleExtraction: video.hasMkvSubtitleExtraction,
+      hasMovieGuess: !!movieGuess
+    });
+  }
+
   // Helper function to check if input is IMDb ID or URL
   const isImdbInput = (input) => {
     return input.match(/^(tt\d+|https?:\/\/.*imdb\.com.*\/title\/tt\d+)/i);
@@ -82,8 +93,9 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
         <div className="flex-1">
           <div className="font-semibold flex items-center gap-2" style={{color: colors?.text || '#000'}}>
             {video.name}
+            {/* Always show MKV status if it's an MKV file */}
             {video.hasMkvSubtitleExtraction && (
-              <span className="ml-2">
+              <span className="ml-2" key={`mkv-status-${video.mkvExtractionStatus}-${video.extractedCount}`}>
                 {video.mkvExtractionStatus === 'pending' && (
                   <span 
                     className="px-2 py-1 text-xs rounded font-medium flex items-center gap-1"
@@ -96,17 +108,25 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
                     ⏳ MKV Pending
                   </span>
                 )}
-                {video.mkvExtractionStatus === 'extracting' && (
+                {(video.mkvExtractionStatus === 'detecting' || video.mkvExtractionStatus === 'extracting' || video.mkvExtractionStatus === 'extracting_all') && (
                   <span 
                     className="px-2 py-1 text-xs rounded font-medium flex items-center gap-1"
                     style={{
                       backgroundColor: colors?.link + '20' || '#2878C020',
                       color: colors?.link || '#2878C0'
                     }}
-                    title="Extracting embedded subtitles from MKV..."
+                    title={
+                      video.mkvExtractionStatus === 'detecting' 
+                        ? "Detecting embedded subtitles in MKV..." 
+                        : video.mkvExtractionStatus === 'extracting_all' 
+                          ? `Extracting ${video.extractedCount || 0}/${video.streamCount || 0} subtitles from MKV...`
+                          : "Extracting embedded subtitles from MKV..."
+                    }
                   >
                     <div className="w-3 h-3 border border-blue-300 border-t-transparent rounded-full animate-spin"></div>
-                    Extracting...
+                    {video.mkvExtractionStatus === 'detecting' && 'Detecting...'}
+                    {video.mkvExtractionStatus === 'extracting_all' && `Extracting ${video.extractedCount || 0}/${video.streamCount || 0}`}
+                    {video.mkvExtractionStatus === 'extracting' && 'Extracting...'}
                   </span>
                 )}
                 {video.mkvExtractionStatus === 'completed' && (
@@ -116,12 +136,12 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
                       backgroundColor: colors?.success + '20' || '#9EC06820',
                       color: colors?.success || '#9EC068'
                     }}
-                    title={`Extracted ${video.extractedSubtitleCount || 0} subtitle(s) from MKV`}
+                    title={`Extracted ${video.extractedCount || 0}/${video.streamCount || 0} subtitle(s) from MKV`}
                   >
-                    ✅ {video.extractedSubtitleCount || 0} Extracted
+                    ✅ {video.extractedCount || 0}/{video.streamCount || 0} Extracted
                   </span>
                 )}
-                {video.mkvExtractionStatus === 'no_subtitles' && (
+                {(video.mkvExtractionStatus === 'no_subtitles' || video.mkvExtractionStatus === 'no_streams') && (
                   <span 
                     className="px-2 py-1 text-xs rounded font-medium"
                     style={{
@@ -150,6 +170,30 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
           </div>
           <div className="text-sm flex items-center gap-2 mt-1" style={{color: colors?.textSecondary || '#454545'}}>
             <span title={`File Size: ${formatFileSize(video.size)}`}>📁{formatFileSize(video.size)}</span>
+            
+            {/* Also show MKV status in the details line for extra visibility */}
+            {video.hasMkvSubtitleExtraction && video.mkvExtractionStatus && video.mkvExtractionStatus !== 'pending' && (
+              <span 
+                className="px-1 py-0.5 text-xs rounded font-medium"
+                style={{
+                  backgroundColor: 
+                    video.mkvExtractionStatus === 'completed' 
+                      ? (colors?.success + '30' || '#9EC06830')
+                      : (colors?.link + '30' || '#2878C030'),
+                  color: 
+                    video.mkvExtractionStatus === 'completed' 
+                      ? (colors?.success || '#9EC068')
+                      : (colors?.link || '#2878C0')
+                }}
+                title={`MKV Status: ${video.mkvExtractionStatus}`}
+              >
+                {video.mkvExtractionStatus === 'detecting' && '🔍 Detecting MKV streams'}
+                {video.mkvExtractionStatus === 'extracting_all' && `🔄 Extracting ${video.extractedCount || 0}/${video.streamCount || 0}`}
+                {video.mkvExtractionStatus === 'completed' && `✅ MKV: ${video.extractedCount || 0}/${video.streamCount || 0} extracted`}
+                {video.mkvExtractionStatus === 'no_streams' && '📝 MKV: No subtitles'}
+                {video.mkvExtractionStatus === 'error' && '❌ MKV: Error'}
+              </span>
+            )}
             
             {/* Only show movie hash for actual video files, not orphaned subtitles */}
             {!isOrphanedSubtitle && video.movieHash && video.movieHash !== 'error' && (
