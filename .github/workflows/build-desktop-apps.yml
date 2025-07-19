@@ -22,26 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Priority 1: Windows x64
-          - platform: 'windows-latest'
-            args: '--target x86_64-pc-windows-msvc'
-            target: 'x86_64-pc-windows-msvc'
-            arch: 'x64'
-            os: 'windows'
-          
-          # Priority 2: macOS Intel + Apple Silicon
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-            target: 'aarch64-apple-darwin'
-            arch: 'arm64'
-            os: 'macos'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-            target: 'x86_64-apple-darwin'
-            arch: 'x64'
-            os: 'macos'
-          
-          # Priority 3: Linux x64
+          # Test with just Ubuntu first
           - platform: 'ubuntu-20.04'
             args: ''
             target: 'x86_64-unknown-linux-gnu'
