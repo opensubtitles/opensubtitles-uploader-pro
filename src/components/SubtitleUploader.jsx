@@ -1687,7 +1687,7 @@ function SubtitleUploaderInner() {
                 className="block hover:opacity-80 transition-opacity"
               >
                 <img 
-                  src={isDark ? logoWhite : logoDark}
+                  src={isDark ? logoDark : logoWhite}
                   alt="OpenSubtitles Logo" 
                   className="h-16 w-auto"
                   onError={(e) => {
