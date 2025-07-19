@@ -213,6 +213,17 @@ export class MkvSubtitleExtractor {
       
       console.log(`✅ Successfully extracted stream ${streamIndex}, size: ${subtitleData.length} bytes`);
       
+      // Check for empty subtitle data
+      if (subtitleData.length === 0) {
+        console.warn(`⚠️ Extracted subtitle is empty (0 bytes) for stream ${streamIndex}`);
+        
+        // Clean up files and return null
+        await this.ffmpeg.deleteFile(outputFileName);
+        await this.ffmpeg.deleteFile(inputFileName);
+        
+        return null; // Return null to indicate empty/invalid subtitle
+      }
+      
       // Clean up both the output file and the input chunk file
       await this.ffmpeg.deleteFile(outputFileName);
       await this.ffmpeg.deleteFile(inputFileName);

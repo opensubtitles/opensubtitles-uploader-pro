@@ -52,6 +52,8 @@ export const CACHE_KEYS = {
   LANGUAGE_DETECTION_CACHE_EXPIRY: 'opensubtitles_language_detection_cache_expiry',
   FEATURES_CACHE: 'opensubtitles_features_cache',
   FEATURES_CACHE_EXPIRY: 'opensubtitles_features_cache_expiry',
+  XMLRPC_CHECKSUB: 'opensubtitles_xmlrpc_checksub_cache',
+  XMLRPC_CHECKSUB_EXPIRY: 'opensubtitles_xmlrpc_checksub_cache_expiry',
   DEBUG_MODE: 'opensubtitles_debug_mode'
 };
 
@@ -139,6 +141,7 @@ export const DEFAULT_SETTINGS = {
   MOVIE_GUESS_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
   LANGUAGE_DETECTION_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
   FEATURES_CACHE_DURATION: 259200, // 72 hours in seconds (3 days)
+  CHECKSUB_CACHE_DURATION: 86400, // 24 hours in seconds (1 day) - shorter for hash checks
   LANGUAGE_DETECTION_CHUNK_SIZE: 5120, // 5KB
   MOVIE_HASH_CHUNK_SIZE: 65536, // 64KB
   DEBUG_LOG_LIMIT: 1000,

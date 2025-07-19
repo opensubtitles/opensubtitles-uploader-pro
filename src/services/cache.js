@@ -1,9 +1,89 @@
 import { CACHE_KEYS, DEFAULT_SETTINGS } from '../utils/constants.js';
+import pako from 'pako';
 
 /**
  * Cache management service for OpenSubtitles data
  */
 export class CacheService {
+  /**
+   * Compress data using pako (deflate)
+   * @param {any} data - Data to compress (will be JSON stringified)
+   * @returns {string} - Base64 encoded compressed data with compression marker
+   */
+  static compressData(data) {
+    try {
+      // Convert to JSON string
+      const jsonString = JSON.stringify(data);
+      
+      // Convert string to Uint8Array
+      const encoder = new TextEncoder();
+      const uint8Array = encoder.encode(jsonString);
+      
+      // Compress using deflate
+      const compressed = pako.deflate(uint8Array);
+      
+      // Convert to base64 and add compression marker
+      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      const compressedWithMarker = 'PAKO:' + base64;
+      
+      // Log compression stats for debugging
+      const compressionRatio = (compressed.length / uint8Array.length * 100).toFixed(1);
+      const sizeSavings = uint8Array.length - compressed.length;
+      const withMarkerSize = compressedWithMarker.length;
+      
+      console.log(`📦 Cache compression: ${uint8Array.length} → ${compressed.length} bytes (${compressionRatio}%) | With marker: ${withMarkerSize} bytes | Saved: ${sizeSavings} bytes`);
+      
+      return compressedWithMarker;
+    } catch (error) {
+      console.error('Cache compression failed, storing uncompressed:', error);
+      // Fallback to uncompressed JSON
+      return JSON.stringify(data);
+    }
+  }
+
+  /**
+   * Decompress data using pako (inflate)
+   * @param {string} compressedData - Base64 encoded compressed data
+   * @returns {any} - Decompressed and parsed data
+   */
+  static decompressData(compressedData) {
+    try {
+      // Check if data is compressed (has PAKO: marker)
+      if (!compressedData.startsWith('PAKO:')) {
+        // Backward compatibility: parse as regular JSON
+        return JSON.parse(compressedData);
+      }
+      
+      // Remove compression marker
+      const base64Data = compressedData.substring(5); // Remove 'PAKO:'
+      
+      // Decode base64 to binary
+      const binaryString = atob(base64Data);
+      const compressedBytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        compressedBytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Decompress using inflate
+      const decompressed = pako.inflate(compressedBytes);
+      
+      // Convert back to string
+      const decoder = new TextDecoder('utf-8');
+      const jsonString = decoder.decode(decompressed);
+      
+      // Parse JSON
+      return JSON.parse(jsonString);
+    } catch (error) {
+      console.error('Cache decompression failed:', error);
+      // Try parsing as regular JSON (fallback for corrupted data)
+      try {
+        return JSON.parse(compressedData.startsWith('PAKO:') ? compressedData.substring(5) : compressedData);
+      } catch (fallbackError) {
+        console.error('Cache fallback parsing also failed:', fallbackError);
+        return null;
+      }
+    }
+  }
   /**
    * Check if cache is valid for a given key
    */
@@ -23,13 +103,13 @@ export class CacheService {
   }
 
   /**
-   * Load data from cache if valid
+   * Load data from cache if valid and decompress
    */
   static loadFromCache(cacheKey) {
     try {
       const cachedData = localStorage.getItem(cacheKey);
       if (cachedData && this.isCacheValid(cacheKey)) {
-        return JSON.parse(cachedData);
+        return this.decompressData(cachedData);
       }
     } catch (error) {
       console.error(`Error loading from cache (${cacheKey}):`, error);
@@ -38,7 +118,7 @@ export class CacheService {
   }
 
   /**
-   * Save data to cache with expiration
+   * Save data to cache with expiration and compression
    */
   static saveToCache(cacheKey, data, cacheControlHeader = null) {
     try {
@@ -53,7 +133,10 @@ export class CacheService {
       
       const expiryTime = new Date().getTime() + (maxAge * 1000);
       
-      localStorage.setItem(cacheKey, JSON.stringify(data));
+      // Compress data before storing
+      const compressedData = this.compressData(data);
+      
+      localStorage.setItem(cacheKey, compressedData);
       localStorage.setItem(cacheKey + '_expiry', expiryTime.toString());
       
       return { success: true, expiryTime: maxAge };
@@ -64,13 +147,16 @@ export class CacheService {
   }
 
   /**
-   * Save data to cache with custom expiration duration
+   * Save data to cache with custom expiration duration and compression
    */
   static saveToCacheWithDuration(cacheKey, data, durationInSeconds) {
     try {
       const expiryTime = new Date().getTime() + (durationInSeconds * 1000);
       
-      localStorage.setItem(cacheKey, JSON.stringify(data));
+      // Compress data before storing
+      const compressedData = this.compressData(data);
+      
+      localStorage.setItem(cacheKey, compressedData);
       localStorage.setItem(cacheKey + '_expiry', expiryTime.toString());
       
       return { success: true, expiryTime: durationInSeconds };
@@ -114,6 +200,7 @@ export class CacheService {
                            key.includes('movieguess') ||
                            key.includes('language_detection') ||
                            key.includes('features_') ||
+                           key.includes('checksub') ||
                            key.endsWith('_expiry');
           
           if (isOSCache) {
@@ -123,10 +210,12 @@ export class CacheService {
             itemCount++;
             
             if (!key.endsWith('_expiry')) {
+              const isCompressed = value && value.startsWith('PAKO:');
               cacheItems.push({
                 key,
                 size: itemSize,
-                isExpired: !this.isCacheValid(key)
+                isExpired: !this.isCacheValid(key),
+                compressed: isCompressed
               });
             }
           }
@@ -182,6 +271,9 @@ export class CacheService {
       
       // Clear all Features cache entries (they have dynamic keys)
       this.clearFeaturesCache();
+      
+      // Clear all CheckSubHash cache entries (they have dynamic keys)
+      this.clearCheckSubHashCache();
       
       return true;
     } catch (error) {
@@ -311,6 +403,95 @@ export class CacheService {
   }
 
   /**
+   * Clear all CheckSubHash cache entries
+   */
+  static clearCheckSubHashCache() {
+    try {
+      const checkSubPrefix = CACHE_KEYS.XMLRPC_CHECKSUB;
+      const keysToRemove = [];
+      
+      // Find all localStorage keys that start with CheckSubHash cache prefix
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(checkSubPrefix)) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      // Remove all found keys
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        localStorage.removeItem(key + '_expiry');
+      });
+      
+      console.log(`Cleared ${keysToRemove.length} CheckSubHash cache entries`);
+      return true;
+    } catch (error) {
+      console.error('Error clearing CheckSubHash cache:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get cache compression statistics
+   */
+  static getCacheCompressionStats() {
+    try {
+      let totalCompressed = 0;
+      let totalUncompressed = 0;
+      let compressedEntries = 0;
+      let uncompressedEntries = 0;
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          const isOSCache = Object.values(CACHE_KEYS).some(cacheKey => key.startsWith(cacheKey)) ||
+                           key.includes('opensubtitles') ||
+                           key.includes('guessit') ||
+                           key.includes('movieguess') ||
+                           key.includes('language_detection') ||
+                           key.includes('features_') ||
+                           key.includes('checksub');
+          
+          if (isOSCache && !key.endsWith('_expiry')) {
+            const value = localStorage.getItem(key);
+            if (value) {
+              const itemSize = value.length;
+              if (value.startsWith('PAKO:')) {
+                totalCompressed += itemSize;
+                compressedEntries++;
+              } else {
+                totalUncompressed += itemSize;
+                uncompressedEntries++;
+              }
+            }
+          }
+        }
+      }
+
+      return {
+        compressedEntries,
+        uncompressedEntries,
+        totalCompressed: this.formatBytes(totalCompressed * 2), // UTF-16
+        totalUncompressed: this.formatBytes(totalUncompressed * 2), // UTF-16
+        totalSize: this.formatBytes((totalCompressed + totalUncompressed) * 2),
+        compressionRatio: totalUncompressed > 0 ? 
+          ((totalCompressed / (totalCompressed + totalUncompressed)) * 100).toFixed(1) + '%' : 'N/A'
+      };
+    } catch (error) {
+      console.error('Error calculating compression stats:', error);
+      return {
+        compressedEntries: 0,
+        uncompressedEntries: 0,
+        totalCompressed: '0 B',
+        totalUncompressed: '0 B',
+        totalSize: '0 B',
+        compressionRatio: 'N/A'
+      };
+    }
+  }
+
+  /**
    * Get cache info for debugging
    */
   static getCacheInfo() {
@@ -412,6 +593,27 @@ export class CacheService {
       totalEntries: featuresCount,
       validEntries: validFeaturesCount,
       cacheDuration: '72 hours'
+    };
+    
+    // Add CheckSubHash cache stats
+    const checkSubPrefix = CACHE_KEYS.XMLRPC_CHECKSUB;
+    let checkSubCount = 0;
+    let validCheckSubCount = 0;
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(checkSubPrefix) && !key.endsWith('_expiry')) {
+        checkSubCount++;
+        if (this.isCacheValid(key)) {
+          validCheckSubCount++;
+        }
+      }
+    }
+    
+    info.CHECKSUB_ENTRIES = {
+      totalEntries: checkSubCount,
+      validEntries: validCheckSubCount,
+      cacheDuration: '24 hours'
     };
     
     return info;

@@ -263,7 +263,7 @@ export class OpenSubtitlesApiService {
   }
 
   /**
-   * Detect language of a subtitle file with caching
+   * Detect language of a subtitle file with caching and request deduplication
    * @param {Object} subtitleFile - Subtitle file object
    * @param {Function} addDebugInfo - Debug callback (optional)
    * @returns {Promise<Object>} - Language detection result
@@ -272,36 +272,45 @@ export class OpenSubtitlesApiService {
     try {
       // Calculate MD5 hash of the file content
       const fileHash = await this.calculateFileHash(subtitleFile.file);
+      const requestKey = `detectLanguage_${fileHash}`;
       
-      if (addDebugInfo) {
-        addDebugInfo(`🔍 Language detection for ${subtitleFile.name}`);
-      }
-      
-      // Check cache first
-      const cachedData = this.loadLanguageDetectionFromCache(fileHash);
-      if (cachedData) {
-        console.log(`Language Detection cache hit for: ${subtitleFile.name}`);
+      return this.deduplicateRequest(requestKey, async () => {
         if (addDebugInfo) {
-          addDebugInfo(`🎯 Language Detection cache HIT for ${subtitleFile.name} (no API call needed)`);
+          addDebugInfo(`🔍 Language detection for ${subtitleFile.name}`);
         }
-        return cachedData;
-      }
+        
+        // Check cache first
+        const cachedData = this.loadLanguageDetectionFromCache(fileHash);
+        if (cachedData) {
+          console.log(`Language Detection cache hit for: ${subtitleFile.name}`);
+          if (addDebugInfo) {
+            addDebugInfo(`🎯 Language Detection cache HIT for ${subtitleFile.name} (no API call needed)`);
+          }
+          return cachedData;
+        }
 
-      // Cache miss, make API call
-      console.log(`Language Detection cache miss for: ${subtitleFile.name}, making API call`);
-      if (addDebugInfo) {
-        addDebugInfo(`❌ Language Detection cache MISS for ${subtitleFile.name}, making API call`);
-      }
-      
-      const data = await this.detectLanguageUncached(subtitleFile);
-      
-      // Save to cache (including null results to avoid repeated failed lookups)
-      this.saveLanguageDetectionToCache(fileHash, data);
-      if (addDebugInfo) {
-        addDebugInfo(`💾 Language Detection result cached for ${subtitleFile.name} (72 hours)`);
-      }
-      
-      return data;
+        // Cache miss, make API call with rate limiting
+        console.log(`Language Detection cache miss for: ${subtitleFile.name}, making API call`);
+        if (addDebugInfo) {
+          addDebugInfo(`❌ Language Detection cache MISS for ${subtitleFile.name}, making API call`);
+        }
+        
+        // Rate limiting - prevent multiple language detection calls happening too quickly
+        this.checkRateLimit(`language_detection_${fileHash}`, 1000); // 1 second between calls for same file hash
+        
+        // Log request
+        this.logRequest(API_ENDPOINTS.LANGUAGE_DETECTION, 'POST');
+        
+        const data = await this.detectLanguageUncached(subtitleFile);
+        
+        // Save to cache (including null results to avoid repeated failed lookups)
+        this.saveLanguageDetectionToCache(fileHash, data);
+        if (addDebugInfo) {
+          addDebugInfo(`💾 Language Detection result cached for ${subtitleFile.name} (72 hours)`);
+        }
+        
+        return data;
+      });
     } catch (error) {
       console.error(`Language detection with caching failed for ${subtitleFile.name}:`, error);
       throw error;
@@ -551,38 +560,47 @@ export class OpenSubtitlesApiService {
   }
 
   /**
-   * Detect language of a subtitle file with retry logic
+   * Detect language of a subtitle file with retry logic and request deduplication
    */
   static async detectLanguageWithRetry(subtitleFile, addDebugInfo = null) {
     try {
       // Calculate MD5 hash of the file content for cache check
       const fileHash = await this.calculateFileHash(subtitleFile.file);
+      const requestKey = `detectLanguageRetry_${fileHash}`;
       
-      // Check cache first
-      const cachedData = this.loadLanguageDetectionFromCache(fileHash);
-      if (cachedData) {
-        if (addDebugInfo) {
-          addDebugInfo(`🎯 Language Detection cache HIT for ${subtitleFile.name} (no API call needed)`);
+      return this.deduplicateRequest(requestKey, async () => {
+        // Check cache first
+        const cachedData = this.loadLanguageDetectionFromCache(fileHash);
+        if (cachedData) {
+          if (addDebugInfo) {
+            addDebugInfo(`🎯 Language Detection cache HIT for ${subtitleFile.name} (no API call needed)`);
+          }
+          return cachedData;
         }
-        return cachedData;
-      }
 
-      // Cache miss, use retry logic
-      if (addDebugInfo) {
-        addDebugInfo(`❌ Language Detection cache MISS for ${subtitleFile.name}, making API call with retry`);
-      }
-
-      return this.retryLanguageDetection(
-        () => this.detectLanguageUncached(subtitleFile),
-        subtitleFile.name,
-        addDebugInfo
-      ).then(data => {
-        // Save successful result to cache
-        this.saveLanguageDetectionToCache(fileHash, data);
+        // Cache miss, use retry logic
         if (addDebugInfo) {
-          addDebugInfo(`💾 Language Detection result cached for ${subtitleFile.name} (72 hours)`);
+          addDebugInfo(`❌ Language Detection cache MISS for ${subtitleFile.name}, making API call with retry`);
         }
-        return data;
+
+        // Rate limiting
+        this.checkRateLimit(`language_detection_retry_${fileHash}`, 1000);
+        
+        // Log request
+        this.logRequest(API_ENDPOINTS.LANGUAGE_DETECTION, 'POST');
+
+        return this.retryLanguageDetection(
+          () => this.detectLanguageUncached(subtitleFile),
+          subtitleFile.name,
+          addDebugInfo
+        ).then(data => {
+          // Save successful result to cache
+          this.saveLanguageDetectionToCache(fileHash, data);
+          if (addDebugInfo) {
+            addDebugInfo(`💾 Language Detection result cached for ${subtitleFile.name} (72 hours)`);
+          }
+          return data;
+        });
       });
     } catch (error) {
       console.error(`Language detection with retry failed for ${subtitleFile.name}:`, error);

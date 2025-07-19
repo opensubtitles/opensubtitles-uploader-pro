@@ -8,6 +8,8 @@ import { SessionManager } from '../sessionManager.js';
  * OpenSubtitles XML-RPC API service
  */
 export class XmlRpcService {
+  // Request deduplication - prevent multiple simultaneous identical requests
+  static activeRequests = new Map();
   /**
    * Get authentication token from stored session, PHPSESSID cookie, or empty fallback
    */
@@ -340,37 +342,72 @@ export class XmlRpcService {
   }
 
   /**
-   * Guess movie from filename with caching
+   * Guess movie from filename with caching and request deduplication
    * @param {string} filename - The filename to analyze
    * @param {Function} addDebugInfo - Debug callback (optional)
    * @returns {Promise<Object>} - Movie guess data
    */
   static async guessMovieFromString(filename, addDebugInfo = null) {
-    // Check cache first
-    const cachedData = this.loadMovieGuessFromCache(filename);
-    if (cachedData) {
-      console.log(`Movie Guess cache hit for: ${filename}`);
-      if (addDebugInfo) {
-        addDebugInfo(`🎯 Movie Guess cache HIT for ${filename} (no XML-RPC call needed)`);
+    const requestKey = `guessMovie_${btoa(filename).replace(/[^a-zA-Z0-9]/g, '_')}`;
+    
+    return new Promise((resolve, reject) => {
+      // Check for existing request in progress
+      if (this.activeRequests && this.activeRequests.has(requestKey)) {
+        console.log(`Deduplicating movie guess request for: ${filename}`);
+        if (addDebugInfo) {
+          addDebugInfo(`🔄 Movie Guess request already in progress for ${filename}, waiting...`);
+        }
+        
+        this.activeRequests.get(requestKey).then(resolve).catch(reject);
+        return;
       }
-      return cachedData;
-    }
+      
+      // Start new request
+      const requestPromise = (async () => {
+        // Check cache first
+        const cachedData = this.loadMovieGuessFromCache(filename);
+        if (cachedData) {
+          console.log(`Movie Guess cache hit for: ${filename}`);
+          if (addDebugInfo) {
+            addDebugInfo(`🎯 Movie Guess cache HIT for ${filename} (no XML-RPC call needed)`);
+          }
+          return cachedData;
+        }
 
-    // Cache miss, make XML-RPC call
-    console.log(`Movie Guess cache miss for: ${filename}, making XML-RPC call`);
-    if (addDebugInfo) {
-      addDebugInfo(`❌ Movie Guess cache MISS for ${filename}, making XML-RPC call`);
-    }
-    
-    const data = await this.guessMovieFromStringUncached(filename);
-    
-    // Save to cache (including null results to avoid repeated failed lookups)
-    this.saveMovieGuessToCache(filename, data);
-    if (addDebugInfo) {
-      addDebugInfo(`💾 Movie Guess result cached for ${filename} (72 hours)`);
-    }
-    
-    return data;
+        // Cache miss, make XML-RPC call
+        console.log(`Movie Guess cache miss for: ${filename}, making XML-RPC call`);
+        if (addDebugInfo) {
+          addDebugInfo(`❌ Movie Guess cache MISS for ${filename}, making XML-RPC call`);
+        }
+        
+        const data = await this.guessMovieFromStringUncached(filename);
+        
+        // Save to cache (including null results to avoid repeated failed lookups)
+        this.saveMovieGuessToCache(filename, data);
+        if (addDebugInfo) {
+          addDebugInfo(`💾 Movie Guess result cached for ${filename} (72 hours)`);
+        }
+        
+        return data;
+      })();
+      
+      // Store request to prevent duplicates
+      if (!this.activeRequests) {
+        this.activeRequests = new Map();
+      }
+      this.activeRequests.set(requestKey, requestPromise);
+      
+      // Clean up when done
+      requestPromise
+        .then(result => {
+          this.activeRequests.delete(requestKey);
+          resolve(result);
+        })
+        .catch(error => {
+          this.activeRequests.delete(requestKey);
+          reject(error);
+        });
+    });
   }
 
   /**
@@ -522,11 +559,42 @@ export class XmlRpcService {
   }
 
   /**
-   * Check if subtitle hashes exist in database using XML-RPC API
+   * Generate cache key for CheckSubHash
    * @param {Array<string>} hashes - Array of MD5 hashes to check
-   * @returns {Promise<Object>} - Response with hash check results
+   * @returns {string} - Cache key
    */
-  static async checkSubHash(hashes) {
+  static generateCheckSubHashCacheKey(hashes) {
+    // Sort hashes to ensure consistent cache key regardless of order
+    const sortedHashes = [...hashes].sort();
+    const hashString = sortedHashes.join('|');
+    return `${CACHE_KEYS.XMLRPC_CHECKSUB}_${btoa(hashString).replace(/[^a-zA-Z0-9]/g, '_')}`;
+  }
+
+  /**
+   * Load CheckSubHash data from cache
+   * @param {Array<string>} hashes - Array of MD5 hashes to check
+   * @returns {Object|null} - Cached data or null
+   */
+  static loadCheckSubHashFromCache(hashes) {
+    const cacheKey = this.generateCheckSubHashCacheKey(hashes);
+    return CacheService.loadFromCache(cacheKey);
+  }
+
+  /**
+   * Save CheckSubHash data to cache
+   * @param {Array<string>} hashes - Array of MD5 hashes
+   * @param {Object} data - The CheckSubHash response data
+   * @returns {Object} - Cache save result
+   */
+  static saveCheckSubHashToCache(hashes, data) {
+    const cacheKey = this.generateCheckSubHashCacheKey(hashes);
+    return CacheService.saveToCacheWithDuration(cacheKey, data, DEFAULT_SETTINGS.CHECKSUB_CACHE_DURATION);
+  }
+
+  /**
+   * Check if subtitle hashes exist in database using XML-RPC API (without cache)
+   */
+  static async checkSubHashUncached(hashes) {
     try {
       const token = this.getAuthToken();
       
@@ -580,6 +648,40 @@ export class XmlRpcService {
       console.error('CheckSubHash failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Check if subtitle hashes exist in database using XML-RPC API with caching
+   * @param {Array<string>} hashes - Array of MD5 hashes to check
+   * @param {Function} addDebugInfo - Debug callback (optional)
+   * @returns {Promise<Object>} - Response with hash check results
+   */
+  static async checkSubHash(hashes, addDebugInfo = null) {
+    // Check cache first
+    const cachedData = this.loadCheckSubHashFromCache(hashes);
+    if (cachedData) {
+      console.log(`CheckSubHash cache hit for ${hashes.length} hashes`);
+      if (addDebugInfo) {
+        addDebugInfo(`🎯 CheckSubHash cache HIT for ${hashes.length} hashes (no XML-RPC call needed)`);
+      }
+      return cachedData;
+    }
+
+    // Cache miss, make XML-RPC call
+    console.log(`CheckSubHash cache miss for ${hashes.length} hashes, making XML-RPC call`);
+    if (addDebugInfo) {
+      addDebugInfo(`❌ CheckSubHash cache MISS for ${hashes.length} hashes, making XML-RPC call`);
+    }
+    
+    const data = await this.checkSubHashUncached(hashes);
+    
+    // Save to cache (including null results to avoid repeated failed lookups)
+    this.saveCheckSubHashToCache(hashes, data);
+    if (addDebugInfo) {
+      addDebugInfo(`💾 CheckSubHash result cached for ${hashes.length} hashes (24 hours)`);
+    }
+    
+    return data;
   }
 
   /**
