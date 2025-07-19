@@ -75,6 +75,36 @@ export const useFileHandling = (addDebugInfo) => {
       if (collectedFiles.length > 0) {
         setFiles(collectedFiles);
         addDebugInfo(`Set ${collectedFiles.length} files`);
+        
+        // Process MKV files for subtitle extraction
+        const mkvFiles = collectedFiles.filter(file => file.hasMkvSubtitleExtraction);
+        if (mkvFiles.length > 0) {
+          addDebugInfo(`Starting MKV subtitle extraction for ${mkvFiles.length} file(s)`);
+          
+          // Start MKV extraction process asynchronously (don't await to avoid blocking UI)
+          setTimeout(() => {
+            FileProcessingService.processMkvExtractions(
+              collectedFiles,
+              // onFileUpdate callback
+              (filePath, updates) => {
+                setFiles(prevFiles => 
+                  prevFiles.map(file => 
+                    file.fullPath === filePath ? { ...file, ...updates } : file
+                  )
+                );
+                addDebugInfo(`MKV extraction status update: ${updates.mkvExtractionStatus}`);
+              },
+              // onSubtitleExtracted callback
+              (subtitleFile) => {
+                setFiles(prevFiles => [...prevFiles, subtitleFile]);
+                addDebugInfo(`Extracted subtitle: ${subtitleFile.name} from ${subtitleFile.originalMkvFile}`);
+              }
+            ).catch(error => {
+              console.error('MKV extraction process failed:', error);
+              addDebugInfo(`MKV extraction failed: ${error.message}`);
+            });
+          }, 100); // Small delay to ensure UI updates first
+        }
       } else {
         addDebugInfo("No valid media files found");
         throw new Error("No video or subtitle files found in the dropped items.");

@@ -1,5 +1,6 @@
 import { isMediaFile, isVideoFile, isSubtitleFile } from '../utils/fileUtils.js';
 import { ZipProcessingService } from './zipProcessing.js';
+import { mkvSubtitleExtractor } from './mkvSubtitleExtractor.js';
 
 /**
  * File processing service for handling drag and drop files
@@ -77,6 +78,15 @@ export class FileProcessingService {
         };
         
         output.push(fileObj);
+
+        // Check if this is an MKV file and mark it for subtitle extraction
+        if (isVideo && file.name.toLowerCase().endsWith('.mkv')) {
+          // Mark this MKV file for subtitle extraction
+          fileObj.hasMkvSubtitleExtraction = true;
+          fileObj.mkvExtractionStatus = 'pending';
+          
+          console.log(`🎬 Detected MKV file: ${file.name}, will extract embedded subtitles...`);
+        }
       }
       
     } catch (error) {
@@ -242,6 +252,126 @@ export class FileProcessingService {
     } catch (error) {
       console.error('Error processing Tauri file objects:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Process MKV files to extract embedded subtitles
+   * @param {Array} files - Array of file objects 
+   * @param {Function} onFileUpdate - Callback to update file status
+   * @param {Function} onSubtitleExtracted - Callback when subtitle is extracted
+   */
+  static async processMkvExtractions(files, onFileUpdate, onSubtitleExtracted) {
+    const mkvFiles = files.filter(file => file.hasMkvSubtitleExtraction);
+    
+    for (const mkvFile of mkvFiles) {
+      try {
+        // Update status to extracting
+        onFileUpdate(mkvFile.fullPath, { mkvExtractionStatus: 'extracting' });
+        
+        console.log(`🎯 Starting MKV subtitle extraction for: ${mkvFile.name}`);
+        
+        // Extract subtitles using the MKV subtitle extractor
+        const extractedSubtitles = await mkvSubtitleExtractor.extractSubtitles(mkvFile.file);
+        
+        if (extractedSubtitles.length === 0) {
+          console.log(`📝 No subtitles found in MKV file: ${mkvFile.name}`);
+          onFileUpdate(mkvFile.fullPath, { mkvExtractionStatus: 'no_subtitles' });
+          continue;
+        }
+
+        console.log(`🎉 Successfully extracted ${extractedSubtitles.length} subtitle(s) from ${mkvFile.name}`);
+
+        // Process each extracted subtitle
+        for (const subtitleData of extractedSubtitles) {
+          const subtitleFile = subtitleData.file;
+          const basePath = mkvFile.fullPath.replace(/\/[^/]*$/, '/'); // Get directory path
+          const subtitlePath = basePath + subtitleFile.name;
+
+          // Create subtitle file object in the same format as other files
+          const subtitleObj = {
+            name: subtitleFile.name,
+            fullPath: subtitlePath,
+            size: subtitleFile.size,
+            type: subtitleFile.type,
+            file: subtitleFile,
+            isVideo: false,
+            isSubtitle: true,
+            movieHash: null,
+            detectedLanguage: null, // Will be detected later
+            recognized: true,
+            extractedFromMkv: true, // Mark as extracted from MKV
+            originalMkvFile: mkvFile.name,
+            streamIndex: subtitleData.streamIndex,
+            language: subtitleData.language
+          };
+
+          // Notify that a subtitle was extracted
+          onSubtitleExtracted(subtitleObj);
+          console.log(`✅ Extracted subtitle: ${subtitleFile.name} (${subtitleData.language})`);
+        }
+
+        // Update status to completed
+        onFileUpdate(mkvFile.fullPath, { 
+          mkvExtractionStatus: 'completed',
+          extractedSubtitleCount: extractedSubtitles.length 
+        });
+
+      } catch (error) {
+        console.error(`❌ Failed to extract subtitles from MKV file ${mkvFile.name}:`, error);
+        onFileUpdate(mkvFile.fullPath, { mkvExtractionStatus: 'error', mkvExtractionError: error.message });
+      }
+    }
+  }
+
+  /**
+   * Extract subtitles from MKV file asynchronously (legacy method)
+   */
+  static async _extractMkvSubtitles(mkvFile, mkvPath, output) {
+    try {
+      console.log(`🎯 Starting MKV subtitle extraction for: ${mkvFile.name}`);
+      
+      // Extract subtitles using the MKV subtitle extractor
+      const extractedSubtitles = await mkvSubtitleExtractor.extractSubtitles(mkvFile);
+      
+      if (extractedSubtitles.length === 0) {
+        console.log(`📝 No subtitles found in MKV file: ${mkvFile.name}`);
+        return;
+      }
+
+      // Process each extracted subtitle
+      for (const subtitleData of extractedSubtitles) {
+        const subtitleFile = subtitleData.file;
+        const basePath = mkvPath.replace(/\/[^/]*$/, '/'); // Get directory path
+        const subtitlePath = basePath + subtitleFile.name;
+
+        // Create subtitle file object in the same format as other files
+        const subtitleObj = {
+          name: subtitleFile.name,
+          fullPath: subtitlePath,
+          size: subtitleFile.size,
+          type: subtitleFile.type,
+          file: subtitleFile,
+          isVideo: false,
+          isSubtitle: true,
+          movieHash: null,
+          detectedLanguage: null, // Will be detected later
+          recognized: true,
+          extractedFromMkv: true, // Mark as extracted from MKV
+          originalMkvFile: mkvFile.name,
+          streamIndex: subtitleData.streamIndex,
+          language: subtitleData.language
+        };
+
+        output.push(subtitleObj);
+        console.log(`✅ Extracted subtitle: ${subtitleFile.name} (${subtitleData.language})`);
+      }
+
+      console.log(`🎉 Successfully extracted ${extractedSubtitles.length} subtitle(s) from ${mkvFile.name}`);
+
+    } catch (error) {
+      console.error(`❌ Failed to extract subtitles from MKV file ${mkvFile.name}:`, error);
+      // Don't throw error - extraction failure shouldn't prevent file processing
     }
   }
 

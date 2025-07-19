@@ -78,11 +78,23 @@ export const SubtitleFile = ({
         </div>
         
         <div className="flex-1">
-          <div className={`font-medium transition-colors`}
+          <div className={`font-medium transition-colors flex items-center gap-2`}
             style={{
               color: uploadEnabled ? (colors?.text || '#000') : (colors?.textMuted || '#808080')
             }}>
             {subtitle.name}
+            {subtitle.extractedFromMkv && (
+              <span 
+                className="px-2 py-1 text-xs rounded font-medium"
+                style={{
+                  backgroundColor: colors?.success || '#9EC068',
+                  color: '#fff'
+                }}
+                title={`Extracted from MKV: ${subtitle.originalMkvFile}`}
+              >
+                📹 MKV
+              </span>
+            )}
           </div>
           <div className={`text-sm flex items-center gap-4 mt-1 transition-colors`}
             style={{

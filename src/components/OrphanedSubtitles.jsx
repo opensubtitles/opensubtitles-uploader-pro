@@ -331,6 +331,18 @@ export const OrphanedSubtitles = ({
                 <div>
                   <div className="font-medium flex items-center gap-2" style={{color: themeColors.text}}>
                     <span>{subtitleName}</span>
+                    {subtitle.extractedFromMkv && (
+                      <span 
+                        className="px-2 py-1 text-xs rounded font-medium"
+                        style={{
+                          backgroundColor: themeColors.success || '#9EC068',
+                          color: '#fff'
+                        }}
+                        title={`Extracted from MKV: ${subtitle.originalMkvFile}`}
+                      >
+                        📹 MKV
+                      </span>
+                    )}
                     <span className="text-xs px-2 py-1 rounded ml-2" 
                       style={{
                         backgroundColor: themeColors.warning + '20',
@@ -441,6 +453,18 @@ export const OrphanedSubtitles = ({
                           <span className="text-base font-medium">
                             {subtitleName}
                           </span>
+                          {subtitle.extractedFromMkv && (
+                            <span 
+                              className="px-2 py-1 text-xs rounded font-medium"
+                              style={{
+                                backgroundColor: themeColors.success || '#9EC068',
+                                color: '#fff'
+                              }}
+                              title={`Extracted from MKV: ${subtitle.originalMkvFile}`}
+                            >
+                              📹 MKV
+                            </span>
+                          )}
                           {/* Upload option badges */}
                           <div className="flex gap-1">
                             {(uploadOptions?.[subtitle.fullPath]?.hearingimpaired === '1' || localUploadStates?.[subtitle.fullPath]?.localHearingImpairedValue === '1') && 

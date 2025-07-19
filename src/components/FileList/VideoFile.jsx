@@ -80,7 +80,74 @@ export const VideoFile = ({ video, movieGuess, features, onMovieChange, colors, 
       <div className="flex items-center gap-3" style={{color: colors?.textSecondary || '#454545'}}>
         <span className="text-2xl">🎬</span>
         <div className="flex-1">
-          <div className="font-semibold" style={{color: colors?.text || '#000'}}>{video.name}</div>
+          <div className="font-semibold flex items-center gap-2" style={{color: colors?.text || '#000'}}>
+            {video.name}
+            {video.hasMkvSubtitleExtraction && (
+              <span className="ml-2">
+                {video.mkvExtractionStatus === 'pending' && (
+                  <span 
+                    className="px-2 py-1 text-xs rounded font-medium flex items-center gap-1"
+                    style={{
+                      backgroundColor: colors?.warning + '20' || '#ffc10720',
+                      color: colors?.warning || '#ffc107'
+                    }}
+                    title="MKV subtitle extraction will start..."
+                  >
+                    ⏳ MKV Pending
+                  </span>
+                )}
+                {video.mkvExtractionStatus === 'extracting' && (
+                  <span 
+                    className="px-2 py-1 text-xs rounded font-medium flex items-center gap-1"
+                    style={{
+                      backgroundColor: colors?.link + '20' || '#2878C020',
+                      color: colors?.link || '#2878C0'
+                    }}
+                    title="Extracting embedded subtitles from MKV..."
+                  >
+                    <div className="w-3 h-3 border border-blue-300 border-t-transparent rounded-full animate-spin"></div>
+                    Extracting...
+                  </span>
+                )}
+                {video.mkvExtractionStatus === 'completed' && (
+                  <span 
+                    className="px-2 py-1 text-xs rounded font-medium"
+                    style={{
+                      backgroundColor: colors?.success + '20' || '#9EC06820',
+                      color: colors?.success || '#9EC068'
+                    }}
+                    title={`Extracted ${video.extractedSubtitleCount || 0} subtitle(s) from MKV`}
+                  >
+                    ✅ {video.extractedSubtitleCount || 0} Extracted
+                  </span>
+                )}
+                {video.mkvExtractionStatus === 'no_subtitles' && (
+                  <span 
+                    className="px-2 py-1 text-xs rounded font-medium"
+                    style={{
+                      backgroundColor: colors?.textMuted + '20' || '#80808020',
+                      color: colors?.textMuted || '#808080'
+                    }}
+                    title="No embedded subtitles found in MKV"
+                  >
+                    📝 No Subtitles
+                  </span>
+                )}
+                {video.mkvExtractionStatus === 'error' && (
+                  <span 
+                    className="px-2 py-1 text-xs rounded font-medium"
+                    style={{
+                      backgroundColor: colors?.error + '20' || '#dc354520',
+                      color: colors?.error || '#dc3545'
+                    }}
+                    title={`MKV extraction failed: ${video.mkvExtractionError || 'Unknown error'}`}
+                  >
+                    ❌ Error
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
           <div className="text-sm flex items-center gap-2 mt-1" style={{color: colors?.textSecondary || '#454545'}}>
             <span title={`File Size: ${formatFileSize(video.size)}`}>📁{formatFileSize(video.size)}</span>
             
