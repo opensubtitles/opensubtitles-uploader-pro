@@ -581,26 +581,26 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={localConfig.extractMkvSubtitles !== false} // Default to true if not set
+                  checked={localConfig.extractMkvSubtitles === true} // Default to false if not set
                   onChange={(e) => handleChange('extractMkvSubtitles', e.target.checked)}
                   className="sr-only peer"
                 />
                 <div 
                   className="w-11 h-6 rounded-full peer transition-colors duration-200 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
                   style={{
-                    backgroundColor: (localConfig.extractMkvSubtitles !== false) ? colors.success : colors.border,
+                    backgroundColor: (localConfig.extractMkvSubtitles === true) ? colors.success : colors.border,
                   }}
                 />
               </label>
             </div>
           </div>
-          {localConfig.extractMkvSubtitles !== false && (
+          {localConfig.extractMkvSubtitles === true && (
             <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
               <span>✓</span>
               <span>MKV files will be automatically processed for embedded subtitles</span>
             </div>
           )}
-          {localConfig.extractMkvSubtitles === false && (
+          {localConfig.extractMkvSubtitles !== true && (
             <div className="flex items-center gap-2 text-xs" style={{ color: colors.textSecondary }}>
               <span>⚠️</span>
               <span>MKV subtitle extraction is disabled</span>

@@ -626,10 +626,34 @@ function SubtitleUploaderInner() {
     }));
   }, []);
 
-  // Get upload status for subtitle (default to true)
+  // Get upload status for subtitle (default to true, but automatically disable invalid files)
   const getUploadEnabled = useCallback((subtitlePath) => {
+    // Find the subtitle file to check its size
+    const subtitle = [...files, ...orphanedSubtitles].find(file => file.fullPath === subtitlePath);
+    
+    if (!subtitle) {
+      return uploadStates[subtitlePath] !== false;
+    }
+    
+    // Automatically disable empty files (0 bytes)
+    if (subtitle.size === 0) {
+      return false;
+    }
+    
+    // Check for small files (less than 512 bytes) not marked as foreign parts only
+    // This matches backend validation: strlen($subtitle['subcontent']) < 512
+    // Using file size as approximation since we can't read content synchronously
+    if (subtitle.size < 512) {
+      const options = uploadOptions[subtitlePath] || {};
+      const isForeignPartsOnly = options.foreignpartsonly === '1';
+      
+      if (!isForeignPartsOnly) {
+        return false; // Disable small files that aren't foreign parts only
+      }
+    }
+    
     return uploadStates[subtitlePath] !== false; // Default to true unless explicitly set to false
-  }, [uploadStates]);
+  }, [uploadStates, files, orphanedSubtitles, uploadOptions]);
 
   // Handle upload action
   const handleUpload = useCallback(async (validationResult) => {
@@ -902,13 +926,21 @@ function SubtitleUploaderInner() {
           addDebugInfo(`🔍 MKV file detected via file selection: ${file.name}`);
           
           if (isVideo) {
-            // Mark this MKV file for subtitle extraction
-            processedFile.hasMkvSubtitleExtraction = true;
-            processedFile.mkvExtractionStatus = 'pending';
+            // Check if MKV extraction is enabled in config (default: false)
+            const extractMkvSubtitles = config.extractMkvSubtitles === true;
             
-            console.log(`🎬 Detected MKV file via file selection: ${file.name}, will detect embedded subtitles...`);
-            addDebugInfo(`🎬 MKV file detected: ${file.name}`);
-            addDebugInfo(`📺 Subtitle detection will start automatically for this MKV file`);
+            if (extractMkvSubtitles) {
+              // Mark this MKV file for subtitle extraction
+              processedFile.hasMkvSubtitleExtraction = true;
+              processedFile.mkvExtractionStatus = 'pending';
+              
+              console.log(`🎬 Detected MKV file via file selection: ${file.name}, will detect embedded subtitles...`);
+              addDebugInfo(`🎬 MKV file detected: ${file.name}`);
+              addDebugInfo(`📺 Subtitle detection will start automatically for this MKV file`);
+            } else {
+              console.log(`⚠️ MKV file ${file.name} detected but extraction is disabled in settings`);
+              addDebugInfo(`⚠️ MKV file ${file.name} detected but extraction is disabled in settings`);
+            }
           } else {
             console.log(`⚠️ MKV file ${file.name} not flagged for extraction: isVideo=${isVideo}`);
             addDebugInfo(`⚠️ MKV file ${file.name} not flagged for extraction: isVideo=${isVideo}`);

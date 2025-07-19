@@ -87,8 +87,8 @@ export class FileProcessingService {
 
         // Check if this is an MKV file and mark it for subtitle extraction (if enabled)
         if (isVideo && file.name.toLowerCase().endsWith('.mkv')) {
-          // Check if MKV extraction is enabled in config (default: true)
-          const extractMkvSubtitles = config.extractMkvSubtitles !== false;
+          // Check if MKV extraction is enabled in config (default: false)
+          const extractMkvSubtitles = config.extractMkvSubtitles === true;
           
           if (extractMkvSubtitles) {
             // Mark this MKV file for subtitle extraction
@@ -334,8 +334,18 @@ export class FileProcessingService {
               stream.originalFileName
             );
 
-            if (extractedSubtitle) {
+            if (extractedSubtitle && extractedSubtitle !== null) {
               const subtitleFile = extractedSubtitle.file;
+              
+              // Check for empty subtitle files (0 bytes) - double check in case MKV extractor didn't catch it
+              if (subtitleFile.size === 0 || extractedSubtitle.size === 0) {
+                console.warn(`⚠️ Extracted subtitle has 0 bytes: ${subtitleFile.name} (stream ${stream.streamIndex})`);
+                if (addDebugInfo) {
+                  addDebugInfo(`⚠️ Skipped empty subtitle: ${subtitleFile.name} (0 bytes)`);
+                }
+                // Skip this empty subtitle and continue with next stream
+                continue;
+              }
               
               // Create subtitle file path in the same directory as the MKV file
               // Use MKV base name + language + extension for proper pairing
@@ -389,6 +399,12 @@ export class FileProcessingService {
                 extractedCount: extractedCount,
                 streamCount: detectedStreams.length
               });
+            } else {
+              // extractedSubtitle is null (empty subtitle detected by MKV extractor)
+              console.warn(`⚠️ Skipping empty subtitle from stream ${stream.streamIndex} (${stream.language})`);
+              if (addDebugInfo) {
+                addDebugInfo(`⚠️ Skipped empty subtitle: stream ${stream.streamIndex} (0 bytes)`);
+              }
             }
           } catch (extractError) {
             console.warn(`⚠️ Failed to extract stream ${stream.streamIndex}: ${extractError.message}`);

@@ -48,6 +48,8 @@ export const SubtitleFile = ({
             e.target.closest('button, a, select, input, textarea, [role="button"], [data-interactive]')) {
           return;
         }
+        // Don't allow toggling for empty files or invalid small files
+        if (subtitle.size === 0 || (subtitle.size < 512 && !uploadEnabled)) return;
         onToggleUpload && onToggleUpload(subtitle.fullPath, !uploadEnabled);
       }}
     >
@@ -60,12 +62,14 @@ export const SubtitleFile = ({
             <input
               type="checkbox"
               checked={uploadEnabled}
+              disabled={subtitle.size === 0 || (subtitle.size < 512 && !uploadEnabled)} // Disable checkbox for empty files and invalid small files
               onChange={(e) => onToggleUpload && onToggleUpload(subtitle.fullPath, e.target.checked)}
               className="w-4 h-4 rounded focus:ring-2"
               style={{
                 accentColor: colors?.success || '#9EC068',
                 backgroundColor: colors?.cardBackground || '#fff',
-                borderColor: colors?.border || '#ccc'
+                borderColor: colors?.border || '#ccc',
+                opacity: (subtitle.size === 0 || (subtitle.size < 512 && !uploadEnabled)) ? 0.5 : 1 // Dim disabled checkbox
               }}
             />
             <span className={`ml-2 text-xs font-medium transition-colors`}
@@ -100,7 +104,9 @@ export const SubtitleFile = ({
             style={{
               color: uploadEnabled ? (colors?.textSecondary || '#454545') : (colors?.textMuted || '#808080')
             }}>
-            <span>📏 {formatFileSize(subtitle.size)}</span>
+            <span className={subtitle.size === 0 ? 'text-red-500 font-medium' : ''}>
+              📏 {subtitle.size === 0 ? '0 Bytes (Empty File)' : formatFileSize(subtitle.size)}
+            </span>
             
             {/* File Type/Kind */}
             <span className="flex items-center gap-1">
@@ -289,8 +295,29 @@ export const SubtitleFile = ({
           )}
 
 
+          {/* Empty file warning message */}
+          {subtitle.size === 0 && (
+            <div className="text-xs mt-2 p-2 rounded" style={{backgroundColor: '#fee2e2', color: '#dc2626'}}>
+              <div className="font-medium">⚠️ Empty File (0 bytes)</div>
+              <div className="italic">This subtitle file is empty and has been automatically excluded from upload.</div>
+            </div>
+          )}
+
+          {/* Small file warning message */}
+          {subtitle.size > 0 && subtitle.size < 512 && (
+            <div className="text-xs mt-2 p-2 rounded" style={{backgroundColor: !uploadEnabled ? '#fee2e2' : '#fef3c7', color: !uploadEnabled ? '#dc2626' : '#d97706'}}>
+              <div className="font-medium">⚠️ File Too Small ({subtitle.size} bytes)</div>
+              <div className="italic">
+                {!uploadEnabled 
+                  ? 'Files under 512 bytes require "Foreign Parts Only" to be checked in Upload Options.'
+                  : 'Small file detected. If upload fails, mark as "Foreign Parts Only" in Upload Options.'
+                }
+              </div>
+            </div>
+          )}
+
           {/* Disabled state message */}
-          {!uploadEnabled && !uploadResults?.[subtitle.fullPath] && (
+          {!uploadEnabled && !uploadResults?.[subtitle.fullPath] && subtitle.size > 0 && subtitle.size >= 512 && (
             <div className="text-xs mt-2">
               <div className="italic" style={{color: colors?.textMuted || '#808080'}}>
                 This subtitle will not be uploaded
