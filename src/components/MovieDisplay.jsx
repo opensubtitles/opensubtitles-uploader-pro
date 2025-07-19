@@ -511,7 +511,7 @@ export const MovieDisplay = ({
                     //   'finalMovieData': finalMovieData
                     // });
                     
-                    // If we have episode-specific features data, use parent_title + original_title
+                    // If we have episode-specific features data, use parent_title + original_title (filter out null/empty values)
                     if (episodeFeaturesData?.data?.[0]?.attributes) {
                       const episodeAttrs = episodeFeaturesData.data[0].attributes;
                       const parentTitle = episodeAttrs.parent_title;
@@ -519,7 +519,13 @@ export const MovieDisplay = ({
                       const seasonEpisode = `S${episodeAttrs.season_number?.toString().padStart(2, '0') || '??'}E${episodeAttrs.episode_number?.toString().padStart(2, '0') || '??'}`;
                       // DISABLED: console.log to prevent setState during render
                       // console.log('Using episode features data:', { parentTitle, originalTitle, seasonEpisode, episodeAttrs });
-                      return `${parentTitle} - ${seasonEpisode} - ${originalTitle}`;
+                      
+                      // Filter out null/empty original_title - use episode title or fallback
+                      const episodeTitle = originalTitle && originalTitle !== 'null' && originalTitle.trim() !== '' 
+                        ? originalTitle 
+                        : episodeAttrs.title || `Episode ${episodeAttrs.episode_number || '?'}`;
+                      
+                      return `${parentTitle} - ${seasonEpisode} - ${episodeTitle}`;
                     }
                     
                     // If this is an episode with season/episode info from finalMovieData, format it properly
