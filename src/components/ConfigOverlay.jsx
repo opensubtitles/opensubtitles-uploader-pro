@@ -5,29 +5,57 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
   const [localConfig, setLocalConfig] = useState(config);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [languageSearch, setLanguageSearch] = useState('');
+  const [fpsDropdownOpen, setFpsDropdownOpen] = useState(false);
+  const [fpsSearchTerm, setFpsSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+  const fpsDropdownRef = useRef(null);
+
+  // FPS options for dropdown
+  const fpsOptions = [
+    { value: '', label: 'Select FPS' },
+    { value: '23.976', label: '23.976 FPS - NTSC Film' },
+    { value: '24', label: '24 FPS - Cinema' },
+    { value: '25', label: '25 FPS - PAL' },
+    { value: '29.97', label: '29.97 FPS - NTSC' },
+    { value: '30', label: '30 FPS - True NTSC' },
+    { value: '47.952', label: '47.952 FPS - Double NTSC' },
+    { value: '48', label: '48 FPS - HFR' },
+    { value: '50', label: '50 FPS - PAL HFR' },
+    { value: '59.94', label: '59.94 FPS - NTSC HFR' },
+    { value: '60', label: '60 FPS - True HFR' },
+    { value: '100', label: '100 FPS - Double PAL' },
+    { value: '119.88', label: '119.88 FPS - Double NTSC' },
+    { value: '120', label: '120 FPS - UHFR' }
+  ];
 
   useEffect(() => {
     setLocalConfig(config);
   }, [config]);
 
-  // Click outside to close dropdown
+  // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Check language dropdown
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsLanguageDropdownOpen(false);
         setLanguageSearch('');
       }
+      
+      // Check FPS dropdown
+      if (fpsDropdownRef.current && !fpsDropdownRef.current.contains(event.target)) {
+        setFpsDropdownOpen(false);
+        setFpsSearchTerm('');
+      }
     };
 
-    if (isLanguageDropdownOpen) {
+    if (isLanguageDropdownOpen || fpsDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isLanguageDropdownOpen]);
+  }, [isLanguageDropdownOpen, fpsDropdownOpen]);
 
   const handleChange = (key, value) => {
     const newConfig = { ...localConfig, [key]: value };
@@ -249,39 +277,108 @@ export const ConfigOverlay = ({ isOpen, onClose, config, onConfigChange, colors,
             <p className="text-xs" style={{ color: colors.textSecondary }}>
               Pre-select FPS for all orphaned subtitles (subtitles without video files)
             </p>
-            <select
-              value={localConfig.defaultFps || ''}
-              onChange={(e) => handleChange('defaultFps', e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2"
-              style={{
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.text,
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = colors.link;
-                e.target.style.boxShadow = `0 0 0 2px ${colors.link}20`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = colors.border;
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              <option value="">Select FPS</option>
-              <option value="23.976">23.976 FPS - NTSC Film</option>
-              <option value="24">24 FPS - Cinema</option>
-              <option value="25">25 FPS - PAL</option>
-              <option value="29.97">29.97 FPS - NTSC</option>
-              <option value="30">30 FPS - True NTSC</option>
-              <option value="47.952">47.952 FPS - Double NTSC</option>
-              <option value="48">48 FPS - HFR</option>
-              <option value="50">50 FPS - PAL HFR</option>
-              <option value="59.94">59.94 FPS - NTSC HFR</option>
-              <option value="60">60 FPS - True HFR</option>
-              <option value="100">100 FPS - Double PAL</option>
-              <option value="119.88">119.88 FPS - Double NTSC</option>
-              <option value="120">120 FPS - UHFR</option>
-            </select>
+            <div className="relative" ref={fpsDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setFpsDropdownOpen(!fpsDropdownOpen)}
+                className="w-full px-3 py-2 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 text-left flex items-center justify-between min-h-[40px]"
+                style={{
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = colors.link;
+                  e.target.style.boxShadow = `0 0 0 2px ${colors.link}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = colors.border;
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                <span>
+                  {localConfig.defaultFps ? 
+                    fpsOptions.find(fps => fps.value === localConfig.defaultFps)?.label || `${localConfig.defaultFps} FPS` :
+                    'Select FPS'
+                  }
+                </span>
+                <span className="ml-2">{fpsDropdownOpen ? '▲' : '▼'}</span>
+              </button>
+
+              {fpsDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 rounded-lg shadow-lg z-50 min-w-full max-h-60 overflow-hidden"
+                     style={{
+                       backgroundColor: colors.cardBackground,
+                       border: `1px solid ${colors.border}`,
+                       boxShadow: `0 10px 25px -5px ${colors.shadow}`,
+                     }}>
+                  {/* Search input */}
+                  <div className="p-3" style={{borderBottom: `1px solid ${colors.border}`}}>
+                    <input
+                      type="text"
+                      placeholder="Type to search FPS..."
+                      value={fpsSearchTerm}
+                      onChange={(e) => setFpsSearchTerm(e.target.value)}
+                      className="w-full text-sm px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2"
+                      style={{
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = colors.link;
+                        e.target.style.boxShadow = `0 0 0 2px ${colors.link}20`;
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = colors.border;
+                        e.target.style.boxShadow = 'none';
+                      }}
+                    />
+                  </div>
+                  
+                  {/* FPS options */}
+                  <div className="max-h-48 overflow-y-auto">
+                    {fpsOptions
+                      .filter(fps => {
+                        if (!fpsSearchTerm) return true;
+                        const search = fpsSearchTerm.toLowerCase();
+                        return (
+                          fps.label.toLowerCase().includes(search) ||
+                          fps.value.toString().includes(search)
+                        );
+                      })
+                      .map((fps) => (
+                        <button
+                          key={fps.value}
+                          type="button"
+                          onClick={() => {
+                            handleChange('defaultFps', fps.value);
+                            setFpsDropdownOpen(false);
+                            setFpsSearchTerm('');
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:opacity-90 transition-opacity"
+                          style={{
+                            backgroundColor: localConfig.defaultFps === fps.value ? colors.link : 'transparent',
+                            color: localConfig.defaultFps === fps.value ? '#fff' : colors.text,
+                          }}
+                          onMouseEnter={(e) => {
+                            if (localConfig.defaultFps !== fps.value) {
+                              e.target.style.backgroundColor = colors.hoverBackground || (isDark ? '#3a3a3a' : '#f5f5f5');
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (localConfig.defaultFps !== fps.value) {
+                              e.target.style.backgroundColor = 'transparent';
+                            }
+                          }}
+                        >
+                          {fps.label}
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </div>
             {localConfig.defaultFps && (
               <div className="flex items-center gap-2 text-xs" style={{ color: colors.success }}>
                 <span>✓</span>

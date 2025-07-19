@@ -26,6 +26,10 @@ export const MovieDisplay = ({
   // SAFE: Separate state for enhanced episode data to avoid setState during render
   const [enhancedEpisodeData, setEnhancedEpisodeData] = React.useState(null);
   
+  // FPS dropdown state management
+  const [fpsDropdownOpen, setFpsDropdownOpen] = React.useState({});
+  const [fpsSearchTerm, setFpsSearchTerm] = React.useState({});
+  
   // FPS options for orphaned subtitles
   const fpsOptions = [
     { value: '', label: 'Select FPS' },
@@ -182,6 +186,132 @@ export const MovieDisplay = ({
       }
     }
   }, [movieGuesses, videoPath, featuresByImdbId, guessItData]);
+
+  // Handle click outside for FPS dropdowns
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Close all open FPS dropdowns if clicking outside
+      const hasOpenDropdowns = Object.values(fpsDropdownOpen).some(open => open);
+      if (hasOpenDropdowns && !event.target.closest('.fps-dropdown-container')) {
+        setFpsDropdownOpen({});
+        setFpsSearchTerm({});
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [fpsDropdownOpen]);
+
+  // Helper functions for FPS dropdowns
+  const toggleFpsDropdown = (key) => {
+    setFpsDropdownOpen(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+    setFpsSearchTerm(prev => ({ ...prev, [key]: '' }));
+  };
+
+  const handleFpsSelect = (key, value) => {
+    if (onOrphanedSubtitlesFpsChange) {
+      onOrphanedSubtitlesFpsChange(key, value);
+    }
+    setFpsDropdownOpen(prev => ({ ...prev, [key]: false }));
+    setFpsSearchTerm(prev => ({ ...prev, [key]: '' }));
+  };
+
+  const handleFpsSearch = (key, value) => {
+    setFpsSearchTerm(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Searchable FPS dropdown component
+  const SearchableFpsDropdown = ({ dropdownKey, currentValue }) => (
+    <div className="fps-dropdown-container relative">
+      <button
+        type="button"
+        onClick={() => toggleFpsDropdown(dropdownKey)}
+        className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px] text-left flex items-center justify-between"
+        style={{
+          backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+          color: themeColors.text,
+          border: `1px solid ${themeColors.border}`
+        }}
+        onFocus={(e) => {
+          e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+        }}
+        onBlur={(e) => {
+          e.target.style.boxShadow = 'none';
+        }}
+      >
+        <span>
+          {currentValue ? 
+            fpsOptions.find(fps => fps.value === currentValue)?.label || `${currentValue} FPS` :
+            'Select FPS'
+          }
+        </span>
+        <span className="ml-2">▼</span>
+      </button>
+
+      {fpsDropdownOpen[dropdownKey] && (
+        <div className="absolute top-full left-0 mt-1 rounded shadow-lg z-10 min-w-full max-h-60 overflow-hidden"
+             style={{
+               backgroundColor: themeColors.cardBackground || (isDark ? '#2a2a2a' : '#fff'),
+               border: `1px solid ${themeColors.border}`
+             }}>
+          {/* Search input */}
+          <div className="p-2" style={{borderBottom: `1px solid ${themeColors.border}`}}>
+            <input
+              type="text"
+              placeholder="Type to search FPS..."
+              value={fpsSearchTerm[dropdownKey] || ''}
+              onChange={(e) => handleFpsSearch(dropdownKey, e.target.value)}
+              className="w-full text-xs px-2 py-1 rounded border focus:outline-none focus:ring-1"
+              style={{
+                backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
+                color: themeColors.text,
+                borderColor: themeColors.border
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = themeColors.success;
+                e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = themeColors.border;
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+          </div>
+          
+          {/* FPS options */}
+          <div className="max-h-48 overflow-y-auto">
+            {fpsOptions
+              .filter(fps => {
+                const searchTerm = fpsSearchTerm[dropdownKey] || '';
+                if (!searchTerm) return true;
+                const search = searchTerm.toLowerCase();
+                return (
+                  fps.label.toLowerCase().includes(search) ||
+                  fps.value.toString().includes(search)
+                );
+              })
+              .map((fps) => (
+                <button
+                  key={fps.value}
+                  type="button"
+                  onClick={() => handleFpsSelect(dropdownKey, fps.value)}
+                  className="w-full text-left px-3 py-2 text-xs hover:opacity-80 transition-opacity"
+                  style={{
+                    backgroundColor: currentValue === fps.value ? themeColors.success : 'transparent',
+                    color: currentValue === fps.value ? '#fff' : themeColors.text,
+                  }}
+                >
+                  {fps.label}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   // SAFE: Render logic after all hooks to prevent "Rendered fewer hooks than expected" error
   const renderContent = () => {
@@ -616,28 +746,10 @@ export const MovieDisplay = ({
                     {/* FPS Dropdown for orphaned subtitles */}
                     {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
                       <div className="mt-2">
-                        <select
-                          value={orphanedSubtitlesFps[videoPath] || ''}
-                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
-                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
-                          style={{
-                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
-                            color: themeColors.text,
-                            border: `1px solid ${themeColors.border}`
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = 'none';
-                          }}
-                        >
-                          {fpsOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableFpsDropdown 
+                          dropdownKey={videoPath}
+                          currentValue={orphanedSubtitlesFps[videoPath] || ''}
+                        />
                       </div>
                     )}
                   </>
@@ -679,28 +791,10 @@ export const MovieDisplay = ({
                     {/* FPS Dropdown for orphaned subtitles */}
                     {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
                       <div className="mt-2">
-                        <select
-                          value={orphanedSubtitlesFps[videoPath] || ''}
-                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
-                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
-                          style={{
-                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
-                            color: themeColors.text,
-                            border: `1px solid ${themeColors.border}`
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = 'none';
-                          }}
-                        >
-                          {fpsOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableFpsDropdown 
+                          dropdownKey={videoPath}
+                          currentValue={orphanedSubtitlesFps[videoPath] || ''}
+                        />
                       </div>
                     )}
                   </>
@@ -767,28 +861,10 @@ export const MovieDisplay = ({
                     {/* FPS Dropdown for orphaned subtitles */}
                     {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
                       <div className="mt-2">
-                        <select
-                          value={orphanedSubtitlesFps[videoPath] || ''}
-                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
-                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
-                          style={{
-                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
-                            color: themeColors.text,
-                            border: `1px solid ${themeColors.border}`
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = 'none';
-                          }}
-                        >
-                          {fpsOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableFpsDropdown 
+                          dropdownKey={videoPath}
+                          currentValue={orphanedSubtitlesFps[videoPath] || ''}
+                        />
                       </div>
                     )}
                   </>
@@ -816,28 +892,10 @@ export const MovieDisplay = ({
                     {/* FPS Dropdown for orphaned subtitles */}
                     {isOrphanedSubtitle && onOrphanedSubtitlesFpsChange && (
                       <div className="mt-2">
-                        <select
-                          value={orphanedSubtitlesFps[videoPath] || ''}
-                          onChange={(e) => onOrphanedSubtitlesFpsChange(videoPath, e.target.value)}
-                          className="rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 min-w-[200px]"
-                          style={{
-                            backgroundColor: isDark ? '#3a3a3a' : '#f8f9fa',
-                            color: themeColors.text,
-                            border: `1px solid ${themeColors.border}`
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.boxShadow = `0 0 0 1px ${themeColors.success}`;
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.boxShadow = 'none';
-                          }}
-                        >
-                          {fpsOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        <SearchableFpsDropdown 
+                          dropdownKey={videoPath}
+                          currentValue={orphanedSubtitlesFps[videoPath] || ''}
+                        />
                       </div>
                     )}
                   </>
