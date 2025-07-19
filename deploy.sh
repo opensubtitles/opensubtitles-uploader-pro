@@ -457,6 +457,9 @@ if [ "$CLEAN_BUILD" = true ]; then
   print_success "Build artifacts cleaned"
 fi
 
+# Get version from package.json
+VERSION=$(node -p "require('./package.json').version" 2>/dev/null || echo "unknown")
+
 # Development mode (no zero-downtime needed)
 if [ "$DEV_MODE" = true ]; then
   print_step "🏗️  Starting development server..."
@@ -467,7 +470,7 @@ if [ "$DEV_MODE" = true ]; then
     graceful_shutdown $dev_pid 5 $DEV_PORT
   fi
   
-  print_success "Development server will be available at http://localhost:$DEV_PORT"
+  print_success "Development server will be available at http://localhost:$DEV_PORT with version $VERSION"
   
   if [ "$BACKGROUND_MODE" = true ]; then
     print_step "Starting development server in background..."
@@ -518,7 +521,7 @@ fi
 # Perform zero-downtime deployment
 if zero_downtime_deploy $PREVIEW_PORT; then
   print_success "🎉 Deployment completed successfully!"
-  print_success "Server is running at http://localhost:$PREVIEW_PORT"
+  print_success "Server is running at http://localhost:$PREVIEW_PORT with version $VERSION"
   
   if [ "$BACKGROUND_MODE" = true ]; then
     # Create pid file and log file for background mode
