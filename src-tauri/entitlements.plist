@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Enable app sandbox (required for proper permissions) -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    
+    <!-- Allow reading user-selected files (for drag and drop) -->
+    <key>com.apple.security.files.user-selected.read-only</key>
+    <true/>
+    
+    <!-- Allow reading downloads folder -->
+    <key>com.apple.security.files.downloads.read-only</key>
+    <true/>
+    
+    <!-- Allow reading movies folder -->
+    <key>com.apple.security.files.movies.read-only</key>
+    <true/>
+    
+    <!-- Allow reading desktop folder -->
+    <key>com.apple.security.files.desktop.read-only</key>
+    <true/>
+    
+    <!-- Allow reading documents folder -->
+    <key>com.apple.security.files.documents.read-only</key>
+    <true/>
+    
+    <!-- Allow network access for API calls -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    
+    <!-- Allow outgoing network connections -->
+    <key>com.apple.security.network.server</key>
+    <false/>
+    
+    <!-- Allow access to removable volumes -->
+    <key>com.apple.security.files.removable-volumes.read-only</key>
+    <true/>
+    
+    <!-- Force permission dialog by requesting specific access -->
+    <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+    <array>
+        <string>Downloads/</string>
+        <string>Desktop/</string>
+        <string>Documents/</string>
+        <string>Movies/</string>
+    </array>
+    
+    <!-- Request access to common file locations -->
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
+    <array>
+        <string>/Users/</string>
+        <string>/Volumes/</string>
+    </array>
+</dict>
+</plist>

@@ -9,12 +9,22 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             #[cfg(debug_assertions)] // only include this code on debug builds
             {
                 let window = app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
+            
+            // Setup Tauri environment indicators
+            let window = app.get_webview_window("main").unwrap();
+            let _ = window.eval(r#"
+                console.log('🔧 Tauri v2 setup complete');
+                console.log('🔧 Drag and drop should be enabled');
+                console.log('🔧 Protocol:', window.location.protocol);
+            "#);
+            
             Ok(())
         })
         .run(tauri::generate_context!())

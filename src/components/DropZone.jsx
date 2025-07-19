@@ -112,6 +112,7 @@ export const DropZone = ({
           >
             📁 {hasFiles ? "Add More Files" : "Select Files"}
           </label>
+          
         </div>
       </div>
       

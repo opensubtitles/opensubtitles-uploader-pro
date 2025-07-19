@@ -35,22 +35,42 @@ export const useFileHandling = (addDebugInfo) => {
   // Handle file drop
   const handleDrop = useCallback(async (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setIsDragOver(false);
     
-    console.log('🎯 Drop event triggered in Tauri app:', {
-      isTauri: !!window.__TAURI__,
+    const isTauriEnv = window.location.protocol === 'tauri:';
+    
+    console.log('🎯 DROP EVENT TRIGGERED:', {
+      isTauriEnv,
       eventType: event.type,
-      dataTransfer: event.dataTransfer,
-      items: event.dataTransfer?.items?.length,
-      files: event.dataTransfer?.files?.length
+      dataTransfer: !!event.dataTransfer,
+      items: event.dataTransfer?.items?.length || 0,
+      files: event.dataTransfer?.files?.length || 0,
+      dataTransferTypes: event.dataTransfer?.types || [],
+      protocol: window.location.protocol
     });
     
-    addDebugInfo("Drop event triggered");
+    addDebugInfo(`Drop event triggered in ${isTauriEnv ? 'Tauri' : 'browser'} environment`);
     
     try {
+      // For Tauri, ensure we have proper file data
+      if (isTauriEnv) {
+        console.log('🔥 TAURI DROP EVENT - Checking file data availability...');
+        
+        // Tauri should provide files through the standard DataTransfer API
+        if (!event.dataTransfer || (!event.dataTransfer.files?.length && !event.dataTransfer.items?.length)) {
+          console.error('❌ No files found in Tauri drop event');
+          addDebugInfo("No files found in drop event");
+          throw new Error("No files were provided in the drop event.");
+        }
+        
+        console.log('✅ Files available in Tauri drop event');
+      }
+      
       const collectedFiles = await FileProcessingService.processDroppedItems(event);
       
       addDebugInfo(`Collected ${collectedFiles.length} valid media files`);
+      console.log('📁 Collected files:', collectedFiles.map(f => ({ name: f.name, path: f.fullPath, type: f.type })));
       
       if (collectedFiles.length > 0) {
         setFiles(collectedFiles);
@@ -60,6 +80,7 @@ export const useFileHandling = (addDebugInfo) => {
         throw new Error("No video or subtitle files found in the dropped items.");
       }
     } catch (error) {
+      console.error('❌ Drop processing error:', error);
       addDebugInfo(`Error processing dropped items: ${error.message}`);
       throw error;
     }
@@ -68,16 +89,10 @@ export const useFileHandling = (addDebugInfo) => {
   // Handle drag over
   const handleDragOver = useCallback((e) => {
     e.preventDefault();
-    console.log('🎯 Drag over event:', {
-      isTauri: !!window.__TAURI__,
-      eventType: e.type,
-      hasDataTransfer: !!e.dataTransfer
-    });
+    e.stopPropagation();
     
-    // Add visual feedback for debugging
-    if (window.__TAURI__) {
-      console.log('🔥 TAURI DRAG DETECTED - This should work!');
-    }
+    const isTauriEnv = window.location.protocol === 'tauri:';
+    
     
     setIsDragOver(true);
   }, []);
@@ -85,6 +100,7 @@ export const useFileHandling = (addDebugInfo) => {
   // Handle drag leave
   const handleDragLeave = useCallback((e) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
   }, []);
 
@@ -115,6 +131,7 @@ export const useFileHandling = (addDebugInfo) => {
       })
     );
   }, []);
+
 
   return {
     files,

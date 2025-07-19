@@ -23,10 +23,6 @@ export default defineConfig({
     target: 'esnext', // Support top-level await
     format: 'es',
     rollupOptions: {
-      external: [
-        '@tauri-apps/api/updater',
-        '@tauri-apps/api/process'
-      ],
       output: {
         manualChunks: {
           // Vendor chunks

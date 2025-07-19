@@ -19,15 +19,6 @@ const UserProfile = () => {
   } = useAuth();
   const { isDark } = useTheme();
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log('🔐 UserProfile - Auth state changed:');
-    console.log('🔐 isAuthenticated:', isAuthenticated);
-    console.log('🔐 user:', user);
-    console.log('🔐 loading:', loading);
-    console.log('🔐 error:', error);
-    console.log('🔐 isAnonymous():', isAnonymous ? isAnonymous() : 'N/A');
-  }, [isAuthenticated, user, loading, error, isAnonymous]);
   
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -117,7 +108,17 @@ const UserProfile = () => {
       ) : (
         /* User Profile Button for Authenticated Users */
         <button
-          onClick={() => setShowUserMenu(!showUserMenu)}
+          onClick={() => {
+            console.log('👤 USERNAME CLICKED! Menu toggle debug:');
+            console.log('👤 Current user:', user);
+            console.log('👤 Current showUserMenu state:', showUserMenu);
+            console.log('👤 Will set showUserMenu to:', !showUserMenu);
+            console.log('👤 User display name:', getUserDisplayName());
+            console.log('👤 User rank:', getUserRank());
+            console.log('👤 Is authenticated:', isAuthenticated);
+            console.log('👤 Is anonymous:', isAnonymous ? isAnonymous() : 'N/A');
+            setShowUserMenu(!showUserMenu);
+          }}
           className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${isDark ? 'text-gray-50 hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}`}
         >
           {/* User Avatar */}

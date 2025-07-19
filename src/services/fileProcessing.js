@@ -205,6 +205,47 @@ export class FileProcessingService {
   }
 
   /**
+   * Process file objects from Tauri (file paths only)
+   */
+  static async processFileObjects(fileObjects) {
+    const collectedFiles = [];
+    
+    try {
+      for (const fileObj of fileObjects) {
+        // Extract file name from path
+        const fileName = fileObj.name || fileObj.fullPath?.split('/').pop() || fileObj.path?.split('/').pop() || 'unknown';
+        const filePath = fileObj.fullPath || fileObj.path || '';
+        
+        // Check if it's a media file based on file extension
+        const { isVideo, isSubtitle, isMedia, fileKind } = isMediaFile({ name: fileName });
+        
+        if (isMedia) {
+          const processedFile = {
+            name: fileName,
+            fullPath: filePath,
+            size: fileObj.size || 0,
+            type: fileObj.type || '',
+            file: null, // No File object in Tauri, just the path
+            isVideo: isVideo,
+            isSubtitle: isSubtitle,
+            movieHash: null,
+            detectedLanguage: fileKind ? { file_kind: fileKind } : null,
+            recognized: true,
+            isTauriFile: true // Mark as Tauri file for special handling
+          };
+          
+          collectedFiles.push(processedFile);
+        }
+      }
+      
+      return collectedFiles;
+    } catch (error) {
+      console.error('Error processing Tauri file objects:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Check browser capabilities for file handling
    */
   static getBrowserCapabilities() {

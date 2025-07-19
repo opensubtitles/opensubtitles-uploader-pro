@@ -1,8 +1,0 @@
-cargo:rerun-if-changed=permissions
-cargo:PERMISSION_FILES_PATH=/Users/brano/Documents/data/www/opensubtitles.org/public_html/github/uploader/src-tauri/target/release/build/tauri-plugin-http-7feb19aa7fff9289/out/tauri-plugin-http-permission-files
-cargo:rerun-if-env-changed=REMOVE_UNUSED_COMMANDS
-cargo:GLOBAL_SCOPE_SCHEMA_PATH=/Users/brano/Documents/data/www/opensubtitles.org/public_html/github/uploader/src-tauri/target/release/build/tauri-plugin-http-7feb19aa7fff9289/out/global-scope.json
-cargo:GLOBAL_API_SCRIPT_PATH=/Users/brano/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tauri-plugin-http-2.5.0/api-iife.js
-cargo:rustc-check-cfg=cfg(mobile)
-cargo:rustc-check-cfg=cfg(desktop)
-cargo:rustc-cfg=desktop

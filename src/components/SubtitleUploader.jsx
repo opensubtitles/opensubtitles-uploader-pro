@@ -1,4 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback, Suspense, lazy } from "react";
+
+// Import logo assets
+import logoWhite from '../assets/os_logo_white_512x512.png';
+import logoDark from '../assets/os_logo_dark_512x512.png';
+
+// Import Tauri API to ensure it's loaded (only available in Tauri environment)
+if (typeof window !== 'undefined' && window.location.protocol === 'tauri:') {
+  try {
+    import('@tauri-apps/api/core');
+  } catch (e) {
+    console.log('Tauri core not available in this environment');
+  }
+}
+
 import { useDebugMode } from "../hooks/useDebugMode.js";
 import { useFileHandling } from "../hooks/useFileHandling.js";
 import { useLanguageData } from "../hooks/useLanguageData.js";
@@ -124,7 +138,6 @@ function SubtitleUploaderInner() {
 
     // Start auto-updates if running as standalone app
     if (isStandalone) {
-      console.log('🔄 Starting auto-update system for standalone app');
       startAutoUpdates();
     }
   }, [isStandalone, startAutoUpdates]);
@@ -1674,10 +1687,7 @@ function SubtitleUploaderInner() {
                 className="block hover:opacity-80 transition-opacity"
               >
                 <img 
-                  src={isDark 
-                    ? "https://opensubtitles.org/gfx/logotype/opensubtitles_new/opensubtitles_logo_final_white_on_transparent.png"
-                    : "https://opensubtitles.org/gfx/logotype/opensubtitles_new/opensubtitles_logo_final_black_on_transparent.png"
-                  }
+                  src={isDark ? logoWhite : logoDark}
                   alt="OpenSubtitles Logo" 
                   className="h-16 w-auto"
                   onError={(e) => {
@@ -1826,36 +1836,6 @@ function SubtitleUploaderInner() {
           onFileSelect={handleFileSelect}
         />
 
-        {/* Runtime Environment Indicator */}
-        <div className="rounded-lg p-3 mb-4" style={{
-          backgroundColor: colors.cardBackground,
-          border: `1px solid ${colors.border}`,
-          fontSize: '12px'
-        }}>
-          <div className="flex items-center gap-3">
-            <span style={{ color: colors.textSecondary }}>🔍 Runtime Environment:</span>
-            <div className="flex items-center gap-4">
-              <span style={{ 
-                color: window.__TAURI__ ? colors.success : colors.textSecondary,
-                fontWeight: window.__TAURI__ ? 'bold' : 'normal'
-              }}>
-                {window.__TAURI__ ? '✅ Standalone Tauri App' : '🌐 Web Browser'}
-              </span>
-              <span style={{ color: colors.textSecondary }}>|</span>
-              <span style={{ color: colors.textSecondary }}>
-                User Agent: {navigator.userAgent.includes('Tauri') ? 'Tauri' : 'Browser'}
-              </span>
-              {window.__TAURI__ && (
-                <>
-                  <span style={{ color: colors.textSecondary }}>|</span>
-                  <span style={{ color: colors.textSecondary }}>
-                    Drag & Drop: {window.__TAURI__ ? 'Should be enabled' : 'Browser native'}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
 
         {/* Error Display */}
         {error && (

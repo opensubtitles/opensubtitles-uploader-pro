@@ -35,8 +35,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        console.log('🔐 Initializing authentication...');
-        console.log('🔐 AuthService available:', !!authService);
         
         // First check for URL parameter sid (from opensubtitles.org) or stored session
         const urlParams = new URLSearchParams(window.location.search);
@@ -45,8 +43,6 @@ export const AuthProvider = ({ children }) => {
         
         if (sidFromUrl || storedSessionId) {
           const sessionId = sidFromUrl || storedSessionId;
-          console.log('🔐 Found session ID:', sessionId.substring(0, 10) + '...');
-          console.log('🔐 Source:', sidFromUrl ? 'URL parameter' : 'stored session');
           
           // Check if the session ID is valid by calling GetUserInfo
           const userInfo = await authService.checkAuthStatus(sessionId);
@@ -87,11 +83,8 @@ export const AuthProvider = ({ children }) => {
         } else {
           // No URL parameter, try to restore from localStorage
           const restored = authService.restoreAuthFromStorage();
-          console.log('🔐 Authentication restoration result:', restored);
-          
           if (restored) {
             // Check if the restored session is still valid
-            console.log('🔐 Found stored session, checking validity...');
             const userInfo = await authService.checkAuthStatus();
             
             if (userInfo) {
@@ -110,7 +103,6 @@ export const AuthProvider = ({ children }) => {
             }
           } else {
             // No stored session, user needs to login
-            console.log('🔐 No stored session found, user needs to login');
             setIsAuthenticated(false);
             setUser(null);
             setToken(null);
@@ -143,7 +135,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      console.log('🔐 Attempting login with credentials...');
       
       const result = await authService.loginWithHash(username, password, language);
       
@@ -184,7 +175,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       
-      console.log('🔐 Attempting logout...');
       
       const result = await authService.logout();
       
@@ -240,7 +230,6 @@ export const AuthProvider = ({ children }) => {
       
       // If we have a user, try to re-login with same credentials
       if (user && !isAnonymous()) {
-        console.log('🔐 Refreshing authentication...');
         // Note: We can't re-login with original credentials since we don't store them
         // This would require the user to login again
         setError('Please login again to refresh your session');
