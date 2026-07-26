@@ -204,16 +204,32 @@ export class UserService {
   }
 
   /**
+   * Get every rank the user holds.
+   *
+   * UserRanks only contains group memberships (vip member, app developer, trusted, ...).
+   * Upload-count ranks (bronze/silver/gold/platinum member) are never part of that array -
+   * the server exposes the winning one in UserRank instead. Both sources have to be merged,
+   * otherwise a gold member who is also in any group loses their gold member rank.
+   *
+   * @param {Object} userInfo - User info response from XML-RPC GetUserInfo
+   * @returns {Array} - Deduplicated array of all ranks held by the user
+   */
+  static getEffectiveRanks(userInfo) {
+    const ranks = [...this.getUserRanks(userInfo), this.getUserRank(userInfo)]
+      .filter(rank => typeof rank === 'string' && rank.trim() !== '')
+      .map(rank => rank.trim());
+
+    return [...new Set(ranks)];
+  }
+
+  /**
    * Check if user has sufficient rank to use the application
    * @param {Object} userInfo - User info response from XML-RPC GetUserInfo
    * @returns {Object} - { allowed: boolean, reason: string, userRanks: Array }
    */
   static validateUserRank(userInfo) {
-    const userRanks = this.getUserRanks(userInfo);
     const currentRank = this.getUserRank(userInfo);
-
-    // Create effective ranks array - use UserRanks if available, otherwise fall back to UserRank
-    const effectiveRanks = userRanks.length > 0 ? userRanks : currentRank ? [currentRank] : [];
+    const effectiveRanks = this.getEffectiveRanks(userInfo);
 
     // Allowed ranks for application usage
     const allowedRanks = [
@@ -271,7 +287,7 @@ export class UserService {
     console.log('❌ User does not have sufficient rank for application access');
     return {
       allowed: false,
-      reason: `Access denied: Your account rank "${currentRank}" is not sufficient for uploading. Required ranks: ${allowedRanks.join(', ')}.`,
+      reason: `Access denied: Your account ranks "${effectiveRanks.join('", "')}" are not sufficient for uploading. Required ranks: ${allowedRanks.join(', ')}.`,
       userRanks: effectiveRanks,
       currentRank: currentRank,
     };

@@ -25,7 +25,7 @@ const RankRestrictionWarning = () => {
   const rankValidation = uploadPermission.rankValidation;
   const isForbiddenRank = rankValidation?.forbiddenRank;
   const currentRank = UserService.getUserRank(userInfo);
-  const userRanks = UserService.getUserRanks(userInfo);
+  const userRanks = UserService.getEffectiveRanks(userInfo);
 
   return (
     <div className="fixed top-0 left-0 right-0 bg-red-600 text-white px-4 py-3 shadow-lg z-50">
