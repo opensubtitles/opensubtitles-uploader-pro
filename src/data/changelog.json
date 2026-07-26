@@ -1,8 +1,43 @@
 {
-  "generated_at": "2026-07-16T13:43:50.452Z",
+  "generated_at": "2026-07-26T23:38:59.324Z",
   "generator": "OpenSubtitles Uploader PRO Build System",
   "total_releases": 15,
   "releases": [
+    {
+      "version": "v1.8.19",
+      "name": "v1.8.19 - Extracted MKV Subtitles Fix",
+      "published_at": "2026-07-16T13:44:06Z",
+      "body": "## 🐛 Bug Fix: Extracted MKV Subtitles Classification\n\nFixed extracted MKV subtitles being incorrectly classified as orphaned subtitles, which prevented them from displaying episode numbers.\n\n### What was broken\n- When subtitles were extracted from MKV files, they were sometimes treated as orphaned instead of paired with the source video\n- Orphaned subtitles display differently in UI (without episode info from the paired video)\n- This was a race condition in subtitle pairing detection\n\n### What's fixed\n- Extracted subtitles now explicitly check `pairedWithMkv` flag to prevent orphan classification\n- Subtitles extracted from MKV are now correctly recognized as paired, not orphaned\n- Episode information now displays correctly for extracted subtitles\n\n### Files changed\n- SubtitleUploader.jsx: Added `pairedWithMkv` flag check in orphaned subtitle filter",
+      "html_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/tag/v1.8.19",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "latest.json",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.19/latest.json",
+          "size": 1994
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.19_amd64.AppImage",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.19/OpenSubtitles.Uploader.PRO_1.8.19_amd64.AppImage",
+          "size": 100676800
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.19_amd64.deb",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.19/OpenSubtitles.Uploader.PRO_1.8.19_amd64.deb",
+          "size": 15329406
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.19_universal.dmg",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.19/OpenSubtitles.Uploader.PRO_1.8.19_universal.dmg",
+          "size": 30064053
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.19_x64-setup.exe",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.19/OpenSubtitles.Uploader.PRO_1.8.19_x64-setup.exe",
+          "size": 13098484
+        }
+      ]
+    },
     {
       "version": "v1.8.18",
       "name": "v1.8.18",
@@ -490,41 +525,6 @@
           "name": "OpenSubtitles.Uploader.PRO_1.8.4_x64-setup.exe",
           "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.4/OpenSubtitles.Uploader.PRO_1.8.4_x64-setup.exe",
           "size": 4690882
-        }
-      ]
-    },
-    {
-      "version": "v1.8.2",
-      "name": "v1.8.2 - Build 195",
-      "published_at": "2025-11-11T20:45:35Z",
-      "body": "Automated release created by GitHub Actions build.\\n\\n**Build Information:**\\n- Build Number: 195\\n- Commit: c678a3b4b2c25e79e70f0e80900f202f1aa2e2ff\\n- Triggered by: push\\n\\nAssets will be uploaded as builds complete on each platform.\\n\\n🤖 Generated with [Claude Code](https://claude.ai/code)\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>",
-      "html_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/tag/v1.8.2",
-      "prerelease": false,
-      "assets": [
-        {
-          "name": "latest.json",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.2/latest.json",
-          "size": 1451
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.2_amd64.AppImage",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.2/OpenSubtitles.Uploader.PRO_1.8.2_amd64.AppImage",
-          "size": 91743424
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.2_amd64.deb",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.2/OpenSubtitles.Uploader.PRO_1.8.2_amd64.deb",
-          "size": 7268208
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.2_universal.dmg",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.2/OpenSubtitles.Uploader.PRO_1.8.2_universal.dmg",
-          "size": 14018470
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.2_x64-setup.exe",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.2/OpenSubtitles.Uploader.PRO_1.8.2_x64-setup.exe",
-          "size": 4689890
         }
       ]
     }
