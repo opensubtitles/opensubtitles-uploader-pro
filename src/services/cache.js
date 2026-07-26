@@ -1,5 +1,6 @@
 import { CACHE_KEYS, DEFAULT_SETTINGS } from '../utils/constants.js';
 import pako from 'pako';
+import { uint8ArrayToBase64 } from '../utils/base64Utils.js';
 
 /**
  * Cache management service for OpenSubtitles data
@@ -23,7 +24,7 @@ export class CacheService {
       const compressed = pako.deflate(uint8Array);
 
       // Convert to base64 and add compression marker
-      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      const base64 = uint8ArrayToBase64(compressed);
       const compressedWithMarker = 'PAKO:' + base64;
 
       // Log compression stats for debugging

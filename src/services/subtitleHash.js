@@ -1,5 +1,6 @@
 import CryptoJS from 'crypto-js';
 import pako from 'pako';
+import { uint8ArrayToBase64 } from '../utils/base64Utils.js';
 
 /**
  * Subtitle hash calculation utilities for OpenSubtitles
@@ -110,7 +111,7 @@ export class SubtitleHashService {
       const compressedHash = this.calculateSubtitleHashFromBytes(compressed);
 
       // Convert to base64
-      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      const base64 = uint8ArrayToBase64(compressed);
 
       console.log('Raw bytes compression (zlib):', {
         originalSize: rawBytes.length,
@@ -149,7 +150,7 @@ export class SubtitleHashService {
       const compressedHash = this.calculateSubtitleHashFromBytes(compressed);
 
       // Convert to base64
-      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      const base64 = uint8ArrayToBase64(compressed);
 
       // DEBUG: Verify round-trip compression/decompression
       const debugResult = this.debugCompressedContent(base64, content);
@@ -193,7 +194,7 @@ export class SubtitleHashService {
       const compressed = pako.deflate(uint8Array);
 
       // Convert to base64
-      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      const base64 = uint8ArrayToBase64(compressed);
 
       // DEBUG: Verify round-trip compression/decompression
       const debugResult = this.debugCompressedContent(base64, content);
