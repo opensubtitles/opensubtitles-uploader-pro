@@ -7,6 +7,39 @@ import {
 } from '../utils/fileUtils.js';
 import { MetadataTags } from './MetadataTags.jsx';
 
+/**
+ * Label for the type shown next to the upload IMDb link.
+ *
+ * The features API feature_type is authoritative and knows about episodes;
+ * movieData.kind comes from suggest_imdb.php and used to report every episode
+ * as "movie", which is why episodes were labelled Movie. Prefer the features
+ * value and only fall back to kind when features have not loaded yet.
+ *
+ * @param {Object} featuresData - featuresByImdbId entry for the current imdb
+ * @param {string} kind - movieData.kind ('movie' | 'tv series' | 'episode')
+ * @returns {string} - Display label
+ */
+const getFeatureTypeLabel = (featuresData, kind) => {
+  const featureType = featuresData?.data?.[0]?.attributes?.feature_type;
+
+  if (featureType) {
+    switch (featureType.toLowerCase()) {
+      case 'movie':
+        return 'Movie';
+      case 'tvshow':
+      case 'tv_series':
+        return 'TV Series';
+      case 'episode':
+        return 'Episode';
+      default:
+        return featureType.replace('_', ' ');
+    }
+  }
+
+  if (kind === 'episode') return 'Episode';
+  return kind === 'tv series' ? 'TV Series' : 'Movie';
+};
+
 export const MovieDisplay = ({
   videoPath,
   movieGuesses,
@@ -975,27 +1008,7 @@ export const MovieDisplay = ({
                           [OS]
                         </a>
                         <span className="text-xs ml-2" style={{ color: '#28a745' }}>
-                          (
-                          {(() => {
-                            const featureType = featuresData?.data?.[0]?.attributes?.feature_type;
-                            if (featureType) {
-                              // Convert feature_type to display format
-                              switch (featureType.toLowerCase()) {
-                                case 'movie':
-                                  return 'Movie';
-                                case 'tvshow':
-                                case 'tv_series':
-                                  return 'TV Series';
-                                case 'episode':
-                                  return 'Episode';
-                                default:
-                                  return featureType.replace('_', ' ');
-                              }
-                            }
-                            // Fallback to bestMovieData kind
-                            return bestMovieData.kind === 'tv series' ? 'TV Series' : 'Movie';
-                          })()}
-                          )
+                          ({getFeatureTypeLabel(featuresData, bestMovieData.kind)})
                         </span>
                       </div>
 
@@ -1138,7 +1151,7 @@ export const MovieDisplay = ({
                           [OS]
                         </a>
                         <span className="text-xs ml-2" style={{ color: '#28a745' }}>
-                          ({bestMovieData.kind === 'tv series' ? 'TV Series' : 'Movie'})
+                          ({getFeatureTypeLabel(featuresData, bestMovieData.kind)})
                         </span>
                       </div>
 
