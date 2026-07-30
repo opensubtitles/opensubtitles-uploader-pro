@@ -1,8 +1,43 @@
 {
-  "generated_at": "2026-07-26T23:38:59.324Z",
+  "generated_at": "2026-07-30T23:55:13.185Z",
   "generator": "OpenSubtitles Uploader PRO Build System",
   "total_releases": 15,
   "releases": [
+    {
+      "version": "v1.8.20",
+      "name": "v1.8.20",
+      "published_at": "2026-07-26T23:40:05Z",
+      "body": "Version 1.8.20 - Rank validation, large subtitle uploads, episode labels\n\n- Gold members holding any group rank are no longer denied uploading\n- Subtitles around 380 KB and up no longer fail with a stack overflow\n- Episodes attached by IMDb ID label as Episode instead of Movie",
+      "html_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/tag/v1.8.20",
+      "prerelease": false,
+      "assets": [
+        {
+          "name": "latest.json",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.20/latest.json",
+          "size": 1397
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.20_amd64.AppImage",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.20/OpenSubtitles.Uploader.PRO_1.8.20_amd64.AppImage",
+          "size": 100676800
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.20_amd64.deb",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.20/OpenSubtitles.Uploader.PRO_1.8.20_amd64.deb",
+          "size": 15329164
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.20_universal.dmg",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.20/OpenSubtitles.Uploader.PRO_1.8.20_universal.dmg",
+          "size": 30078713
+        },
+        {
+          "name": "OpenSubtitles.Uploader.PRO_1.8.20_x64-setup.exe",
+          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.20/OpenSubtitles.Uploader.PRO_1.8.20_x64-setup.exe",
+          "size": 13097871
+        }
+      ]
+    },
     {
       "version": "v1.8.19",
       "name": "v1.8.19 - Extracted MKV Subtitles Fix",
@@ -490,41 +525,6 @@
           "name": "OpenSubtitles.Uploader.PRO_1.8.5_x64-setup.exe",
           "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.5/OpenSubtitles.Uploader.PRO_1.8.5_x64-setup.exe",
           "size": 4697035
-        }
-      ]
-    },
-    {
-      "version": "v1.8.4",
-      "name": "v1.8.4 - Build 198",
-      "published_at": "2025-11-19T06:30:25Z",
-      "body": "## Version 1.8.4 - Advanced Language Filter with Dynamic Updates\n\n### NEW FEATURES\n- **Language Filter** - Filter subtitles by detected language before upload\n- **Select/Deselect All** - Quick language selection controls  \n- **Dynamic Updates** - Filter updates when languages are manually changed\n- **Auto-Remove Empty** - Languages with 0 subtitles automatically removed\n- **Real-time Counts** - Subtitle counts update as languages change\n- **Smart Auto-Select** - Initial auto-select, respects manual deselections\n- **Select Folder Button** - Added directory picker next to file picker\n\n### ENHANCEMENTS\n- Fixed Chrome multi-directory drag-drop bug (two-phase processing)\n- Improved language detection display (uses language_code field)\n- Better spacing in language filter component\n- Comprehensive debug logging for language filter logic\n\n### TECHNICAL DETAILS\n- LanguageFilter component with checkbox grid layout\n- Integration with getSubtitleLanguage for manual/auto detection\n- Smart useEffect with previousLanguagesRef tracking\n- Prevents re-selecting after user deselects",
-      "html_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/tag/v1.8.4",
-      "prerelease": false,
-      "assets": [
-        {
-          "name": "latest.json",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.4/latest.json",
-          "size": 1451
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.4_amd64.AppImage",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.4/OpenSubtitles.Uploader.PRO_1.8.4_amd64.AppImage",
-          "size": 91751616
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.4_amd64.deb",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.4/OpenSubtitles.Uploader.PRO_1.8.4_amd64.deb",
-          "size": 7274626
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.4_universal.dmg",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.4/OpenSubtitles.Uploader.PRO_1.8.4_universal.dmg",
-          "size": 14021988
-        },
-        {
-          "name": "OpenSubtitles.Uploader.PRO_1.8.4_x64-setup.exe",
-          "download_url": "https://github.com/opensubtitles/OpenSubtitles-Uploader-PRO/releases/download/v1.8.4/OpenSubtitles.Uploader.PRO_1.8.4_x64-setup.exe",
-          "size": 4690882
         }
       ]
     }
