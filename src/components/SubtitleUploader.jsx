@@ -145,7 +145,7 @@ function SubtitleUploaderInner() {
   const [subcontentData, setSubcontentData] = useState({}); // New state for subcontent data
   const [uploadOptions, setUploadOptions] = useState({}); // New state for upload options (release name, comments, etc.)
   const [orphanedSubtitlesFps, setOrphanedSubtitlesFps] = useState({}); // New state for orphaned subtitles FPS
-  const [uploadProgress, setUploadProgress] = useState({
+  const initialUploadProgress = {
     isUploading: false,
     isComplete: false,
     processed: 0,
@@ -155,7 +155,8 @@ function SubtitleUploaderInner() {
     failed: 0,
     currentSubtitle: '',
     results: [],
-  }); // Enhanced upload progress tracking
+  };
+  const [uploadProgress, setUploadProgress] = useState(initialUploadProgress); // Enhanced upload progress tracking
   const [validationErrors, setValidationErrors] = useState([]); // Validation errors from UploadButton for highlighting subtitles
   const [showLoginDialog, setShowLoginDialog] = useState(false); // Login dialog for "Login to Upload" button
 
@@ -1113,17 +1114,7 @@ function SubtitleUploaderInner() {
 
       // Reset upload progress only if not currently uploading
       if (!uploadProgress.isUploading) {
-        setUploadProgress({
-          isUploading: false,
-          isComplete: false,
-          processed: 0,
-          total: 0,
-          successful: 0,
-          alreadyExists: 0,
-          failed: 0,
-          currentSubtitle: '',
-          results: [],
-        });
+        setUploadProgress(initialUploadProgress);
       }
 
       // Process selected files similar to FileProcessingService
@@ -1353,12 +1344,7 @@ function SubtitleUploaderInner() {
       setSubtitleContent('');
 
       if (!uploadProgress.isUploading) {
-        setUploadProgress({
-          isUploading: false,
-          current: 0,
-          total: 0,
-          currentFile: '',
-        });
+        setUploadProgress(initialUploadProgress);
       }
 
       // Process selected files (same as handleFileSelect)
@@ -1548,6 +1534,7 @@ function SubtitleUploaderInner() {
       setSubcontentData({}); // Clear previous subcontent data
       setUploadStates({}); // Reset upload enable/disable states
       setUploadOptions({}); // Reset upload options states
+      setUploadProgress(initialUploadProgress); // Reset upload progress so a finished upload doesn't disable the Upload button
       setOpenDropdowns({}); // Close any open dropdowns
       setDropdownSearch({}); // Clear dropdown search states
       setPreviewSubtitle(null); // Close any preview
@@ -2200,6 +2187,7 @@ function SubtitleUploaderInner() {
     setUploadStates({}); // Clear upload states
     setUploadOptions({}); // Clear upload options
     setUploadResults({}); // Clear upload results
+    setUploadProgress(initialUploadProgress); // Reset upload progress - a leftover isComplete keeps the Upload button disabled for the next batch
     setHasDroppedFiles(false); // Reset drop state to allow files to be dropped again
     setSubcontentData({}); // Clear subcontent data
 
