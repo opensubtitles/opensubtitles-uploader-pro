@@ -248,6 +248,10 @@ Tests run automatically on every push and pull request.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+## 🔒 Privacy
+
+The app contains no analytics, telemetry, or ads. See the [Privacy Policy](PRIVACY.md) for details on what data is processed and where it goes.
+
 ## 🆘 Support
 
 - 📖 **Documentation**: [OpenSubtitles API Docs](https://api.opensubtitles.com)
