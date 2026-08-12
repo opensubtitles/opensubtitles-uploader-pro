@@ -116,8 +116,8 @@ jobs:
         env:
           VITE_OPENSUBTITLES_API_KEY: ${{ secrets.VITE_OPENSUBTITLES_API_KEY }}
           NODE_ENV: production
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           echo "🍎 Building macOS with basic debugging..."
           echo "Debug - Environment info:"
@@ -207,7 +207,25 @@ jobs:
             gh release upload "${{ steps.version.outputs.VERSION }}" "$DMG_FILE" --clobber || {
               echo "⚠️ Failed to upload macOS DMG, continuing..."
             }
+          fi
+
+          # Upload updater artifacts (created by createUpdaterArtifacts)
+          UPDATER_TGZ=$(find src-tauri -name "*.app.tar.gz" | head -1)
+          UPDATER_SIG=$(find src-tauri -name "*.app.tar.gz.sig" | head -1)
+          if [ -n "$UPDATER_TGZ" ] && [ -f "$UPDATER_TGZ" ]; then
+            echo "✅ Found macOS updater archive: $UPDATER_TGZ"
+            gh release upload "${{ steps.version.outputs.VERSION }}" "$UPDATER_TGZ" --clobber || echo "⚠️ Failed to upload updater archive"
           else
+            echo "⚠️ No macOS updater archive (.app.tar.gz) found"
+          fi
+          if [ -n "$UPDATER_SIG" ] && [ -f "$UPDATER_SIG" ]; then
+            echo "✅ Found macOS updater signature: $UPDATER_SIG"
+            gh release upload "${{ steps.version.outputs.VERSION }}" "$UPDATER_SIG" --clobber || echo "⚠️ Failed to upload updater signature"
+          else
+            echo "⚠️ No macOS updater signature (.app.tar.gz.sig) found"
+          fi
+
+          if [ -z "$DMG_FILE" ]; then
             echo "⚠️ No macOS DMG found"
             
             # Try to find .app and create a simple archive
@@ -231,8 +249,8 @@ jobs:
         env:
           VITE_OPENSUBTITLES_API_KEY: ${{ secrets.VITE_OPENSUBTITLES_API_KEY }}
           NODE_ENV: production
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           echo "🐧 Building Linux with basic debugging..."
           echo "Debug - Environment info:"
@@ -262,8 +280,8 @@ jobs:
         env:
           VITE_OPENSUBTITLES_API_KEY: ${{ secrets.VITE_OPENSUBTITLES_API_KEY }}
           NODE_ENV: production
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           echo "🪟 Building Windows with basic debugging..."
           echo "Debug - Environment info:"
@@ -308,6 +326,15 @@ jobs:
             gh release upload "${{ steps.version.outputs.VERSION }}" "$APPIMAGE_FILE" --clobber
           else
             echo "⚠️ No AppImage found"
+          fi
+
+          # Upload updater signature (created by createUpdaterArtifacts)
+          APPIMAGE_SIG=$(find src-tauri -name "*.AppImage.sig" | head -1)
+          if [ -n "$APPIMAGE_SIG" ] && [ -f "$APPIMAGE_SIG" ]; then
+            echo "✅ Found AppImage signature: $APPIMAGE_SIG"
+            gh release upload "${{ steps.version.outputs.VERSION }}" "$APPIMAGE_SIG" --clobber || echo "⚠️ Failed to upload AppImage signature"
+          else
+            echo "⚠️ No AppImage signature found"
           fi
           
           # Upload DEB if found
@@ -357,6 +384,15 @@ jobs:
             }
           else
             echo "⚠️ No Windows installer found"
+          fi
+
+          # Upload updater signature (created by createUpdaterArtifacts)
+          NSIS_SIG=$(find src-tauri -name "*setup.exe.sig" | head -1)
+          if [ -n "$NSIS_SIG" ] && [ -f "$NSIS_SIG" ]; then
+            echo "✅ Found installer signature: $NSIS_SIG"
+            gh release upload "${{ steps.version.outputs.VERSION }}" "$NSIS_SIG" --clobber || echo "⚠️ Failed to upload installer signature"
+          else
+            echo "⚠️ No installer signature found"
           fi
           
           # Skip updater manifest generation here - will be done in separate job
@@ -424,18 +460,33 @@ jobs:
           echo "Available assets:"
           echo "$ASSETS"
           
-          # Determine macOS file URL based on what actually exists
-          if echo "$ASSETS" | grep -q "universal\.dmg"; then
+          # Determine macOS updater URL — prefer .app.tar.gz (required by Tauri updater), fall back to DMG
+          MACOS_TGZ=$(echo "$ASSETS" | grep '\.app\.tar\.gz$' | head -1)
+          if [ -n "$MACOS_TGZ" ]; then
+            MACOS_URL="https://github.com/opensubtitles/opensubtitles-uploader-pro/releases/download/$VERSION/$MACOS_TGZ"
+            echo "✅ Found updater archive, using: $MACOS_URL"
+          elif echo "$ASSETS" | grep -q "universal\.dmg"; then
             MACOS_URL="https://github.com/opensubtitles/opensubtitles-uploader-pro/releases/download/$VERSION/OpenSubtitles.Uploader.PRO_${VERSION_NUM}_universal.dmg"
-            echo "✅ Found DMG file, using: $MACOS_URL"
-          elif echo "$ASSETS" | grep -q "_macos\.tar\.gz"; then
-            MACOS_URL="https://github.com/opensubtitles/opensubtitles-uploader-pro/releases/download/$VERSION/OpenSubtitles.Uploader.PRO_macos.tar.gz"
-            echo "✅ Found tar.gz file, using: $MACOS_URL"
+            echo "⚠️ No .app.tar.gz — falling back to DMG (updater cannot install DMG): $MACOS_URL"
           else
-            echo "❌ No macOS file found (neither .dmg nor .tar.gz)"
+            echo "❌ No macOS file found"
             MACOS_URL="https://github.com/opensubtitles/opensubtitles-uploader-pro/releases/download/$VERSION/OpenSubtitles.Uploader.PRO_${VERSION_NUM}_universal.dmg"
             echo "⚠️ Falling back to DMG URL: $MACOS_URL"
           fi
+
+          # Fetch updater signatures (.sig assets uploaded by build jobs)
+          get_sig() {
+            local sig_name
+            sig_name=$(echo "$ASSETS" | grep -E "$1" | head -1)
+            if [ -n "$sig_name" ]; then
+              rm -f "/tmp/$sig_name"
+              gh release download "$VERSION" --pattern "$sig_name" --dir /tmp 2>/dev/null && tr -d '\n' < "/tmp/$sig_name" || echo ""
+            fi
+          }
+          WIN_SIG=$(get_sig 'setup\.exe\.sig$')
+          MAC_SIG=$(get_sig '\.app\.tar\.gz\.sig$')
+          LINUX_SIG=$(get_sig '\.AppImage\.sig$')
+          echo "Signatures found — win: ${#WIN_SIG} chars, mac: ${#MAC_SIG} chars, linux: ${#LINUX_SIG} chars"
           
           # Fetch actual release notes from GitHub
           echo "📝 Fetching release notes for $VERSION..."
@@ -452,23 +503,23 @@ jobs:
             "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
               "windows-x86_64": {
-                "signature": "",
+                "signature": "$WIN_SIG",
                 "url": "https://github.com/opensubtitles/opensubtitles-uploader-pro/releases/download/$VERSION/OpenSubtitles.Uploader.PRO_${VERSION_NUM}_x64-setup.exe"
               },
               "darwin-universal": {
-                "signature": "",
+                "signature": "$MAC_SIG",
                 "url": "$MACOS_URL"
               },
               "darwin-x86_64": {
-                "signature": "",
+                "signature": "$MAC_SIG",
                 "url": "$MACOS_URL"
               },
               "darwin-aarch64": {
-                "signature": "",
+                "signature": "$MAC_SIG",
                 "url": "$MACOS_URL"
               },
               "linux-x86_64": {
-                "signature": "",
+                "signature": "$LINUX_SIG",
                 "url": "https://github.com/opensubtitles/opensubtitles-uploader-pro/releases/download/$VERSION/OpenSubtitles.Uploader.PRO_${VERSION_NUM}_amd64.AppImage"
               }
             }
