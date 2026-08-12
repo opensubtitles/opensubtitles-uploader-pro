@@ -2990,6 +2990,18 @@ function SubtitleUploaderInner() {
               </a>
               <span className="text-xs opacity-60">•</span>
               <a
+                href="https://github.com/opensubtitles/opensubtitles-uploader-pro/blob/main/PRIVACY.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline transition-all flex items-center gap-1"
+                style={styles.link}
+                {...createHoverHandlers(colors, styles.link, styles.linkHover)}
+              >
+                <span>🔒</span>
+                Privacy Policy
+              </a>
+              <span className="text-xs opacity-60">•</span>
+              <a
                 href="https://www.opensubtitles.org/upload"
                 target="_blank"
                 rel="noopener noreferrer"

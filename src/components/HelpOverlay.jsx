@@ -481,6 +481,23 @@ export const HelpOverlay = ({ isOpen, onClose, colors, isDark }) => {
                     </a>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
+                  <span>🔒</span>
+                  <div>
+                    <div className="font-semibold" style={{ color: colors.text }}>
+                      Privacy Policy
+                    </div>
+                    <a
+                      href="https://github.com/opensubtitles/opensubtitles-uploader-pro/blob/main/PRIVACY.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:underline"
+                      style={{ color: colors.link }}
+                    >
+                      How the app handles your data
+                    </a>
+                  </div>
+                </div>
               </div>
             </section>
           </div>
